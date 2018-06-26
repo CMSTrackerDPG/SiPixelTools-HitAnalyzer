@@ -115,6 +115,7 @@
 #include <TH2.h>
 #include <TH1.h>
 #include <TProfile.h>
+#include <TProfile2D.h>
 #include <TVector3.h>
 
 //#define L1
@@ -188,6 +189,10 @@ class PixClustersWithTracks : public edm::EDAnalyzer {
 
   TH2F *hDetMap1, *hDetMap2, *hDetMap3, *hDetMap4;  // clusters 
   TH2F *hcluDetMap1, *hcluDetMap2,*hcluDetMap3,*hcluDetMap4; // MODULE PROJECTION 
+
+  TProfile2D *hsizeDets1, *hsizeDets2, *hsizeDets3, *hsizeDets4;
+  TProfile2D *hchargeDets1, *hchargeDets2, *hchargeDets3, *hchargeDets4;
+  TProfile2D *hpixchargeDets1, *hpixchargeDets2, *hpixchargeDets3, *hpixchargeDets4;
 
   TH2F *hpvxy, *hetaphiMap1, *hetaphiMap2,*hetaphiMap3,*hetaphiMap4; // eta vs PHI
 
@@ -517,6 +522,46 @@ void PixClustersWithTracks::beginJob() {
 				416,0.,416.,160,0.,160.);
   hcluDetMap4 = fs->make<TH2F>( "hclusMap4", "clu det layer 4",
 				416,0.,416.,160,0.,160.);
+
+  // clu size per det
+  hsizeDets1 = fs->make<TProfile2D>("hsizeDets1"," cluster size L1",
+				9,-4.5,4.5,13,-6.5,6.5,0.,1000.);
+  hsizeDets1->SetOption("colz");
+  hsizeDets2 = fs->make<TProfile2D>("hsizeDets2"," cluster size L2",
+				9,-4.5,4.5,29,-14.5,14.5,0.,1000.);
+  hsizeDets2->SetOption("colz");
+  hsizeDets3 = fs->make<TProfile2D>("hsizeDets3"," cluster size L3",
+				9,-4.5,4.5,45,-22.5,22.5,0.,1000.);
+  hsizeDets3->SetOption("colz");
+  hsizeDets4 = fs->make<TProfile2D>("hsizeDets4"," cluster size L4",
+				9,-4.5,4.5,65,-32.5,32.5,0.,1000.);
+  hsizeDets4->SetOption("colz");
+
+  hchargeDets1 = fs->make<TProfile2D>("hchargeDets1"," cluster charge L1",
+				      9,-4.5,4.5,13,-6.5,6.5,0.,1000.);
+  hchargeDets1->SetOption("colz");
+  hchargeDets2 = fs->make<TProfile2D>("hchargeDets2"," cluster charge L2",
+				9,-4.5,4.5,29,-14.5,14.5,0.,1000.);
+  hchargeDets2->SetOption("colz");
+  hchargeDets3 = fs->make<TProfile2D>("hchargeDets3"," cluster charge L3",
+				9,-4.5,4.5,45,-22.5,22.5,0.,1000.);
+  hchargeDets3->SetOption("colz");
+  hchargeDets4 = fs->make<TProfile2D>("hchargeDets4"," cluster charge L4",
+				9,-4.5,4.5,65,-32.5,32.5,0.,1000.);
+  hchargeDets4->SetOption("colz");
+
+  hpixchargeDets1 = fs->make<TProfile2D>("hpixchargeDets1"," cluster charge L1",
+				      9,-4.5,4.5,13,-6.5,6.5,0.,1000.);
+  hpixchargeDets1->SetOption("colz");
+  hpixchargeDets2 = fs->make<TProfile2D>("hpixchargeDets2"," cluster charge L2",
+				9,-4.5,4.5,29,-14.5,14.5,0.,1000.);
+  hpixchargeDets2->SetOption("colz");
+  hpixchargeDets3 = fs->make<TProfile2D>("hpixchargeDets3"," cluster charge L3",
+				9,-4.5,4.5,45,-22.5,22.5,0.,1000.);
+  hpixchargeDets3->SetOption("colz");
+  hpixchargeDets4 = fs->make<TProfile2D>("hpixchargeDets4"," cluster charge L4",
+				9,-4.5,4.5,65,-32.5,32.5,0.,1000.);
+  hpixchargeDets4->SetOption("colz");
 
   hladder1id = fs->make<TH1D>( "hladder1id", "Clus in ladder L1", 13, -6.5, 6.5);
   hladder2id = fs->make<TH1D>( "hladder2id", "Clus in ladder L2", 29, -14.5, 14.5);
@@ -1970,6 +2015,8 @@ void PixClustersWithTracks::analyze(const edm::Event& e,
 			 <<endl;
 
 	    hDetMap1->Fill(float(module),float(ladderOn)); 
+	    hsizeDets1->Fill(float(module),float(ladderOn),float(size));
+	    hchargeDets1->Fill(float(module),float(ladderOn),charge);
 	    hcluDetMap1->Fill(col,row);
 	    hcols1->Fill(col);
 	    hrows1->Fill(row);
@@ -2106,6 +2153,8 @@ void PixClustersWithTracks::analyze(const edm::Event& e,
 			     <<endl;
 	      
 	      hDetMap2->Fill(float(module),float(ladderOn));
+	      hsizeDets2->Fill(float(module),float(ladderOn),float(size));
+	      hchargeDets2->Fill(float(module),float(ladderOn),charge);
 	      hcluDetMap2->Fill(col,row);
 	      hcharge2->Fill(charge);
 	      hcols2->Fill(col);
@@ -2194,6 +2243,8 @@ void PixClustersWithTracks::analyze(const edm::Event& e,
 	
 	    hDetMap3->Fill(float(module),float(ladderOn));
 	    hcluDetMap3->Fill(col,row);
+	    hsizeDets3->Fill(float(module),float(ladderOn),float(size));
+	    hchargeDets3->Fill(float(module),float(ladderOn),charge);
 	    hcharge3->Fill(charge);
 	    hcols3->Fill(col);
 	    hrows3->Fill(row);
@@ -2255,6 +2306,8 @@ void PixClustersWithTracks::analyze(const edm::Event& e,
 	
 	    hDetMap4->Fill(float(module),float(ladderOn));
 	    hcluDetMap4->Fill(col,row);
+	    hsizeDets4->Fill(float(module),float(ladderOn),float(size));
+	    hchargeDets4->Fill(float(module),float(ladderOn),charge);
 	    hcharge4->Fill(charge);
 	    hladder4id->Fill(float(ladderOn));
 	    hz4id->Fill(float(module));
@@ -2374,6 +2427,7 @@ void PixClustersWithTracks::analyze(const edm::Event& e,
 	    if(newL1Modules) hpixcharge1n->Fill(adc);
 	    else             hpixcharge1->Fill(adc);
 	    hpixDetMap1->Fill(pixy,pixx);
+	    hpixchargeDets1->Fill(float(module),float(ladderOn),adc);
  	    htest2->Fill(adc,float(sizeY));
 	    hpladder1id->Fill(float(ladderOn));
 	    hpz1id->Fill(float(module));
@@ -2426,6 +2480,7 @@ void PixClustersWithTracks::analyze(const edm::Event& e,
 	      if(select) cout<<i<<" "<<pixx<<" "<<pixy<<" "<<adc<<endl;
 	      hpixcharge2->Fill(adc);
 	      hpixDetMap2->Fill(pixy,pixx);
+	      hpixchargeDets2->Fill(float(module),float(ladderOn),adc);
 	      htest4->Fill(adc,float(sizeY));
 	      hpladder2id->Fill(float(ladderOn));
 	      hpz2id->Fill(float(module));
@@ -2458,6 +2513,7 @@ void PixClustersWithTracks::analyze(const edm::Event& e,
 	    
 	    hpixcharge3->Fill(adc);
 	    hpixDetMap3->Fill(pixy,pixx);
+	    hpixchargeDets3->Fill(float(module),float(ladderOn),adc);
  	    htest4->Fill(adc,float(sizeY));
 	    hpladder3id->Fill(float(ladderOn));
 	    hpz3id->Fill(float(module));
@@ -2482,6 +2538,7 @@ void PixClustersWithTracks::analyze(const edm::Event& e,
 	    
 	    hpixcharge4->Fill(adc);
 	    hpixDetMap4->Fill(pixy,pixx);
+	    hpixchargeDets4->Fill(float(module),float(ladderOn),adc);
  	    htest4->Fill(adc,float(sizeY));
 	    hpladder4id->Fill(float(ladderOn));
 	    hpz4id->Fill(float(module));
