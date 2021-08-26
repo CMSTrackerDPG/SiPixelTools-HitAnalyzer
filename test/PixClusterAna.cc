@@ -101,7 +101,7 @@ using namespace std;
 #define PV
 #define BX_TESTS
 //#define STUDY_LAY1
-#define SINGLE_MODULES
+//#define SINGLE_MODULES
 //#define PHI_PROFILES
 //#define TEST_GEOM
 //#define TEST_DCOLS
@@ -1958,23 +1958,16 @@ void PixClusterAna::endJob(){
     norm4 = norm/64.;
   }
 
-
   cout <<" clus/pix per full event "<<sumClusters<<"/"<<sumPixels<<endl;
 
-  //countLumi /= 1000.;
-  //double c1=0, c2=0;
-  //double c3 = hinst->GetMean();
-  //if(c3>0.) {c1=sumClusters/c3; c2=sumPixels/c3;}
-  //cout<<" Lumi = "<<countLumi<<" still the /10 bug? "<<"clu and pix per lumi unit"<<c1<<" "<<c2<<endl;
-  
-  if(!Normalise || countEvents==0) return;
-
-  cout<<" 2D plots are rescaled by the number of full events "<<countEvents<<endl;
   //Divide the size histos
   hsizeDets1->Divide(hsizeDets1,hcluDets1,1.,1.);
   hsizeDets2->Divide(hsizeDets2,hcluDets2,1.,1.);
   hsizeDets3->Divide(hsizeDets3,hcluDets3,1.,1.);
   hsizeDets4->Divide(hsizeDets4,hcluDets4,1.,1.);
+
+  if(!Normalise || countEvents==0) return;
+  cout<<" 2D plots are rescaled by the number of full events "<<countEvents<<endl;
 
   // rescale if histos 
   hladder1id->Scale(norm/8.);
@@ -2811,21 +2804,21 @@ void PixClusterAna::analyze(const edm::Event& e,
       // change ladeer sign for Outer )x<0)
       if(shell==1 || shell==3) ladder = -ladder;
 
-      if( layer==2 && select1!=9998 ) {
-	if( (ladder ==-1) && ( (module == 1) || (module == 2) || (module == 3)) ) badL2Modules=true;
-	else if( (ladder ==-5) &&( (module == -1) || (module == -2) || (module == -3)) ) badL2Modules=true;
-	else if( (ladder == 14) && (module == -1) ) badL2Modules=true;
-	else if( (ladder == 13) && (module == -4) ) badL2Modules=true;
-	else if( (ladder == 12) && (module == -1) ) badL2Modules=true;
-	else if( (ladder == 11) && (module == -4) ) badL2Modules=true;
+      // if( layer==2 && select1!=9998 ) {
+      // 	if( (ladder ==-1) && ( (module == 1) || (module == 2) || (module == 3)) ) badL2Modules=true;
+      // 	else if( (ladder ==-5) &&( (module == -1) || (module == -2) || (module == -3)) ) badL2Modules=true;
+      // 	else if( (ladder == 14) && (module == -1) ) badL2Modules=true;
+      // 	else if( (ladder == 13) && (module == -4) ) badL2Modules=true;
+      // 	else if( (ladder == 12) && (module == -1) ) badL2Modules=true;
+      // 	else if( (ladder == 11) && (module == -4) ) badL2Modules=true;
 
-	else if( (ladder == 1) &&( (module == 1) || (module == 2) || (module == 3))) goodL2Modules=true;
-	else if( (ladder ==-1) &&( (module ==-1) || (module ==-2) || (module ==-3))) goodL2Modules=true;
-	else if( (ladder ==-8) &&( (module ==-1) || (module ==-2) || (module ==-3))) goodL2Modules=true;
-	else if( (ladder == 7) && (module == 1) ) goodL2Modules=true;
-	else if( (ladder == 6) && (module == 4) ) goodL2Modules=true;
-	else if( (ladder ==-5) && (module ==-3) ) goodL2Modules=true;	
-      }
+      // 	else if( (ladder == 1) &&( (module == 1) || (module == 2) || (module == 3))) goodL2Modules=true;
+      // 	else if( (ladder ==-1) &&( (module ==-1) || (module ==-2) || (module ==-3))) goodL2Modules=true;
+      // 	else if( (ladder ==-8) &&( (module ==-1) || (module ==-2) || (module ==-3))) goodL2Modules=true;
+      // 	else if( (ladder == 7) && (module == 1) ) goodL2Modules=true;
+      // 	else if( (ladder == 6) && (module == 4) ) goodL2Modules=true;
+      // 	else if( (ladder ==-5) && (module ==-3) ) goodL2Modules=true;	
+      // }
       
       // find inner and outer modules for layer 1 onl
       if( (layer==1) ) {
@@ -2834,14 +2827,14 @@ void PixClusterAna::analyze(const edm::Event& e,
 	    (ladder==-1) || (ladder==-3) || (ladder==-5) ) inner=true;
 	else inner=false;
 #endif
-	if( (select1!=9998) ) {
-	  if     ( (ladder ==-1) && (module == 3) ) newL1Modules=true;
-	  else if( (ladder ==-3) && (module == 3) ) newL1Modules=true;
-	  else if( (ladder ==-1) && (module ==-3) ) newL1Modules=true;
-	  else if( (ladder ==-1) && (module ==-1) ) newL1Modules=true;
-	  else if( (ladder ==-3) && (module ==-1) ) newL1Modules=true;
-	  else if( (ladder ==-5) && (module ==-1) ) newL1Modules=true;
-	} // seperate new modules 
+	//if( (select1!=9998) ) {
+	//if     ( (ladder ==-1) && (module == 3) ) newL1Modules=true;
+	//else if( (ladder ==-3) && (module == 3) ) newL1Modules=true;
+	//else if( (ladder ==-1) && (module ==-3) ) newL1Modules=true;
+	//else if( (ladder ==-1) && (module ==-1) ) newL1Modules=true;
+	//else if( (ladder ==-3) && (module ==-1) ) newL1Modules=true;
+	//else if( (ladder ==-5) && (module ==-1) ) newL1Modules=true;
+	//} // seperate new modules 
       }
       
       // find rings 1-2 and 3-4

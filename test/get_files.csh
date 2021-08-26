@@ -93,5 +93,7 @@
 
 #dasgoclient -query='dataset dataset=/*/Run2018*/RAW site=T2_CH_CERN'  # all RAW at CERN
 #dasgoclient -query='file dataset=/ZeroBias/Run2018E-v1/RAW site=T2_CH_CERN'  # all RAW at CERN
-dasgoclient -query='file dataset=/HIMinimumBias0/HIRun2018A-v1/RAW run=327560'  # RAW HI
+#dasgoclient -query='file dataset=/HIMinimumBias0/HIRun2018A-v1/RAW run=327560'  # RAW HI
 
+# 2021 cosmics, express 
+dasgoclient -query='file dataset=/ExpressCosmics/Commissioning2021-Express-v1/FEVT run=344681'  

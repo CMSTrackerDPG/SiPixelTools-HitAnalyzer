@@ -114,6 +114,7 @@ using namespace std;
 namespace {
   const bool useNewL1 = false;
   const bool useBadL2 = false;
+  const bool Normalise = false;
 }
 // Enable this to look at simlinks (link simhit->digis)
 // Can be used only with simulated data.
@@ -1028,29 +1029,29 @@ void PixDigisTest::analyze(const edm::Event& iEvent,
       
 
 
-      if( (layer==2) && (select1==99) && useBadL2 ) {
-	if( (ladder ==-1) && ( (module == 1) || (module == 2) || (module == 3)) ) badL2Modules=true;
-	else if( (ladder ==-5) &&( (module == -1) || (module == -2) || (module == -3)) ) badL2Modules=true;
-	else if( (ladder == 14) && (module == -1) ) badL2Modules=true;
-	else if( (ladder == 13) && (module == -4) ) badL2Modules=true;
-	else if( (ladder == 12) && (module == -1) ) badL2Modules=true;
-	else if( (ladder == 11) && (module == -4) ) badL2Modules=true;
-      }
+      // if( (layer==2) && (select1==99) && useBadL2 ) {
+      // 	if( (ladder ==-1) && ( (module == 1) || (module == 2) || (module == 3)) ) badL2Modules=true;
+      // 	else if( (ladder ==-5) &&( (module == -1) || (module == -2) || (module == -3)) ) badL2Modules=true;
+      // 	else if( (ladder == 14) && (module == -1) ) badL2Modules=true;
+      // 	else if( (ladder == 13) && (module == -4) ) badL2Modules=true;
+      // 	else if( (ladder == 12) && (module == -1) ) badL2Modules=true;
+      // 	else if( (ladder == 11) && (module == -4) ) badL2Modules=true;
+      // }
 
-      // find inner and outer modules for layer 1 onl
-      if( (layer==1 && useNewL1 ) ) {
-	//if( (ladder==2) || (ladder==4) || (ladder==6) ||
-	//  (ladder==-1) || (ladder==-3) || (ladder==-5) ) inner=true;
-	//else inner=false;
+      // // find inner and outer modules for layer 1 onl
+      // if( (layer==1 && useNewL1 ) ) {
+      // 	//if( (ladder==2) || (ladder==4) || (ladder==6) ||
+      // 	//  (ladder==-1) || (ladder==-3) || (ladder==-5) ) inner=true;
+      // 	//else inner=false;
 
-	if     ( (ladder ==-1) && (module == 3) ) newL1Modules=true;
-	else if( (ladder ==-3) && (module == 3) ) newL1Modules=true;
-	else if( (ladder ==-1) && (module ==-3) ) newL1Modules=true;
-	else if( (ladder ==-1) && (module ==-1) ) newL1Modules=true;
-	else if( (ladder ==-3) && (module ==-1) ) newL1Modules=true;
-	else if( (ladder ==-5) && (module ==-1) ) newL1Modules=true;
+      // 	if     ( (ladder ==-1) && (module == 3) ) newL1Modules=true;
+      // 	else if( (ladder ==-3) && (module == 3) ) newL1Modules=true;
+      // 	else if( (ladder ==-1) && (module ==-3) ) newL1Modules=true;
+      // 	else if( (ladder ==-1) && (module ==-1) ) newL1Modules=true;
+      // 	else if( (ladder ==-3) && (module ==-1) ) newL1Modules=true;
+      // 	else if( (ladder ==-5) && (module ==-1) ) newL1Modules=true;
 
-      }
+      // }
       
 
       if(PRINT) { 
@@ -1789,9 +1790,7 @@ void PixDigisTest::endJob(){
   }
 
   float norm = 1.;
-  if(count3>0) {
-    norm = 1./float(count3);
-  }
+  if(Normalise && count3>0) {norm = 1./float(count3);}
 
   // Rescale all 2D plots
   hdetMap1->Scale(norm);

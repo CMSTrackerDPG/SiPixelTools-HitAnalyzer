@@ -127,7 +127,7 @@
 //#define ALIGN_STUDIES
 //#define OVERLAP_STUDIES
 //#define STUDY_LAY1
-#define SINGLE_MODULES
+//#define SINGLE_MODULES
 //#define CLU_SHAPE    // L1, use one or the other but not both
 //#define CLU_SHAPE_L2  // same for L2 
 //#define PHI_PROFILES
@@ -2127,34 +2127,33 @@ void PixClustersWithTracks::analyze(const edm::Event& e,
 	//if( (ladderOn==2) || (ladderOn==4) || (ladderOn==6) ||
 	//    (ladderOn==-1) || (ladderOn==-3) || (ladderOn==-5) ) inner=true;
 
-	if( layer==2 && select1!=9998) {
-	  if(      (ladderOn ==-1) &&( (module == 1)  || (module == 2)  || (module == 3)) ) badL2Modules=true;
-	  else if( (ladderOn ==-5) &&( (module == -1) || (module == -2)) ) badL2Modules=true;
-	  else if( (ladderOn == 14) && (module == -1) ) badL2Modules=true;
-	  else if( (ladderOn == 13) && (module == -4) ) badL2Modules=true;
-	  else if( (ladderOn == 12) && (module == -1) ) badL2Modules=true;
-	  else if( (ladderOn == 11) && (module == -4) ) badL2Modules=true;
+	// if( layer==2 && select1!=9998) {
+	//   if(      (ladderOn ==-1) &&( (module == 1)  || (module == 2)  || (module == 3)) ) badL2Modules=true;
+	//   else if( (ladderOn ==-5) &&( (module == -1) || (module == -2)) ) badL2Modules=true;
+	//   else if( (ladderOn == 14) && (module == -1) ) badL2Modules=true;
+	//   else if( (ladderOn == 13) && (module == -4) ) badL2Modules=true;
+	//   else if( (ladderOn == 12) && (module == -1) ) badL2Modules=true;
+	//   else if( (ladderOn == 11) && (module == -4) ) badL2Modules=true;
 
-	  else if( (ladderOn == 1) &&( (module == 1) || (module == 2) || (module == 3))) goodL2Modules=true;
-	  else if( (ladderOn ==-1) &&( (module ==-1) || (module ==-2) || (module ==-3))) goodL2Modules=true;
-	  else if( (ladderOn ==-8) &&( (module ==-1) || (module ==-2) || (module ==-3))) goodL2Modules=true;
-	  else if( (ladderOn == 7) && (module == 1) ) goodL2Modules=true;
-	  else if( (ladderOn == 6) && (module == 4) ) goodL2Modules=true;
-	  else if( (ladderOn ==-5) && (module ==-3) ) goodL2Modules=true;
+	//   else if( (ladderOn == 1) &&( (module == 1) || (module == 2) || (module == 3))) goodL2Modules=true;
+	//   else if( (ladderOn ==-1) &&( (module ==-1) || (module ==-2) || (module ==-3))) goodL2Modules=true;
+	//   else if( (ladderOn ==-8) &&( (module ==-1) || (module ==-2) || (module ==-3))) goodL2Modules=true;
+	//   else if( (ladderOn == 7) && (module == 1) ) goodL2Modules=true;
+	//   else if( (ladderOn == 6) && (module == 4) ) goodL2Modules=true;
+	//   else if( (ladderOn ==-5) && (module ==-3) ) goodL2Modules=true;
 
-	}
-	
-	  
-	if( (layer==1)  ) {
-	  if( select1!=9998 ) {
-	    if     ( (ladderOn ==-1) && (module == 3) ) newL1Modules=true;
-	    else if( (ladderOn ==-3) && (module == 3) ) newL1Modules=true;
-	    else if( (ladderOn ==-1) && (module ==-3) ) newL1Modules=true;
-	    else if( (ladderOn ==-1) && (module ==-1) ) newL1Modules=true;
-	    else if( (ladderOn ==-3) && (module ==-1) ) newL1Modules=true;
-	    else if( (ladderOn ==-5) && (module ==-1) ) newL1Modules=true;
-	  }
-	}
+	// }
+		  
+	// if( (layer==1)  ) {
+	//   if( select1!=9998 ) {
+	//     if     ( (ladderOn ==-1) && (module == 3) ) newL1Modules=true;
+	//     else if( (ladderOn ==-3) && (module == 3) ) newL1Modules=true;
+	//     else if( (ladderOn ==-1) && (module ==-3) ) newL1Modules=true;
+	//     else if( (ladderOn ==-1) && (module ==-1) ) newL1Modules=true;
+	//     else if( (ladderOn ==-3) && (module ==-1) ) newL1Modules=true;
+	//     else if( (ladderOn ==-5) && (module ==-1) ) newL1Modules=true;
+	//   }
+	// }
       
 	if(PRINT) cout<<"barrel layer/ladder/module: "<<layer<<"/"<<ladderIndex<<"/"<<zindex<<endl;
 	

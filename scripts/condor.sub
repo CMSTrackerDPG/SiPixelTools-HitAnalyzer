@@ -1,0 +1,7 @@
+executable              = job.sh
+arguments               = $(ClusterId)$(ProcId)
+output                  = job.$(ClusterId).$(ProcId).out
+error                   = job.$(ClusterId).$(ProcId).err
+log                     = job.$(ClusterId).log
++JobFlavour             = "nextweek"
+queue

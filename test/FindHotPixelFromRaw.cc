@@ -402,15 +402,19 @@ public:
   HotPixels() {
     count=0; 
     for(int i=0;i<NumPixels;++i) {array[i]=0; data[i]=0;}
-    for(int n=0;n<NumROCs;++n) {rocs[n]=0;} }
+    for(int i=0;i<NumROCs;++i) {rocs[i]=0;} 
+    for(int i=0;i<4;++i) {countInLayers[i]=0.;} 
+  }
 
-  ~HotPixels() {}
+  ~HotPixels() {
+  }
   void update(int channel, int roc, int dcol, int pix); 
   int code(int channel, int roc, int dcol, int pix); 
   void decode(int index, int &channel, int &roc, int &dcol, int &pix); 
   //void print(int, int, double);
   void print(int, int, double, TH2F*);
   void printROCs(int, int);
+  double printLayers(double &l1, double &l2, double &l3, double&l4);
   int get_counts(int i) {if(i<count) return data[i]; else return -1;}
   int get_countsROC(int i) {if(i<NumROCs) return rocs[i]; else return -1;}
   int codeROC(int channel, int roc); 
@@ -421,8 +425,17 @@ private:
   int array[NumPixels];
   int data[NumPixels];
   int rocs[NumROCs];
+  double countInLayers[4];
 };
-
+double HotPixels::printLayers(double &l1,double &l2,double &l3,double &l4) {
+  l1 = countInLayers[0];
+  l2 = countInLayers[1];
+  l3 = countInLayers[2];
+  l4 = countInLayers[3];
+  double l=l1+l2+l3+l4;
+  //    for(int i=0;i<4;++i) {cout<<countInLayers[i]<<" ";} cout<<endl; 
+  return l;
+}
 int HotPixels::code(int channel, int roc, int dcol, int pix) {
   // pix 0 - 182, dcol 0 - 26 , roc 0-7, chan 1- 48
   int index = pix + 1000 * dcol + 100000 * roc + 10000000 * channel;
@@ -500,7 +513,7 @@ void HotPixels::print(int events, int fed_id, double fraction, TH2F* hfedchannel
 
   for(int i=0;i<count;++i) {
 
-    if(data[i]<=0) {cout<<" not counts "<<data[i]<<endl; continue;}
+    if(data[i]<=0) {cout<<" no counts "<<data[i]<<endl; continue;}
 
     int index = array[i];
     if(index<=0) {cout<<" index wrong "<<index<<endl; continue;}
@@ -528,6 +541,8 @@ void HotPixels::print(int events, int fed_id, double fraction, TH2F* hfedchannel
       else if( modName.find("_LYR2_") != string::npos ) layer=2;  
       else if( modName.find("_LYR3_") != string::npos ) layer=3;  
       else if( modName.find("_LYR4_") != string::npos ) layer=4;  
+
+      if(layer>0 &&layer<5) countInLayers[layer-1] += data[i];
 
       if( layer==1 ) { // layer  1
 	//cout<<" this is layer 1 "<<modName<<endl;
@@ -827,6 +842,15 @@ void FindHotPixelFromRaw::endJob() {
     hotPixels[i].printROCs(i+fedId0,cutROC);
   }
 
+  double tl1=0, tl2=0, tl3=0, tl4=0;
+  double cl1=0, cl2=0, cl3=0, cl4=0;
+  for(int i=1200; i<1294;++i) {
+    double c = hotPixels[i-1200].printLayers(cl1,cl2,cl3,cl4);
+    tl1 += cl1; tl2 += cl2; tl3 += cl3; tl4 += cl4;
+    if(c>0.) cout<<"for fed "<<i<<" pixel count "<<cl1<<" "<<cl2<<" "<<cl3<<" "<<cl4<<endl;
+  }
+  cout<<"Total counts "<<tl1<<" "<<tl2<<" "<<tl3<<" "<<tl4<<endl;
+  
   cout<<"test counter "<<countTest<<endl;
 }
 
@@ -1135,7 +1159,7 @@ void FindHotPixelFromRaw::analyze(const  edm::Event& ev, const edm::EventSetup& 
     //cout<<" : ";
     //cin>>dummy;
   } // if
-  
+
 }
 
 #include "FWCore/Framework/interface/MakerMacros.h"

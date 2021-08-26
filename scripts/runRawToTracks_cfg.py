@@ -1,6 +1,7 @@
 import FWCore.ParameterSet.Config as cms
 from Configuration.StandardSequences.Eras import eras
-process = cms.Process("MyRawToTracks",eras.Run2_2017)
+#process = cms.Process("MyRawToTracks",eras.Run2_2017)
+process = cms.Process("MyRawToTracks",eras.Run3)
 
 process.load("FWCore.MessageLogger.MessageLogger_cfi")
 process.load('Configuration.StandardSequences.GeometryRecoDB_cff')
@@ -31,7 +32,9 @@ from Configuration.AlCa.GlobalTag import GlobalTag
 #process.GlobalTag.globaltag = '100X_dataRun2_Express_v2' # 
 #process.GlobalTag.globaltag = '101X_dataRun2_Express_v8' # 
 # AUTO conditions 
-process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:run2_data', '')
+process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:run3_data_express', '')
+#process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:run3_data_prompt', '')
+#process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:run2_data', '')
 #process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:run1_data', '')
 #process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:run2_mc', '')
 #process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:run2_design', '')
@@ -65,7 +68,7 @@ process.hltfilter = hlt.hltHighLevel.clone(
     throw = False
     )
 
-process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(-1))
+process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(100000))
 
 
 myfilelist = cms.untracked.vstring()
@@ -76,14 +79,9 @@ process.source = cms.Source("PoolSource",
 # fileNames =  myfilelist
 #)
 # fileNames =  cms.untracked.vstring('file:rawdata.root')
-
 fileNames =  cms.untracked.vstring(
-
-
-"file:/work/kotlinski/DATA/RAW/325170/06590754-A60F-E24C-AFDE-4B01585C2B01.root", # copy from AAA
-#"file:/work/kotlinski/DATA/RAW/325308/FDDD4BEE-4B1B-7E42-BD0E-E7FDF26FB466.root", # copy from eos
-
-
+#"file:/work/kotlinski/DATA/RAW/325170/06590754-A60F-E24C-AFDE-4B01585C2B01.root", # copy from AAA
+"file:/work/kotlinski/DATA/RAW/325308/FDDD4BEE-4B1B-7E42-BD0E-E7FDF26FB466.root", # copy from eos
  )
 #   skipEvents = cms.untracked.uint32(5000)
 )
@@ -93,7 +91,7 @@ fileNames =  cms.untracked.vstring(
 #process.source.lumisToProcess = cms.untracked.VLuminosityBlockRange('302131:34-302131:943')
 
 # for Raw2digi for data
-process.siPixelDigis.InputLabel = 'rawDataCollector'
+process.siPixelDigis.cpu.InputLabel = 'rawDataCollector'
 process.siStripDigis.ProductLabel = 'rawDataCollector'
 
 #process.siPixelClustersPreSplitting.SeedThreshold = 1000
@@ -135,7 +133,8 @@ if useLocalDB :
        cms.PSet(
         record = cms.string('SiPixelGainCalibrationOfflineRcd'),
 #        record = cms.string('SiPixelGainCalibrationRcd'),
-        tag = cms.string('SiPixelGainCalibration_2018_v1_offline') #in DB
+        tag = cms.string('SiPixelGainCalibration_2021_v2_offline')
+#        tag = cms.string('SiPixelGainCalibration_2018_v1_offline') #in DB
 #        tag = cms.string('SiPixelGainCalibration_2017_v2_bugfix') #in DB
 #        tag = cms.string('SiPixelGainCalibration_2017_v2_bugfix_offline')
 #        tag = cms.string('SiPixelGainCalibration_2017_v2_offline')
@@ -161,10 +160,9 @@ if useLocalDB :
 #     connect = cms.string('sqlite_file:/afs/cern.ch/user/d/dkotlins/WORK/DB/Gains/SiPixelGainCalibration_2017_v4_offline.db')
 #     connect = cms.string('sqlite_file:/afs/cern.ch/user/d/dkotlins/WORK/DB/Gains/SiPixelGainCalibration_2017_v3_offline.db')
 #     connect = cms.string('sqlite_file:/afs/cern.ch/user/d/dkotlins/WORK/DB/Gains/SiPixelGainCalibration_2017_v2_offline.db')
-     connect = cms.string('sqlite_file:/afs/cern.ch/user/d/dkotlins/WORK/DB/Gains/SiPixelGainCalibration_2018_v1_offline.db')
-
+#     connect = cms.string('sqlite_file:/afs/cern.ch/user/d/dkotlins/WORK/DB/Gains/SiPixelGainCalibration_2018_v1_offline.db')
 #     connect = cms.string('sqlite_file:/afs/cern.ch/user/d/dkotlins/WORK/DB/Gains/SiPixelGainCalibration_phase1_ideal_v2.db')
-
+     connect = cms.string('sqlite_file:/afs/cern.ch/user/d/dkotlins/WORK/DB/Gains/2021/SiPixelGainCalibration_2021_v2_offline.db')
 #     connect = cms.string('frontier://FrontierProd/CMS_CONDITIONS')
 #     connect = cms.string('frontier://FrontierPrep/CMS_CONDITIONS')
     ) # end process
@@ -221,41 +219,44 @@ process.d = cms.EDAnalyzer("PixClusterAna",
     Select2 = cms.untracked.int32(0),  # value     
 )
 
+process.d_cosm = cms.EDAnalyzer("PixClusterAna",
+    Verbosity = cms.untracked.bool(False),
+    phase1 = cms.untracked.bool(True),
+    #src = cms.InputTag("siPixelClusters"),
+    src = cms.InputTag("siPixelClustersPreSplitting"),
+#    Tracks = cms.InputTag("generalTracks::MyRawToTracks"),
+#    Tracks = cms.InputTag("ctfWithMaterialTracksP5::MyRawToTracks"),
+    Tracks = cms.InputTag(""),
+#    Select1 = cms.untracked.int32(0),  # cut  
+#    Select2 = cms.untracked.int32(0),  # value     
+)
+
 
 process.c = cms.EDAnalyzer("PixClustersWithTracks",
     Verbosity = cms.untracked.bool(False),
     phase1 = cms.untracked.bool(True),
     src = cms.InputTag("generalTracks::MyRawToTracks"),
-#     PrimaryVertexLabel = cms.untracked.InputTag("offlinePrimaryVertices"),                             
+# for cosmics 
+#    src = cms.InputTag("ctfWithMaterialTracksP5"),
+#     PrimaryVertexLabel = cms.untracked.InputTag("offlinePrimaryVertices"),
 #     trajectoryInput = cms.string("TrackRefitterP5")
 #     trajectoryInput = cms.string('cosmictrackfinderP5')
 )
 
-process.c1 = cms.EDAnalyzer("PixClustersWithTracks",
+process.c_cosm = cms.EDAnalyzer("PixClustersWithTracks",
     Verbosity = cms.untracked.bool(False),
     phase1 = cms.untracked.bool(True),
     src = cms.InputTag("generalTracks::MyRawToTracks"),
 # for cosmics 
+#    src = cms.InputTag("ctfWithMaterialTracksP5::MyRawToTracks"),
 #    src = cms.InputTag("ctfWithMaterialTracksP5"),
-#     PrimaryVertexLabel = cms.untracked.InputTag("offlinePrimaryVertices"),
+#    PrimaryVertexLabel = cms.untracked.InputTag("offlinePrimaryVertices"),
 #     trajectoryInput = cms.string("TrackRefitterP5")
 #     trajectoryInput = cms.string('cosmictrackfinderP5')
 # additional selections
-    Select1 = cms.untracked.int32(13),  # select the cut type, o no cut
-    Select2 = cms.untracked.int32(1),  # select the cut value   
-)
-process.c2 = cms.EDAnalyzer("PixClustersWithTracks",
-    Verbosity = cms.untracked.bool(False),
-    phase1 = cms.untracked.bool(True),
-    src = cms.InputTag("generalTracks::MyRawToTracks"),
-# for cosmics 
-#    src = cms.InputTag("ctfWithMaterialTracksP5"),
-#     PrimaryVertexLabel = cms.untracked.InputTag("offlinePrimaryVertices"),
-#     trajectoryInput = cms.string("TrackRefitterP5")
-#     trajectoryInput = cms.string('cosmictrackfinderP5')
-# additional selections
-    Select1 = cms.untracked.int32(14),  # select the cut type, o no cut
-    Select2 = cms.untracked.int32(1),  # select the cut value   
+#    Select1 = cms.untracked.int32(14),  # select the cut type, o no cut
+
+#    Select2 = cms.untracked.int32(1),  # select the cut value   
 )
 
 process.TFileService = cms.Service("TFileService",
@@ -284,5 +285,6 @@ process.myTracking = cms.Sequence(process.InitialStep*
 #process.p = cms.Path(process.hltfilter*process.RawToDigi*process.reconstruction*process.c*process.c1*process.c2)
 #process.p = cms.Path(process.hltfilter*process.RawToDigi*process.reconstruction*process.c*process.d)
 process.p = cms.Path(process.RawToDigi*process.reconstruction*process.c*process.d)
+#process.p = cms.Path(process.RawToDigi*process.reconstruction*process.c_cosm*process.d_cosm)
 
 #process.ep = cms.EndPath(process.out)

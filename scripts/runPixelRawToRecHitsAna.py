@@ -5,8 +5,9 @@
 ##############################################################################
 
 import FWCore.ParameterSet.Config as cms
+from Configuration.StandardSequences.Eras import eras
+process = cms.Process("myTest",eras.Run3)
 
-process = cms.Process("ClusTest")
 
 process.load("FWCore.MessageLogger.MessageLogger_cfi")
 process.load("Configuration.Geometry.GeometryIdeal_cff")
@@ -31,7 +32,7 @@ process.load('Configuration.EventContent.EventContent_cff')
 process.load('Configuration.StandardSequences.EndOfProcess_cff')
 
 process.maxEvents = cms.untracked.PSet(
-    input = cms.untracked.int32(-1)
+    input = cms.untracked.int32(100)
 )
 
 process.MessageLogger = cms.Service("MessageLogger",
@@ -56,7 +57,7 @@ process.source = cms.Source("PoolSource",
 
 #  '/store/relval/CMSSW_7_1_0_pre8/RelValTTbar/GEN-SIM-DIGI-RAW-HLTDEBUG/PU_PRE_STA71_V4-v1/00000/06397C95-91E2-E311-963D-02163E00B776.root',
 
- '/store/relval/CMSSW_7_1_0_pre8/RelValSingleMuPt100_UP15/GEN-SIM-DIGI-RAW-HLTDEBUG/PRE_LS171_V9-v1/00000/5AAEC7CC-D7E1-E311-83DD-0025905A6094.root',
+# '/store/relval/CMSSW_7_1_0_pre8/RelValSingleMuPt100_UP15/GEN-SIM-DIGI-RAW-HLTDEBUG/PRE_LS171_V9-v1/00000/5AAEC7CC-D7E1-E311-83DD-0025905A6094.root',
 
 # 25ns flat pu=20-50
 #   /store/mc/Spring14dr/TT_Tune4C_13TeV-pythia8-tauola/GEN-SIM-RAW/Flat20to50_POSTLS170_V5-v1/00000/006EBBE4-98DC-E311-B64F-0025905A611E.root
@@ -70,18 +71,16 @@ process.source = cms.Source("PoolSource",
 # 25ns poisson pu=20
 #   /store/mc/Fall13dr/TT_Tune4C_13TeV-pythia8-tauola/GEN-SIM-RAW/tsg_PU20bx25_POSTLS162_V2-v1/00000/001E7210-126D-E311-8D68-003048679182.root
 
+/store/express/Commissioning2021/ExpressCosmics/FEVT/Express-v1/000/344/068/00000/ffc30ac2-6e3b-42e1-b6d9-74973a9cf961.root
+
 
   )
 )
 
 # Choose the global tag here:
 #process.GlobalTag.globaltag = "POSTLS162_V2::All"
-#process.GlobalTag.globaltag = "MC_70_V1::All"
-#process.GlobalTag.globaltag = "START70_V1::All"
-process.GlobalTag.globaltag = "START71_V1::All"
-#process.GlobalTag.globaltag = "MC_71_V1::All"
-#process.GlobalTag.globaltag = "POSTLS171_V1::All"
-#process.GlobalTag.globaltag = "PRE_MC_71_V2::All"
+process.GlobalTag.globaltag = "run3_data_express::All"
+#process.GlobalTag.globaltag = "run3_data_promp::All"
 
 
 # DB stuff 
@@ -205,7 +204,8 @@ process.siPixelDigis.InputLabel = 'rawDataCollector'
 
 process.siPixelClusters.src = 'siPixelDigis'
 
+process.p1 = cms.Path(process.siPixelDigis)
 #process.p1 = cms.Path(process.siPixelDigis*process.pixeltrackerlocalreco)
-process.p1 = cms.Path(process.siPixelDigis*process.pixeltrackerlocalreco*process.d)
+#process.p1 = cms.Path(process.siPixelDigis*process.pixeltrackerlocalreco*process.d)
 
 #process.outpath = cms.EndPath(process.o1)

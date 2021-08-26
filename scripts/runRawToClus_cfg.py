@@ -1,6 +1,6 @@
 import FWCore.ParameterSet.Config as cms
 from Configuration.StandardSequences.Eras import eras
-process = cms.Process("MyRawToClus",eras.Run2_2017)
+process = cms.Process("MyRawToClus",eras.Run3)
 
 process.load("FWCore.MessageLogger.MessageLogger_cfi")
 #process.load('Configuration.StandardSequences.GeometryRecoDB_cff')
@@ -35,7 +35,9 @@ from Configuration.AlCa.GlobalTag import GlobalTag
 #process.GlobalTag.globaltag = '106X_dataRun2_v28' # 
 
 # AUTO conditions 
-process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:run2_data', '')
+process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:run3_data_express', '')
+#process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:run3_data_prompt', '')
+#process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:run2_data', '')
 #process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:run1_data', '')
 #process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:run2_mc', '')
 #process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:run2_design', '')
@@ -72,21 +74,21 @@ process.hltfilter = hlt.hltHighLevel.clone(
     throw = False
     )
 
-process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(-1))
+process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(1000000))
 
-#myfilelist = cms.untracked.vstring()
-#myfilelist.extend([
-#"/store/express/Run2018D/ExpressPhysics/FEVT/Express-v1/000/325/097/00000/88FA64E4-D1A1-3748-B8C8-7D2C33053969.root",
-#])
+myfilelist = cms.untracked.vstring()
+myfilelist.extend([
+])
 
 process.source = cms.Source("PoolSource",
-    # fileNames =  myfilelist)
-    fileNames =  cms.untracked.vstring(
+    fileNames =  myfilelist)
+
+#    fileNames =  cms.untracked.vstring(
 
 #"file:/eos/cms/store/data/Run2018E/ZeroBias/RAW/v1/000/325/699/00000/FAAE70B9-D4C7-364D-8D80-C34BBB8D1AAC.root",
 #"file:/eos/cms/store/group/dpg_tracker_pixel/comm_pixel/tvami/forDanek/321178/FC2C31E9-C99E-E811-9C51-FA163EAC0A56.root",  # from Tamas OK 
 
-"file:/work/kotlinski/DATA/RAW/325170/06590754-A60F-E24C-AFDE-4B01585C2B01.root", # copy from AAA
+#"file:/work/kotlinski/DATA/RAW/325170/06590754-A60F-E24C-AFDE-4B01585C2B01.root", # copy from AAA
 #"file:/work/kotlinski/DATA/RAW/325308/FDDD4BEE-4B1B-7E42-BD0E-E7FDF26FB466.root", # copy from eos
 
 # HI cannot be accessed from T3
@@ -100,8 +102,10 @@ process.source = cms.Source("PoolSource",
 
 #"/store/data/Run2018D/ZeroBias/RAW/v1/000/325/170/00000/06590754-A60F-E24C-AFDE-4B01585C2B01.root",
 #"/store/express/Run2018D/ExpressPhysics/FEVT/Express-v1/000/325/159/00000/2EB3AEDA-747D-FB46-9583-BC1F1241CFE7.root",
- )
-)
+
+#"/store/express/Commissioning2021/ExpressCosmics/FEVT/Express-v1/000/344/068/00000/ffc30ac2-6e3b-42e1-b6d9-74973a9cf961.root",
+# )
+#)
 
 #process.source.lumisToProcess = cms.untracked.VLuminosityBlockRange('325097:1-325097:100') # overview
 
@@ -185,14 +189,13 @@ if useLocalDB :
 # end 
 
 # for Raw2digi for data
-process.siPixelDigis.InputLabel = 'rawDataCollector'  # normal p-p
+process.siPixelDigis.cpu.InputLabel = 'rawDataCollector'  # normal p-p
 #process.siPixelDigis.InputLabel = 'rawDataRepacker'  # HI
 #process.siStripDigis.ProductLabel = 'rawDataCollector'
 #process.siPixelDigis.InputLabel = 'source'
-process.siPixelDigis.IncludeErrors = True
-process.siPixelDigis.Timing = False 
-#process.siPixelDigis.UsePilotBlade = True 
-process.siPixelDigis.UsePhase1 = True
+process.siPixelDigis.cpu.IncludeErrors = True
+process.siPixelDigis.cpu.Timing = False 
+process.siPixelDigis.cpu.UsePhase1 = True
 
 # for digi to clu
 #process.siPixelClusters.src = 'siPixelDigis'
@@ -232,8 +235,8 @@ process.d = cms.EDAnalyzer("PixClusterAna",
     phase1 = cms.untracked.bool(True),
     #src = cms.InputTag("siPixelClusters"),
     src = cms.InputTag("siPixelClustersPreSplitting"),
-    Tracks = cms.InputTag(""), # ni tracks, only local reco
-    #Tracks = cms.InputTag("generalTracks"),
+    #Tracks = cms.InputTag(""), # ni tracks, only local reco
+    Tracks = cms.InputTag("generalTracks"),
     Select1 = cms.untracked.int32(0),  # cut  
     Select2 = cms.untracked.int32(0),  # value     
 )
@@ -241,6 +244,7 @@ process.d_cosm = cms.EDAnalyzer("PixClusterAna",
 #process.d = cms.EDAnalyzer("PixClusterTest",
     Verbosity = cms.untracked.bool(False),
     phase1 = cms.untracked.bool(True),
+    Normalise = cms.untracked.bool(False),
     #src = cms.InputTag("siPixelClusters"),
     src = cms.InputTag("siPixelClustersPreSplitting"),
     Tracks = cms.InputTag(""),
@@ -261,9 +265,11 @@ process.TFileService = cms.Service("TFileService",
 
 # for random cosmics 
 #process.p = cms.Path(process.hltfilter*process.siPixelDigis*process.pixeltrackerlocalreco*process.a*process.d_cosm)
+# for cosmics
+process.p = cms.Path(process.siPixelDigis*process.pixeltrackerlocalreco*process.a*process.d_cosm)
 
 # for HI
-process.p = cms.Path(process.siPixelDigis*process.pixeltrackerlocalreco*process.a*process.d)
+#process.p = cms.Path(process.siPixelDigis*process.pixeltrackerlocalreco*process.a*process.d)
 
 # suppress output file or not
 #process.ep = cms.EndPath(process.out)
