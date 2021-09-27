@@ -6,7 +6,7 @@
 #include "FWCore/Framework/interface/ESHandle.h"
 #include "FWCore/Framework/interface/EventSetup.h"
 #include "FWCore/Framework/interface/Frameworkfwd.h"
-#include "FWCore/Framework/interface/EDAnalyzer.h"
+#include "FWCore/Framework/interface/one/EDAnalyzer.h"
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/Framework/interface/MakerMacros.h"
 //#include "DataFormats/Common/interface/Handle.h"
@@ -15,7 +15,7 @@
 #include "FWCore/Utilities/interface/InputTag.h"
 //#include "FWCore/Utilities/interface/EDGetToken.h"  // not needed
 
-#include "FWCore/Framework/interface/EDAnalyzer.h"
+#include "FWCore/Framework/interface/one/EDAnalyzer.h"
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 #include "FWCore/Framework/interface/Frameworkfwd.h"
@@ -397,24 +397,16 @@ return status;
 
 ////////////////////////////////////////////////////////////////////////////
 
-class PixelFedErrorDumper : public edm::EDAnalyzer {
+class PixelFedErrorDumper : public edm::one::EDAnalyzer<edm::one::SharedResources> {
 public:
 
-  /// ctor
-  explicit PixelFedErrorDumper( const edm::ParameterSet& cfg); 
-
-  /// dtor
-  virtual ~PixelFedErrorDumper() {}
-
-  void beginJob();
-
-  //void beginRun( const edm::EventSetup& ) {}
-
-  // end of job 
-  void endJob();
-
+  PixelFedErrorDumper( const edm::ParameterSet& cfg); 
+  ~PixelFedErrorDumper() {}
+  void beginJob() override;
+  //void beginRun(const edm::EventSetup&) {}
+  void endJob() override;
   /// get data, convert to digis attach againe to Event
-  virtual void analyze(const edm::Event&, const edm::EventSetup&);
+  void analyze(const edm::Event&, const edm::EventSetup&) override;
   int analyzeFedErrors(int errorType, int FedId, int fedChannel, uint32_t word32);
   int analyzeConversionErrors(int errorType, int FedId, int fedChannel, uint32_t word32);
 
@@ -450,7 +442,7 @@ private:
 };
 //----------------------------------
 PixelFedErrorDumper::PixelFedErrorDumper( const edm::ParameterSet& cfg) : theConfig(cfg) {
-
+  usesResource("TFileService");
   //std::string src_ = theConfig.getUntrackedParameter<std::string>("InputLabel","source");
   std::string src = theConfig.getUntrackedParameter<std::string>("InputLabel","siPixelDigis");
 
@@ -708,7 +700,7 @@ void PixelFedErrorDumper::analyze(const  edm::Event& ev, const edm::EventSetup& 
   //Retrieve tracker topology from geometry
   edm::ESHandle<TrackerTopology> tTopoH;
   es.get<TrackerTopologyRcd>().get(tTopoH);
-  const TrackerTopology *tTopo=tTopoH.product();
+  //const TrackerTopology *tTopo=tTopoH.product();
 
   // Access event information
   int run       = ev.id().run();

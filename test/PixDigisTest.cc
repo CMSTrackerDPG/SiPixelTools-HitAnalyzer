@@ -25,7 +25,7 @@
 
 // user include files
 #include "FWCore/Framework/interface/Frameworkfwd.h"
-#include "FWCore/Framework/interface/EDAnalyzer.h"
+#include "FWCore/Framework/interface/one/EDAnalyzer.h"
 
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/Framework/interface/MakerMacros.h"
@@ -125,15 +125,15 @@ namespace {
 // class decleration
 //
 
-class PixDigisTest : public edm::EDAnalyzer {
+class PixDigisTest : public edm::one::EDAnalyzer<edm::one::SharedResources> {
 
 public:
 
-  explicit PixDigisTest(const edm::ParameterSet&);
+  PixDigisTest(const edm::ParameterSet&);
   ~PixDigisTest();
-  virtual void beginJob();
-  virtual void analyze(const edm::Event&, const edm::EventSetup&);
-  virtual void endJob(); 
+  void beginJob() override;
+  void analyze(const edm::Event&, const edm::EventSetup&) override;
+  void endJob() override; 
   int moduleIndex(int ladder,int module); 
   bool validIndex(int index, bool print); 
   int rocId(int pixy,int pixx);  // 0-15, column, row
@@ -253,7 +253,7 @@ private:
 // constructors and destructor
 //
 PixDigisTest::PixDigisTest(const edm::ParameterSet& iConfig) {
-
+  usesResource("TFileService");
   PRINT = iConfig.getUntrackedParameter<bool>("Verbosity",false);
   src_ =  iConfig.getParameter<edm::InputTag>( "src" );
   tPixelDigi = consumes <edm::DetSetVector<PixelDigi>> (src_);
@@ -267,7 +267,8 @@ PixDigisTest::PixDigisTest(const edm::ParameterSet& iConfig) {
   cout<<" Construct PixDigisTest "<<endl;
 
 #ifdef USE_GAINS
-  theSiPixelGainCalibration_ = new SiPixelGainCalibrationOfflineService(iConfig);
+  //theSiPixelGainCalibration_ = new SiPixelGainCalibrationOfflineService(iConfig);
+  theSiPixelGainCalibration_ = new SiPixelGainCalibrationOfflineService(iConfig,consumesCollector());
 #endif
 
 }
@@ -779,7 +780,6 @@ void PixDigisTest::beginJob() {
 // ------------ method called to produce the data  ------------
 void PixDigisTest::analyze(const edm::Event& iEvent, 
 			   const edm::EventSetup& iSetup) {
-
   const bool MY_DEBUG = false;
   const bool rescaleVcal = false; // to try escaling vcal to account for radiation
 

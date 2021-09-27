@@ -3,7 +3,7 @@
 
 #include <map>
 
-#include "FWCore/Framework/interface/EDAnalyzer.h"
+#include "FWCore/Framework/interface/one/EDAnalyzer.h"
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/Framework/interface/EventSetup.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
@@ -16,21 +16,17 @@
 #include "DataFormats/DetId/interface/DetId.h"
 #include "DataFormats/TrackerCommon/interface/TrackerTopology.h"
 
-class SiPixelDets : public edm::EDAnalyzer
+class SiPixelDets : public edm::one::EDAnalyzer<edm::one::SharedResources>
 {
  public:
   
-  explicit SiPixelDets(const edm::ParameterSet& conf);
+  SiPixelDets(const edm::ParameterSet& conf);
   
-  virtual ~SiPixelDets();
-  
-  //  virtual void beginJob(const edm::EventSetup& c);
-
-  virtual void beginJob();
-  
-  virtual void endJob(); 
-  
-  virtual void analyze(const edm::Event& e, const edm::EventSetup& c);
+  ~SiPixelDets();
+  //  void beginJob() (const edm::EventSetup&) override;
+  void beginJob() override;
+  void endJob() override; 
+  void analyze(const edm::Event&, const edm::EventSetup&) override;
   
   void printDet(DetId detid, const TrackerTopology* tt);
 

@@ -11,9 +11,7 @@
 <use   name="CondFormats/SiPixelObjects"/>
 
 # for tracks
-#<use   name="TrackingTools/TrajectoryState"/>
-#<use   name="TrackingTools/TrackFitters"/>
-<use   name="TrackingTools/TransientTrack"/>
+#<use   name="TrackingTools/TransientTrack"/>
 
 # for HEPMC
 <use name="GeneratorInterface/Core"/>
@@ -37,10 +35,6 @@
 
 # for trajectory
 <use name="TrackingTools/Records"/>
-#<use name="Geometry/TrackerGeometryBuilder"/>
-#<use name="TrackingTools/TransientTrack"/>
-#<use name="TrackingTools/MaterialEffects"/>
-#<use name="TrackingTools/TrackFitters"/>
 <use name="TrackingTools/TransientTrackingRecHit"/>
 <use name="RecoTracker/TransientTrackingRecHit"/>
 
@@ -49,14 +43,3 @@
  <flags   EDM_PLUGIN="1"/>
 </library>
 
-#<library   file="SimHitAnalyzer.cc" name="testPixel1">
-# <flags   EDM_PLUGIN="1"/>
-#</library>
-
-#<library   file="SiPixelDets.cc" name="testPixel2">
-# <flags   EDM_PLUGIN="1"/>
-#</library>
-
-#<library   file="PixClusterTest.cc" name="testPixel3">
-# <flags   EDM_PLUGIN="1"/>
-#</library>

@@ -22,7 +22,7 @@
 
 // user include files
 #include "FWCore/Framework/interface/Frameworkfwd.h"
-#include "FWCore/Framework/interface/EDAnalyzer.h"
+#include "FWCore/Framework/interface/one/EDAnalyzer.h"
 
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/Framework/interface/EventSetup.h"
@@ -66,21 +66,20 @@
 #include <TH2.h>
 
 using namespace std;
-using namespace edm;
+//using namespace edm;
 
 //
 //
 // class decleration
 //
 
-class SimHitAnalyzer : public edm::EDAnalyzer {
+class SimHitAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources> {
 public:
-  explicit SimHitAnalyzer( const edm::ParameterSet& );
+  SimHitAnalyzer(const edm::ParameterSet& );
   ~SimHitAnalyzer();
-  void beginRun();
-  void beginJob();
-  void endJob();
-  virtual void analyze( const edm::Event&, const edm::EventSetup& );
+  void beginJob() override;
+  void endJob() override;
+  void analyze(const edm::Event&, const edm::EventSetup&) override;
 private:
       // ----------member data ---------------------------
   std::string HepMCLabel;
@@ -88,10 +87,10 @@ private:
   std::string SimVtxLabel;
   std::string SimHitLabel;
 
-  edm::EDGetTokenT<PSimHitContainer> tPixelSimHits;
-  edm::EDGetTokenT<SimTrackContainer> tSimTracks;
-  edm::EDGetTokenT<SimVertexContainer> tSimVertexs;
-  edm::EDGetTokenT<HepMCProduct> tHepMC;
+  edm::EDGetTokenT<edm::PSimHitContainer> tPixelSimHits;
+  edm::EDGetTokenT<edm::SimTrackContainer> tSimTracks;
+  edm::EDGetTokenT<edm::SimVertexContainer> tSimVertexs;
+  edm::EDGetTokenT<edm::HepMCProduct> tHepMC;
   
   // histograms 
   TH1D *heta,*heta1,*heta2,*heta3,*heta4,*heta5,*heta6,*heta7; 
@@ -117,20 +116,21 @@ SimHitAnalyzer::SimHitAnalyzer( const edm::ParameterSet& iConfig ):
   SimVtxLabel(iConfig.getUntrackedParameter("moduleLabelVtx",std::string("g4SimHits"))),
   SimHitLabel(iConfig.getUntrackedParameter("moduleLabelHit",std::string("g4SimHits")))
 {
+  usesResource("TFileService");
    //now do what ever initialization is needed
   edm::InputTag tag("g4SimHits","TrackerHitsPixelBarrelLowTof");   // for the ByToken
   //edm::InputTag tag("g4SimHits","TrackerHitsPixelBarrelHighTof");   // for the ByToken
   //edm::InputTag tag("g4SimHits","TrackerHitsPixelEndcapLowTof");   // for the ByToken
   //edm::InputTag tag("g4SimHits","TrackerHitsPixelEndcapHighTof");   // for the ByToken
-  tPixelSimHits = consumes <PSimHitContainer> (tag);
+  tPixelSimHits = consumes <edm::PSimHitContainer> (tag);
 
   edm::InputTag tag1("g4SimHits","");   // for the ByToken
-  tSimTracks = consumes <SimTrackContainer> (tag1);
+  tSimTracks = consumes <edm::SimTrackContainer> (tag1);
   edm::InputTag tag2("g4SimHits","");   // for the ByToken
-  tSimVertexs = consumes <SimVertexContainer> (tag2);
+  tSimVertexs = consumes <edm::SimVertexContainer> (tag2);
 
   edm::InputTag tag0("generatorSmeared","");   // for the ByToken
-  tHepMC = consumes <HepMCProduct> (tag0);
+  tHepMC = consumes <edm::HepMCProduct> (tag0);
 
 }
 
@@ -146,7 +146,6 @@ SimHitAnalyzer::~SimHitAnalyzer() {
 //
 // member functions
 //
-void SimHitAnalyzer::beginRun() {}
 void SimHitAnalyzer::beginJob() {
   edm::Service<TFileService> fs;
 
@@ -179,37 +178,32 @@ void SimHitAnalyzer::beginJob() {
 }
 void SimHitAnalyzer::endJob() {}
 
-
-
-
-
 // ------------ method called to produce the data  ------------
 void
-SimHitAnalyzer::analyze( const edm::Event& iEvent, const edm::EventSetup& iSetup )
-{
+SimHitAnalyzer::analyze( const edm::Event& iEvent, const edm::EventSetup& iSetup ) {
    using namespace edm;
-   const float PI = 3.1416;
+   //const float PI = 3.1416;
    const bool print = false;
 
    std::vector<PSimHit> theTrackerHits;
    std::vector<SimTrack> theSimTracks;
    std::vector<SimVertex> theSimVertexes;
 
-   Handle<HepMCProduct> MCEvt;
+   Handle<edm::HepMCProduct> MCEvt;
    //   iEvent.getByLabel(HepMCLabel, MCEvt);
    iEvent.getByToken(tHepMC, MCEvt);
 
-   Handle<SimTrackContainer> SimTk;
+   Handle<edm::SimTrackContainer> SimTk;
    //iEvent.getByLabel(SimTkLabel,SimTk); // old way 
    iEvent.getByToken( tSimTracks ,SimTk); // 
    theSimTracks.insert(theSimTracks.end(),SimTk->begin(),SimTk->end());
 
-   Handle<SimVertexContainer> SimVtx;
+   Handle<edm::SimVertexContainer> SimVtx;
    //iEvent.getByLabel(SimVtxLabel,SimVtx);
    iEvent.getByToken( tSimVertexs ,SimVtx);
    theSimVertexes.insert(theSimVertexes.end(),SimVtx->begin(),SimVtx->end());
 
-   Handle<PSimHitContainer> PixelBarrelHitsLowTof;
+   Handle<edm::PSimHitContainer> PixelBarrelHitsLowTof;
    //Handle<PSimHitContainer> PixelBarrelHitsHighTof;
    //Handle<PSimHitContainer> PixelEndcapHitsLowTof;
    //Handle<PSimHitContainer> PixelEndcapHitsHighTof;
@@ -345,7 +339,7 @@ SimHitAnalyzer::analyze( const edm::Event& iEvent, const edm::EventSetup& iSetup
 	  isim != theTrackerHits.end(); ++isim){
        SimHitMap[(*isim).detUnitId()].push_back((*isim));
 
-       int detid = isim->detUnitId();
+       //int detid = isim->detUnitId();
        //if(detid>=302000000 && detid<303000000) {  // only bpix
        if(1) {  // all
 	 // SimHit information 
@@ -354,10 +348,10 @@ SimHitAnalyzer::analyze( const edm::Event& iEvent, const edm::EventSetup& iSetup
 	 float p = (*isim).pabs();
 	 //float pt = (*isim).momentumAtEntry().perp();
 	 float theta = (*isim).thetaAtEntry();
-	 float beta = 0;  // beta is roughly like real theta
-	 if(theta<PI/2.) beta=(PI/2.) - theta; //  
-	 else            beta=theta - (PI/2.);
-	 float eta = -log(tan(beta/2.));  // this is an approximation to the tracks eta
+	 //float beta = 0;  // beta is roughly like real theta
+	 //if(theta<PI/2.) beta=(PI/2.) - theta; //  
+	 //else            beta=theta - (PI/2.);
+	 //float eta = -log(tan(beta/2.));  // this is an approximation to the tracks eta
 
 	 //float phi = (*isim).phiAtEntry();
 	 int pid = ((*isim).particleType()); 

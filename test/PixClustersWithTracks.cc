@@ -14,7 +14,7 @@
 #include "FWCore/Framework/interface/EventSetup.h"
 
 #include "FWCore/Framework/interface/Frameworkfwd.h"
-#include "FWCore/Framework/interface/EDAnalyzer.h"
+#include "FWCore/Framework/interface/one/EDAnalyzer.h"
 
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/Framework/interface/MakerMacros.h"
@@ -155,15 +155,16 @@
 
 using namespace std;
 
-class PixClustersWithTracks : public edm::EDAnalyzer {
+class PixClustersWithTracks : public edm::one::EDAnalyzer<edm::one::SharedResources> {
  public:
   
-  explicit PixClustersWithTracks(const edm::ParameterSet& conf);  
-  virtual ~PixClustersWithTracks();
-  virtual void analyze(const edm::Event& e, const edm::EventSetup& c);
-  virtual void beginRun(const edm::EventSetup& iSetup);
-  virtual void beginJob();
-  virtual void endJob();
+  PixClustersWithTracks(const edm::ParameterSet& conf);  
+  ~PixClustersWithTracks();
+  void analyze(const edm::Event&, const edm::EventSetup&) override;
+  //void beginRun(const edm::EventSetup&);
+  void beginJob() override;
+  void endJob() override;
+
 #if defined(CLU_SHAPE) || defined(CLU_SHAPE_L2) 
   void histogramClus(float cha, int size, int sizex, int sizey, bool same, int corner);
   void histogramPix(float pixchar, int size, int sizex, int sizey, bool same, int corner);
@@ -423,7 +424,7 @@ class PixClustersWithTracks : public edm::EDAnalyzer {
 PixClustersWithTracks::PixClustersWithTracks(edm::ParameterSet const& conf) 
 //  : conf_(conf), src_(conf.getParameter<edm::InputTag>( "src" )) { }
   : conf_(conf), Normalise(true) { 
-
+  usesResource("TFileService");
   phase1_ = conf.getUntrackedParameter<bool>("phase1",false);
   PRINT = conf.getUntrackedParameter<bool>("Verbosity",false);
   Normalise = conf.getUntrackedParameter<bool>("Normalise",true);
@@ -461,9 +462,9 @@ PixClustersWithTracks::PixClustersWithTracks(edm::ParameterSet const& conf)
 PixClustersWithTracks::~PixClustersWithTracks() { }  
 
 // ------------ method called at the begining   ------------
-void PixClustersWithTracks::beginRun(const edm::EventSetup& iSetup) {
-  cout << "BeginRun, Verbosity =  " <<PRINT<<" Phase1 "<<phase1_<<endl;
-}
+//void PixClustersWithTracks::beginRun(const edm::EventSetup& iSetup) {
+//  cout << "BeginRun, Verbosity =  " <<PRINT<<" Phase1 "<<phase1_<<endl;
+//}
 
 // ------------ method called at the begining   ------------
 void PixClustersWithTracks::beginJob() {
@@ -1609,7 +1610,6 @@ void PixClustersWithTracks::endJob(){
 // Functions that gets called by framework every event
 void PixClustersWithTracks::analyze(const edm::Event& e, 
 			    const edm::EventSetup& es) {
-
   using namespace edm;
   using namespace reco;
   static int lumiBlockOld = -9999;

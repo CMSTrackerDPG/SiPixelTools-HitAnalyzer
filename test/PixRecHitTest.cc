@@ -9,7 +9,7 @@
 #include "FWCore/Framework/interface/EventSetup.h"
 #include "FWCore/Framework/interface/Frameworkfwd.h"
 #include "FWCore/Framework/interface/MakerMacros.h"
-#include "FWCore/Framework/interface/EDAnalyzer.h"
+#include "FWCore/Framework/interface/one/EDAnalyzer.h"
 #include "FWCore/Framework/interface/Event.h"
 
 #include "DataFormats/Common/interface/Handle.h"
@@ -50,16 +50,14 @@ using namespace std;
 #include <TProfile.h>
 #endif
 
-class PixRecHitTest : public edm::EDAnalyzer {
+class PixRecHitTest : public edm::one::EDAnalyzer<edm::one::SharedResources> {
  public:
   
-  explicit PixRecHitTest(const edm::ParameterSet& conf);
-  
-  virtual ~PixRecHitTest();
-  
-  virtual void analyze(const edm::Event& e, const edm::EventSetup& c);
-  virtual void beginJob();
-  virtual void endJob();
+  PixRecHitTest(const edm::ParameterSet& conf);
+  ~PixRecHitTest();  
+  void analyze(const edm::Event&, const edm::EventSetup&) override;
+  void beginJob() override;
+  void endJob() override;
 
  private:
   edm::ParameterSet conf_;
@@ -119,6 +117,7 @@ class PixRecHitTest : public edm::EDAnalyzer {
 PixRecHitTest::PixRecHitTest(edm::ParameterSet const& conf) : 
   conf_(conf),
   src_( conf.getParameter<edm::InputTag>( "src" ) ) { 
+    usesResource("TFileService");
     print = conf.getUntrackedParameter<bool>("Verbosity",false);
     phase1_ = conf.getUntrackedParameter<bool>("phase1",false);
     cout<<" Verbosity "<<print<<endl;

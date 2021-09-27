@@ -4,7 +4,7 @@
  * Modify for phase1.
  */
 
-#include "FWCore/Framework/interface/EDAnalyzer.h"
+#include "FWCore/Framework/interface/one/EDAnalyzer.h"
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 
@@ -761,29 +761,23 @@ void HotPixels::printROCs(int fed_id, int cut) {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Main program
-class FindHotPixelFromRaw : public edm::EDAnalyzer {
+class FindHotPixelFromRaw : public edm::one::EDAnalyzer<edm::one::SharedResources> {
 public:
 
   /// ctor
-  explicit FindHotPixelFromRaw( const edm::ParameterSet& cfg) : theConfig(cfg) {
+  FindHotPixelFromRaw( const edm::ParameterSet& cfg) : theConfig(cfg) {
+    usesResource("TFileService");
     //consumes<FEDRawDataCollection>(theConfig.getUntrackedParameter<std::string>("InputLabel","source"));
     string label = theConfig.getUntrackedParameter<std::string>("InputLabel","source");
     // For the ByToken method
     rawData = consumes<FEDRawDataCollection>(label);
 } 
-  
-  /// dtor
-  virtual ~FindHotPixelFromRaw() {}
-
-  void beginJob();
-  
-  //void beginRun( const edm::EventSetup& ) {}
-
-  // end of job 
-  void endJob();
-
+  ~FindHotPixelFromRaw() {}
+  void beginJob() override;
+  //void beginRun(const edm::EventSetup&) {}
+  void endJob() override;
   /// get data, convert to digis attach againe to Event
-  void analyze(const edm::Event&, const edm::EventSetup&);
+  void analyze(const edm::Event&, const edm::EventSetup&) override;
   void analyzeHits(int fed, int channel, int layer, int roc, int dcol, int pix, int adc);
   void histogramHits(int fed);
 
@@ -1044,7 +1038,6 @@ void FindHotPixelFromRaw::analyzeHits(int fed, int channel, int layer, int roc, 
 }
 //--------------------------------------------------------------------------
 void FindHotPixelFromRaw::analyze(const  edm::Event& ev, const edm::EventSetup& es) {
-
   edm::Handle<FEDRawDataCollection> buffers;
   //static std::string label = theConfig.getUntrackedParameter<std::string>("InputLabel","source");
   //static std::string instance = theConfig.getUntrackedParameter<std::string>("InputInstance","");

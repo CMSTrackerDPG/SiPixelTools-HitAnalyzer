@@ -39,7 +39,7 @@ using namespace edm;
 
 SiPixelDets::SiPixelDets(edm::ParameterSet const& conf) : 
   conf_(conf), phase1_(false) {
-
+  usesResource("TFileService");
   //phase1_ = conf_.getUntrackedParameter<bool>("phase1",false);		
   //BPixParameters_ = conf_.getUntrackedParameter<Parameters>("BPixParameters");
   //FPixParameters_ = conf_.getUntrackedParameter<Parameters>("FPixParameters");

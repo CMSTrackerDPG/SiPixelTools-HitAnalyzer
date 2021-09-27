@@ -8,7 +8,7 @@
  * Add simple error vs fed num histos.
  */
 
-#include "FWCore/Framework/interface/EDAnalyzer.h"
+#include "FWCore/Framework/interface/one/EDAnalyzer.h"
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 
@@ -647,27 +647,15 @@ int MyDecode::data(int word, int & fedChannel, int fed, int & stat1, int & stat2
 }
 ////////////////////////////////////////////////////////////////////////////
 
-class SiPixelRawDump : public edm::EDAnalyzer {
+class SiPixelRawDump : public edm::one::EDAnalyzer<edm::one::SharedResources> {
 public:
-
-  /// ctor
-  explicit SiPixelRawDump( const edm::ParameterSet& cfg);
-
-  //explicit SiPixelRawDump( const edm::ParameterSet& cfg) : theConfig(cfg) {
-  //consumes<FEDRawDataCollection>(theConfig.getUntrackedParameter<std::string>("InputLabel","source"));} 
-
-  /// dtor
-  virtual ~SiPixelRawDump() {}
-
-  void beginJob();
-
-  //void beginRun( const edm::EventSetup& ) {}
-
-  // end of job 
-  void endJob();
-
+  SiPixelRawDump( const edm::ParameterSet& cfg);
+  ~SiPixelRawDump() {}
+  void beginJob() override;
+  //void beginRun(const edm::EventSetup&) {}
+  void endJob() override;
   /// get data, convert to digis attach againe to Event
-  virtual void analyze(const edm::Event&, const edm::EventSetup&);
+  void analyze(const edm::Event&, const edm::EventSetup&) override;
   void analyzeHits(int fed, int channel, int roc, int dcol, int pix, int adc);
 
 private:
@@ -764,6 +752,7 @@ private:
 };
 //----------------------------------------------------------------------------------
 SiPixelRawDump::SiPixelRawDump( const edm::ParameterSet& cfg) : theConfig(cfg) {
+  usesResource("TFileService");
   string label = theConfig.getUntrackedParameter<std::string>("InputLabel","source");
   // For the ByToken method
   rawData = consumes<FEDRawDataCollection>(label);
@@ -1229,13 +1218,12 @@ void SiPixelRawDump::beginJob() {
 //-----------------------------------------------------------------------
 void SiPixelRawDump::analyzeHits(int fed, int channel, int roc, int dcol, int pix, int adc) {
   //TH2F *hchannelRoc, *hchannelRocs, *hchannelPixels, *hchannelPixPerRoc;
-
-
 }
 
 
 //----------------------------------------------------------------------------
 void SiPixelRawDump::analyze(const  edm::Event& ev, const edm::EventSetup& es) {
+
   const bool printEventInfo = false;
 
 #ifdef PHASE1

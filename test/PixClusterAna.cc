@@ -17,7 +17,7 @@
 #include "FWCore/Framework/interface/EventSetup.h"
 
 #include "FWCore/Framework/interface/Frameworkfwd.h"
-#include "FWCore/Framework/interface/EDAnalyzer.h"
+#include "FWCore/Framework/interface/one/EDAnalyzer.h"
 
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/Framework/interface/MakerMacros.h"
@@ -126,6 +126,7 @@ using namespace std;
 #include "DataFormats/HcalRecHit/interface/HcalRecHitCollections.h"
 #endif // HF
 
+namespace {
 
 //=======================================================================
 #ifdef BX_NEW
@@ -467,15 +468,15 @@ float rocEfficiency::getModule(int layer, int ladder, int module, float & half1,
 
 //==========================================================================================
 
-class PixClusterAna : public edm::EDAnalyzer {
- public:
-  
-  explicit PixClusterAna(const edm::ParameterSet& conf);  
-  virtual ~PixClusterAna();
-  virtual void analyze(const edm::Event& e, const edm::EventSetup& c);
-  virtual void beginRun(const edm::EventSetup& iSetup);
-  virtual void beginJob();
-  virtual void endJob();
+class PixClusterAna : public edm::one::EDAnalyzer<edm::one::WatchRuns, edm::one::SharedResources> {
+ public: 
+  PixClusterAna(const edm::ParameterSet& conf);  
+  ~PixClusterAna();
+  void analyze(const edm::Event&, const edm::EventSetup&) override;
+  void beginRun(edm::Run const&, const edm::EventSetup&) override;
+  void endRun(edm::Run const&, const edm::EventSetup&) override {};
+  void beginJob() override;
+  void endJob() override;
 #ifdef TEST_DCOLS
   void histogramDcols(int layer, int ladder, int ring);
 #endif
@@ -755,7 +756,7 @@ edm::EDGetTokenT<HFRecHitCollection> HFHitsToken_;
 // Contructor, empty.
 PixClusterAna::PixClusterAna(edm::ParameterSet const& conf) 
   : conf_(conf), src_(conf.getParameter<edm::InputTag>( "src" )), Normalise(true) { 
-
+  usesResource("TFileService");
   PRINT = conf.getUntrackedParameter<bool>("Verbosity",false);
   Normalise = conf.getUntrackedParameter<bool>("Normalise",true);
   select1 = conf.getUntrackedParameter<int>("Select1",0);
@@ -861,7 +862,7 @@ void PixClusterAna::histogramDcols(int layer, int ladder, int module) {
 }  
 #endif
 // ------------ method called at the begining   ------------
-void PixClusterAna::beginRun(const edm::EventSetup& iSetup) {
+void PixClusterAna::beginRun(const edm::Run& iEvent, const edm::EventSetup& iSetup) {
   cout << "beginRun -  PixelClusterTest " <<endl;
 }
 
@@ -4250,6 +4251,8 @@ void PixClusterAna::analyze(const edm::Event& e,
 #endif // HISTOS
       
 } // end 
+
+} // end namespace 
 
 //define this as a plug-in
 DEFINE_FWK_MODULE(PixClusterAna);

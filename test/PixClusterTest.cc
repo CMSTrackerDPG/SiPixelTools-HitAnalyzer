@@ -9,11 +9,10 @@
 #include <string>
 #include <iostream>
 
-
 #include "FWCore/Framework/interface/ESHandle.h"
 #include "FWCore/Framework/interface/EventSetup.h"
 #include "FWCore/Framework/interface/Frameworkfwd.h"
-#include "FWCore/Framework/interface/EDAnalyzer.h"
+#include "FWCore/Framework/interface/one/EDAnalyzer.h"
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/Framework/interface/MakerMacros.h"
 //#include "DataFormats/Common/interface/Handle.h"
@@ -83,15 +82,15 @@ using namespace std;
 
 //=============================================================================
 
-class PixClusterTest : public edm::EDAnalyzer {
+class PixClusterTest : public edm::one::EDAnalyzer<edm::one::SharedResources> {
  public:
   
-  explicit PixClusterTest(const edm::ParameterSet& conf);  
-  virtual ~PixClusterTest();
-  virtual void analyze(const edm::Event& e, const edm::EventSetup& c);
-  virtual void beginRun(const edm::EventSetup& iSetup);
-  virtual void beginJob();
-  virtual void endJob();
+  PixClusterTest(const edm::ParameterSet& conf);  
+  ~PixClusterTest();
+  void analyze(const edm::Event&, const edm::EventSetup&) override;
+  //void beginRun(const edm::EventSetup&);
+  void beginJob() override;
+  void endJob() override;
   
  private:
   edm::ParameterSet conf_;
@@ -147,7 +146,7 @@ class PixClusterTest : public edm::EDAnalyzer {
 // Contructor, empty.
 PixClusterTest::PixClusterTest(edm::ParameterSet const& conf) 
   : conf_(conf), src_(conf.getParameter<edm::InputTag>( "src" )) { 
-
+  usesResource("TFileService");
   printLocal = conf.getUntrackedParameter<bool>("Verbosity",false);
   phase1_ = conf.getUntrackedParameter<bool>("phase1",false);
   //src_ =  conf.getParameter<edm::InputTag>( "src" );
@@ -160,9 +159,9 @@ PixClusterTest::PixClusterTest(edm::ParameterSet const& conf)
 PixClusterTest::~PixClusterTest() { }  
 
 // ------------ method called at the begining   ------------
-void PixClusterTest::beginRun(const edm::EventSetup& iSetup) {
-  cout << "beginRun -  PixelClusterTest " <<printLocal<<endl;
-}
+//void PixClusterTest::beginRun(const edm::EventSetup& iSetup) {
+//  cout << "beginRun -  PixelClusterTest " <<printLocal<<endl;
+//}
 
 // ------------ method called at the begining   ------------
 void PixClusterTest::beginJob() {

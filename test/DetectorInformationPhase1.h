@@ -26,7 +26,6 @@
 
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/ServiceRegistry/interface/Service.h"
-#include "FWCore/Framework/interface/EDAnalyzer.h"
 
 #include "Geometry/CommonDetUnit/interface/PixelGeomDetUnit.h"
 
@@ -41,7 +40,6 @@
 class TFile;
 class DetId; 
 
-//class DetectorInformationPhase1 : public edm::EDAnalyzer {
 class DetectorInformationPhase1 {
 
  public:
