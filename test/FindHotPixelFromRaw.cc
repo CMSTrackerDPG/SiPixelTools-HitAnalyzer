@@ -748,7 +748,7 @@ void HotPixels::printROCs(int fed_id, int cut) {
 	  }
 
           cout<<setw(3)<<fed_id<<" "<<setw(3)<<channel<<" "<<setw(30)<<modName<<"  "<<tbm<<"  "
-              <<roc<<" "<<realRocNum<<"  "<<rocs[n]<<endl;
+              <<realRocNum<<" ("<<roc<<") "<<rocs[n]<<endl;
         }
 
       }

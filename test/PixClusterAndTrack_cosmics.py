@@ -87,37 +87,25 @@ process.maxEvents = cms.untracked.PSet(
 
 myfilelist = cms.untracked.vstring()
 myfilelist.extend([
-"/store/express/Commissioning2021/ExpressCosmics/FEVT/Express-v1/000/344/681/00000/dfa10a80-f3ed-4ee3-9669-91bce823270e.root",
-"/store/express/Commissioning2021/ExpressCosmics/FEVT/Express-v1/000/344/681/00000/f00538a5-0d17-4256-ad56-0c1dc6217bf8.root",
-"/store/express/Commissioning2021/ExpressCosmics/FEVT/Express-v1/000/344/681/00000/47d041be-21e2-448f-9b8d-a93b63ba0708.root",
-"/store/express/Commissioning2021/ExpressCosmics/FEVT/Express-v1/000/344/681/00000/fce76b2a-14fd-4880-97f9-079e23f4cf51.root",
-"/store/express/Commissioning2021/ExpressCosmics/FEVT/Express-v1/000/344/681/00000/a5ebd71f-2d84-4096-bb13-1e36fe1fcaff.root",
-"/store/express/Commissioning2021/ExpressCosmics/FEVT/Express-v1/000/344/681/00000/7c9e9ca5-68ad-4a7b-8d8b-612cc09dd022.root",
-"/store/express/Commissioning2021/ExpressCosmics/FEVT/Express-v1/000/344/681/00000/d298f8a6-d626-4352-9223-c3be524381a8.root",
-"/store/express/Commissioning2021/ExpressCosmics/FEVT/Express-v1/000/344/681/00000/19c81b31-4169-45e5-9d2d-71e335204812.root",
-"/store/express/Commissioning2021/ExpressCosmics/FEVT/Express-v1/000/344/681/00000/e7f6e5e7-1aea-451a-b301-809c93741691.root",
-"/store/express/Commissioning2021/ExpressCosmics/FEVT/Express-v1/000/344/681/00000/467f6516-f965-4a0b-834e-f63e30ae60b1.root",
-"/store/express/Commissioning2021/ExpressCosmics/FEVT/Express-v1/000/344/681/00000/32c3b6c4-6c71-45c8-b34e-1313c8afaedd.root",
-"/store/express/Commissioning2021/ExpressCosmics/FEVT/Express-v1/000/344/681/00000/0e7811a5-016a-437f-b10d-b4b7bfa5561b.root",
-"/store/express/Commissioning2021/ExpressCosmics/FEVT/Express-v1/000/344/681/00000/272cde52-b5cf-4023-8722-001438abfc9e.root",
-"/store/express/Commissioning2021/ExpressCosmics/FEVT/Express-v1/000/344/681/00000/78634f9b-e8fb-4b30-8267-2a5572cab1cc.root",
 ])
 
 process.source = cms.Source("PoolSource",
-# fileNames =  myfilelist )
-  fileNames = cms.untracked.vstring(    
-"file:/eos/cms/store/express/Commissioning2021/ExpressCosmics/FEVT/Express-v1/000/344/681/00000/dfa10a80-f3ed-4ee3-9669-91bce823270e.root",
+ fileNames =  myfilelist )
+#  fileNames = cms.untracked.vstring(    
+#"file:/eos/cms/store/express/Commissioning2021/ExpressCosmics/FEVT/Express-v1/000/344/681/00000/dfa10a80-f3ed-4ee3-9669-91bce823270e.root",
 
 
 #"/store/express/Run2018D/ExpressCosmics/FEVT/Express-v1/000/325/088/00000/0189E695-D59D-3448-AD5B-AE4E5FCF2D1B.root",
 
 #"/store/express/Commissioning2021/ExpressCosmics/FEVT/Express-v1/000/344/068/00000/ffc30ac2-6e3b-42e1-b6d9-74973a9cf961.root",
 
-  )   # end the list "by-hand"
-)
+#  )   # end the list "by-hand"
+#)
 
 #process.source.lumisToProcess = cms.untracked.VLuminosityBlockRange('124230:26-124230:9999','124030:2-124030:9999')
 #process.source.lumisToProcess = cms.untracked.VLuminosityBlockRange('325088:0-325088:9')
+
+process.source.skipBadFiles = cms.untracked.bool( True )
 
 process.TFileService = cms.Service("TFileService",
     fileName = cms.string('clus_ana_cosmics.root')

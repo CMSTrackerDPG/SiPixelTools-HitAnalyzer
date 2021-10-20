@@ -195,8 +195,8 @@ class MyDecode {
 public:
   MyDecode() {}
   ~MyDecode() {}
-  static int error(int error,int & fedChannel, int fed, int & stat1, int & stat2, bool print=false);
-  int data(int error, int & fedChannel, int fed, int & stat1, int & stat2, bool print=false);
+  int error(int error,int & fedChannel, int fed, int & stat1, int & stat2, bool print=false);
+  int data(int word, int & fedChannel, int fed, int & stat1, int & stat2, bool print=false);
   static int header(unsigned long long word64, int fed, bool print, unsigned int & bx);
   static int trailer(unsigned long long word64, int fed, bool print);
   static int convertToCol(int dcol,int pix);
@@ -209,8 +209,10 @@ public:
   int get_col(void) {return col_;}
   int get_row(void) {return row_;}
   int get_channel(void) {return channel_;}
+  void setPrint(int selectedFED, int selectedChannel);
 private:
   int channel_, adc_, roc_, dcol_, pix_, col_, row_;
+  int selectedFED_, selectedChannel_;
 };
 /////////////////////////////////////////////////////////////////////////////
 //Returns 1,2,3 for layer 1,2,3 full modules, 11,12,13 for 1/2 modules
@@ -220,6 +222,11 @@ int MyDecode::checkLayerLink(int fed, int chan) {
   int layer = 0;
 
   return layer;
+}
+void MyDecode::setPrint(int fed, int chan) {
+  selectedFED_=fed;
+  selectedChannel_=chan;
+  return;
 }
 
 int MyDecode::convertToCol(int dcol, int pix) {
@@ -341,6 +348,8 @@ int MyDecode::error(int word, int & fedChannel, int fed, int & stat1, int & stat
 
     unsigned int bit20 =      (word & 0x100000)>>20; // works only for slink format
     channel = (word&channelMask)>>26; //channel ## for timeout               
+    if(selectedChannel_>-1 && channel!=unsigned(selectedChannel_)) return 0;
+ 
     unsigned int l1acnt=(word& 0x1FE000) >> 13; //FED event counter only in error FIFO          
     unsigned int diag = (word & 0x3f); // TBM stack or chan?
       
@@ -358,46 +367,10 @@ int MyDecode::error(int word, int & fedChannel, int fed, int & stat1, int & stat
     else {status=0;}
 
     fedChannel = channel;
-    
-    // if(bit20 == 0) { // 2nd word 
-    //   unsigned int timeoutCnt = (word &  0x7f800)>>11; // only for slink
-    //   // unsigned int timeoutCnt = ((word&0xfc000000)>>24) + ((word&0x1800)>>11); // only for fifo
-    //   // More than 1 channel within a group can have a timeout error
-
-    //   unsigned int index = (word & 0x1F);  // index within a group of 4/5
-    //   unsigned int chip = (word& BlkNumMask)>>8;
-    //   int offset = offsets[chip];
-    //   if(print) cout<<"Timeout Error- channel: ";
-    //   //cout<<"Timeout Error- channel: ";
-    //   for(int i=0;i<5;i++) {
-    // 	if( (index & 0x1) != 0) {
-    // 	  channel = offset + i + 1;
-    // 	  if(print) cout<<channel<<" ";
-    // 	  //cout<<channel<<" ";
-    // 	}
-    // 	index = index >> 1;
-    //   }
-    //   if(print) cout << " TimeoutCount: " << timeoutCnt;
-    //   //cout << " TimeoutCount: " << timeoutCnt<<endl;;
-    //  //if(print) cout<<" for Fed "<<fed<<endl;
-    //  status = -10;
-    //  fedChannel = channel;
-    //  //end of timeout  chip and channel decoding
-    // } else {  // this is the 1st timout word with the baseline correction 
-    //   int baselineCorr = 0;
-    //   if(word&0x200){
-    // 	baselineCorr = -(((~word)&0x1ff) + 1);
-    //   } else {
-    // 	baselineCorr = (word&0x1ff);
-    //   }
-    //   if(PRINT_BASELINE && print) cout<<"Timeout BaselineCorr: "<<baselineCorr<<endl;
-    //   //cout<<"Timeout BaselineCorr: "<<baselineCorr<<endl;
-    //   status = 0;
-    // }
-
 
   } else if( (word&errorMask) == eventNumError ) { // EVENT NUMBER ERROR
     channel =  (word & channelMask) >>26;
+    if(selectedChannel_>-1 && channel!=unsigned(selectedChannel_)) return 0;
     unsigned int tbm_event   =  (word & tbmEventMask);
     
     if(print) cout<<" Event Number Error- channel: "<<channel<<" tbm event nr. "
@@ -407,6 +380,7 @@ int MyDecode::error(int word, int & fedChannel, int fed, int & stat1, int & stat
     
   } else if( ((word&errorMask) == trailError)) {  // TRAILER 
     channel =  (word & channelMask) >>26;
+    if(selectedChannel_>-1 && channel!=unsigned(selectedChannel_)) return 0;
     unsigned int tbm_status   =  (word & tbmStatusMask);
     unsigned int bits8_11     =  (word & ErrBitsMask)>>8;
     
@@ -528,8 +502,9 @@ int MyDecode::data(int word, int & fedChannel, int fed, int & stat1, int & stat2
 
 	// will need here a loopup table which can distuinguish layer 1 links
 	// to decide if we read dcol/pis or col/row
-	if(print) cout<<" Fed "<<fed<<" Channel- "<<channel_<<" ROC- "<<(roc_-1)<<" DCOL- "
-		      <<dcol_<<" Pixel- "<<pix_<<" (OR col-"<<col_<<" row-"<<row_<<") ADC- "<<adc_<<endl;
+	if(print && (selectedChannel_==-1 || selectedChannel_==channel_)) 
+	  cout<<" Fed "<<fed<<" Channel- "<<channel_<<" ROC- "<<(roc_-1)<<" DCOL- "
+	      <<dcol_<<" Pixel- "<<pix_<<" (OR col-"<<col_<<" row-"<<row_<<") ADC- "<<adc_<<endl;
 
 	status++;
 
@@ -538,8 +513,10 @@ int MyDecode::data(int word, int & fedChannel, int fed, int & stat1, int & stat2
 	row_ = convertToRow(pix_);
 	
 	// print the roc number according to the online 0-15 scheme
-	if(print) cout<<" Fed "<<fed<<" Channel- "<<channel_<<" ROC- "<<(roc_-1)<<" DCOL- "<<dcol_<<" Pixel- "
-		      <<pix_<<" ("<<col_<<","<<row_<<") ADC- "<<adc_<<endl;
+	if(print && (selectedChannel_==-1 || selectedChannel_==channel_)) 
+	  cout<<" Fed "<<fed<<" Channel- "<<channel_<<" ROC- "<<(roc_-1)
+	      <<" DCOL- "<<dcol_<<" Pixel- "
+	      <<pix_<<" ("<<col_<<","<<row_<<") ADC- "<<adc_<<endl;
 	status++;
 	
 	if(CHECK_PIXELS) {
@@ -663,7 +640,7 @@ private:
   edm::EDGetTokenT<FEDRawDataCollection> rawData;
 
   int printLocal;
-  int selectedFED, selectedType;
+  int selectedFED, selectedChannel, selectedType;
   double printThreshold;
   int countEvents, countAllEvents;
   int countTotErrors;
@@ -714,7 +691,7 @@ private:
   TProfile *hadc1ls,*hadc2ls,*hadc3ls,*hadc4ls,*hadc0ls; 
   TProfile *hadc1bx,*hadc2bx,*hadc3bx,*hadc4bx,*hadc0bx; 
   TH2F *hchannelRoc, *hchannelRocs, *hchannelPixels, *hchannelPixPerRoc;
-
+  TH2F *hchannelFED;
   TH2F *hfed2d, *hsize2d;
   TProfile *hsizels,*havsizebx,*hsizep;
 
@@ -866,7 +843,8 @@ void SiPixelRawDump::beginJob() {
 
   printLocal = theConfig.getUntrackedParameter<int>("Verbosity",1);
   printThreshold = theConfig.getUntrackedParameter<double>("PrintThreshold",0.001); // threshold per event for printing errors
-  selectedFED  = theConfig.getUntrackedParameter<int>("selectedFED",-1);
+  selectedFED = theConfig.getUntrackedParameter<int>("selectedFED",-1);
+  selectedChannel = theConfig.getUntrackedParameter<int>("selectedChannel",-1);
   selectedType = theConfig.getUntrackedParameter<int>("selectedType",-1);  // not used 
   cout<<" beginjob "<<printLocal<<" "<<printThreshold<<" select FED "<<selectedFED<<" select Type "<<selectedType<<endl;  
 
@@ -876,6 +854,8 @@ void SiPixelRawDump::beginJob() {
   else printData = false;
   if(printLocal>2) printHeaders  = true;
   else printHeaders = false;
+
+  decode.setPrint(selectedFED, selectedChannel);
 
 #ifdef PHASE1
   //std::pair<int,int> fedIds(1200,1338); // phase 1
@@ -956,6 +936,8 @@ void SiPixelRawDump::beginJob() {
   htotPixels6 = fs->make<TH1D>( "htotPixels6", "pixels per fed bpix2", 10000, -0.5, totMax);
   htotPixels7 = fs->make<TH1D>( "htotPixels7", "pixels per fed bpix3", 10000, -0.5, totMax);
   htotPixels8 = fs->make<TH1D>( "htotPixels8", "pixels per fed bpix4", 10000, -0.5, totMax);
+
+  hchannelFED = fs->make<TH2F>("hchannelFED", "channel-FED hits",48,0.,48.,n_of_FEDs, -0.5, static_cast<float>(n_of_FEDs) - 0.5);
 
   hchannelRoc = fs->make<TH2F>("hchannelRoc", "roc in a channel",48,0.,48.,9, -0.5,8.5);
   hchannelRocs = fs->make<TH2F>("hchannelRocs", "num of rocs in a channel",48,0.,48.,9, -0.5,8.5);
@@ -1223,8 +1205,8 @@ void SiPixelRawDump::analyzeHits(int fed, int channel, int roc, int dcol, int pi
 
 //----------------------------------------------------------------------------
 void SiPixelRawDump::analyze(const  edm::Event& ev, const edm::EventSetup& es) {
-
   const bool printEventInfo = false;
+  const bool print = false;
 
 #ifdef PHASE1
   std::pair<int,int> fedIds(1200,1338); // phase 1
@@ -1270,14 +1252,14 @@ void SiPixelRawDump::analyze(const  edm::Event& ev, const edm::EventSetup& es) {
 	  <<" all "<<countAllEvents<<endl;
       //LS=lumiBlock;
       //}
-      //if(event<oldEvent) 
-      cout<<"   Lower event number: Run "<<run<<" LS "<<lumiBlock<<" event "<<event<<" bx "<<bx
-	  <<" all "<<countAllEvents<<" "<<oldEvent<<endl;
+      if(event<oldEvent) 
+	cout<<"   Lower event number: Run "<<run<<" LS "<<lumiBlock<<" event "<<event<<" bx "<<bx
+	    <<" all "<<countAllEvents<<" "<<oldEvent<<endl;
     //oldEvent=event;
     //return; // skip the rest 
   }
 
-  if(printHeaders) 
+  if(printHeaders||print) 
     cout<<"Event = "<<countAllEvents<<" Event number "<<event<<" Run "<<run
 	<<" LS "<<lumiBlock<<endl;
 
@@ -1341,13 +1323,15 @@ void SiPixelRawDump::analyze(const  edm::Event& ev, const edm::EventSetup& es) {
   // Loop over FEDs
   for (int fedId = fedIds.first; fedId <= fedIds.second; fedId++) {
 
+    if(selectedFED>-1 && fedId!=selectedFED) continue; // skip if not selected 
+
     //edm::DetSetVector<PixelDigi> collection;
     PixelDataFormatter::Errors errors;
 
     //get event data for this fed
     const FEDRawData& rawData = buffers->FEDData( fedId );
 
-    if(printHeaders) cout<<"Get data For FED = "<<fedId<<" size in bytes "<<rawData.size()<<endl;
+    if(printHeaders||print) cout<<"Get data For FED = "<<fedId<<" size in bytes "<<rawData.size()<<endl;
     if(rawData.size()==0) continue;  // skip if not data for this fed
 
     for(int i=0;i<n_of_Channels;++i) fedchannelsize[i]=0;
@@ -1415,15 +1399,15 @@ void SiPixelRawDump::analyze(const  edm::Event& ev, const edm::EventSetup& es) {
 
 	num++;
 	if(printLocal>3) cout<<" "<<num<<" "<<hex<<w<<dec<<endl;
-
 	status = decode.data(w,fedChannel, fedId, stat1, stat2, printData);
+	if(selectedChannel>-1 && fedChannel!=selectedChannel) continue;
 	int layer = layerIndex[fedId-fedId0][fedChannel-1];
 
 	if(status>0) {  // data
 	  countPixels++;
 	  countPixelsInFed++;
 	  fedchannelsize[fedChannel-1]++;
-	  
+	  hchannelFED->Fill(float(fedChannel-1),float(fedId-fedId0));
 	  int adc = decode.get_adc();
 
 	  if(layer==1)      
@@ -1546,7 +1530,7 @@ void SiPixelRawDump::analyze(const  edm::Event& ev, const edm::EventSetup& es) {
 	      cout<<" new masked channel "<<countAllEvents<<" ls "<<lumiBlock<<" fed "<<fedId<<" ch "<<fedChannel<<endl;
 
 	    if(saveLast) maskedChannels.push_back(make_pair(fedId,fedChannel));
-	    if(saveFirst) maskedChannels0.push_back(make_pair(fedId,fedChannel));
+	    if(saveFirst)maskedChannels0.push_back(make_pair(fedId,fedChannel));
 
 	    break; }
 
@@ -1781,17 +1765,15 @@ void SiPixelRawDump::analyze(const  edm::Event& ev, const edm::EventSetup& es) {
   havsizebx->Fill(float(bx),aveFedSize);
 
   if(printErrors && countErrorsPerEvent>0) {
-    cout<<"EVENT: "<<countEvents<<" "<<eventId<<" pixels "<<countPixels<<" errors "<<countErrorsPerEvent<<endl;
+    cout<<"EVENT: "<<eventId<<" events with hits "<<countEvents<<" pixels "<<countPixels<<" errors "<<countErrorsPerEvent<<endl;
   }
 
   if(countPixels>0) {
     hlumi->Fill(float(lumiBlock));
     hbx->Fill(float(bx));
     htotPixels1->Fill(float(countPixels));
-
-    //cout<<"EVENT: "<<countEvents<<" "<<eventId<<" pixels "<<countPixels<<" errors "<<countTotErrors<<endl;
-    sumPixels += countPixels;
     countEvents++;
+    sumPixels += countPixels;
     //int dummy=0;
     //cout<<" : ";
     //cin>>dummy;

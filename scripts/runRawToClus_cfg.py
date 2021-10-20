@@ -108,7 +108,7 @@ process.source = cms.Source("PoolSource",
 #)
 
 #process.source.lumisToProcess = cms.untracked.VLuminosityBlockRange('325097:1-325097:100') # overview
-
+process.source.skipBadFiles = cms.untracked.bool( True )
 
 process.MessageLogger = cms.Service("MessageLogger",
     debugModules = cms.untracked.vstring('SiPixelClusterizer'),
@@ -194,7 +194,7 @@ process.siPixelDigis.cpu.InputLabel = 'rawDataCollector'  # normal p-p
 #process.siStripDigis.ProductLabel = 'rawDataCollector'
 #process.siPixelDigis.InputLabel = 'source'
 process.siPixelDigis.cpu.IncludeErrors = True
-process.siPixelDigis.cpu.Timing = False 
+#process.siPixelDigis.cpu.Timing = False 
 process.siPixelDigis.cpu.UsePhase1 = True
 
 # for digi to clu
