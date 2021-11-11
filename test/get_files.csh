@@ -47,4 +47,5 @@
 #dasgoclient -query='file dataset=/HIMinimumBias0/HIRun2018A-v1/RAW run=327560'  # RAW HI
 
 # 2021 cosmics, express 
-dasgoclient -query='file dataset=/ExpressCosmics/Commissioning2021-Express-v1/FEVT run=345876'  
+#dasgoclient -query='file dataset=/ExpressCosmics/Commissioning2021-Express-v1/FEVT run=346478'  
+dasgoclient -query='file dataset=/ExpressPhysics/Commissioning2021-Express-v1/FEVT run=346508'  
