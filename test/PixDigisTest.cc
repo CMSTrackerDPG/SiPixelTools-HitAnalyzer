@@ -296,7 +296,8 @@ float PixDigisTest::calibrate(uint32_t detid, int adc, int col, int row) {
   //const float gain = 1./0.313; // 1 ADC = 3.19 VCALs 
   //const float pedestal = -6.2 * gain; // -19.8
   // 
-  float vcal = adc * DBgain - DBpedestal;
+
+  //float vcal = adc * DBgain - DBpedestal;
   //int electrons=0;
   //if (layer_==1) {
   //electrons = int( vcal * theConversionFactor_L1 + theOffset_L1); 
@@ -304,7 +305,10 @@ float PixDigisTest::calibrate(uint32_t detid, int adc, int col, int row) {
   //electrons = int( vcal * theConversionFactor + theOffset); 
   //}
 
-  return vcal;
+  // After the changes in the gain calibration
+  float electrons = adc * DBgain - DBpedestal;
+
+  return electrons;
 }
 #endif
 
@@ -1151,9 +1155,10 @@ void PixDigisTest::analyze(const edm::Event& iEvent,
 
 #ifdef USE_GAINS
 	// Apply the calibration 
-	float vcal = calibrate(detid, adc, col, row);
-	float electrons=0.;
-	const float conversionFactor_L1=50., conversionFactor=47., offset=-60., offset_L1=-670.; 
+	float electrons = calibrate(detid, adc, col, row) / 1000.; //convert elec to kelec
+	float vcal=0.;
+	//const float conversionFactor_L1=50., conversionFactor=47., offset=-60., offset_L1=-670.; 
+	const float conversionFactor_L1=45.7, conversionFactor=47., offset=-60., offset_L1=-308.; 
 	  //if (layer_==1) {
 	  //electrons = int( vcal * theConversionFactor_L1 + theOffset_L1); 
           //} else {
@@ -1203,8 +1208,10 @@ void PixDigisTest::analyze(const edm::Event& iEvent,
        float pixy = col; float pixx=row;
 #endif
        if(layer==1) { // convert adc to kelec
-	 if(rescaleVcal) electrons = (vcal * 53.9 + offset_L1)/1000.; //L1 at 51.5fb-1 50->53.9
-	 else            electrons = (vcal * conversionFactor_L1 + offset_L1)/1000.; //default 
+	 //if(rescaleVcal) electrons = (vcal * 53.9 + offset_L1)/1000.; //L1 at 51.5fb-1 50->53.9
+	 //else            electrons = (vcal * conversionFactor_L1 + offset_L1)/1000.; //default 
+	 if(rescaleVcal) vcal = ((electrons*1000.) - offset_L1) /  53.9; //L1 at 51.5fb-1 50->53.9
+	 else            vcal = ((electrons*1000.) - offset_L1) / conversionFactor_L1 ; //default 
 	 if(newL1Modules) {
 	   helectrons1n->Fill(electrons);
 	   hvcal1n->Fill(vcal);
@@ -1276,8 +1283,10 @@ void PixDigisTest::analyze(const edm::Event& iEvent,
 // 	   }
 
        } else if(layer==2 && !badL2Modules) {
-	 if(rescaleVcal) electrons = (vcal * 47.8 + offset)/1000.; //L2 at 51.5fb-1 47->47.8
-	 else            electrons = (vcal * conversionFactor + offset)/1000.; //default 
+	 //if(rescaleVcal) electrons = (vcal * 47.8 + offset)/1000.; //L2 at 51.5fb-1 47->47.8
+	 //else            electrons = (vcal * conversionFactor + offset)/1000.; //default 
+	 if(rescaleVcal) vcal = ((electrons*1000.) - offset) /  47.8; //L1 at 51.5fb-1 50->53.9
+	 else            vcal = ((electrons*1000.) - offset) / conversionFactor; //default 
 	 helectrons2->Fill(electrons);
 	 hvcal2->Fill(vcal);
 	 float energy = electrons * 3.61; // convert electrons to keV
@@ -1315,8 +1324,10 @@ void PixDigisTest::analyze(const edm::Event& iEvent,
 #endif
 
        } else if(layer==3) {
-	 if(rescaleVcal) electrons = (vcal * 47.5 + offset)/1000.; //L3 at 51.5fb-1 47->47.5
-	 else            electrons = (vcal * conversionFactor + offset)/1000.; //default 
+	 //if(rescaleVcal) electrons = (vcal * 47.5 + offset)/1000.; //L3 at 51.5fb-1 47->47.5
+	 //else            electrons = (vcal * conversionFactor + offset)/1000.; //default 
+	 if(rescaleVcal) vcal = ((electrons*1000.) - offset) /  47.5; //L3
+	 else            vcal = ((electrons*1000.) - offset) / conversionFactor; //default 
 	 float energy = electrons * 3.61; // convert electrons to keV
 	 hrocMapS3->Fill(rocZ,rocPhi,energy);
 	 hrocEne3->Fill(rocZ,energy);
@@ -1344,8 +1355,10 @@ void PixDigisTest::analyze(const edm::Event& iEvent,
 	 //else if( ladder==14 && module==-3) hpixDetMap34->Fill(pixy,pixx,weight); // 
 #endif
        } else if(layer==4) {
-	 if(rescaleVcal) electrons = (vcal * 47.25 + offset)/1000.; //L4 at 51.5fb-1 47->47.25
-	 else            electrons = (vcal * conversionFactor + offset)/1000.; //default 
+	 //if(rescaleVcal) electrons = (vcal * 47.25 + offset)/1000.; //L4 at 51.5fb-1 47->47.25
+	 //else            electrons = (vcal * conversionFactor + offset)/1000.; //default 
+	 if(rescaleVcal) vcal = ((electrons*1000.) - offset) /  47.25; //L4
+	 else            vcal = ((electrons*1000.) - offset) / conversionFactor; //default 
 	 helectrons4->Fill(electrons);
 	 float energy = electrons * 3.61; // convert electrons to keV
 	 hrocMapS4->Fill(rocZ,rocPhi,energy);
