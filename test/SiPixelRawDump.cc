@@ -57,6 +57,7 @@ namespace {
   const bool printBX = false;
   const bool CHECK_PIXELS = true;
   const bool PRINT_BASELINE = false;
+  const bool SHOW_PERMANENT_MASK = false; //ignore channelks which are always masked 
   // to store the previous pixel 
   int fed0 = -1, chan0 = -1, roc0 = -1, dcol0 = -1, pix0 =-1, count0=-1;
   int countDecodeErrors1=0, countDecodeErrors2=0;
@@ -503,10 +504,46 @@ int MyDecode::data(int word, int & fedChannel, int fed, int & stat1, int & stat2
 	// will need here a loopup table which can distuinguish layer 1 links
 	// to decide if we read dcol/pis or col/row
 	if(print && (selectedChannel_==-1 || selectedChannel_==channel_)) 
-	  cout<<" Fed "<<fed<<" Channel- "<<channel_<<" ROC- "<<(roc_-1)<<" DCOL- "
+	  cout<<" Fed "<<fed<<" Channel- "<<channel_<<" ROC(order)- "<<(roc_-1)<<" DCOL- "
 	      <<dcol_<<" Pixel- "<<pix_<<" (OR col-"<<col_<<" row-"<<row_<<") ADC- "<<adc_<<endl;
 
-	status++;
+	status=1;
+
+	if(CHECK_PIXELS) {
+	  // Check invalid ROC numbers
+	  if(roc_>8 ) {  //inv ROC, per channel max 8 rocs
+	    if(printErrors) 
+	      cout<<" Fed "<<fed<<" wrong roc number chan/roc(order)/dcol/pix/adc = "<<channel_<<"/"
+		  <<roc_-1<<"/"<<dcol_<<"/"<<pix_<<"/"<<adc_<<endl;
+	    status = -4;	    
+	  }
+	  
+	  // Check pixels
+	  if(pix_==0) {  // PIX=0
+	    // Detect pixel 0 events
+	    if(printErrors) 
+	      cout<<" Fed "<<fed
+		  <<" pix=0 chan/roc(order)/dcol/pix/adc = "<<channel_<<"/"<<roc_-1<<"/"<<dcol_<<"/"
+		  <<pix_<<"/"<<adc_<<" ("<<col_<<","<<row_<<")"<<endl;
+	    count0++;
+	    stat1 = roc_-1;
+	    stat2 = count0;
+	    status = -5;
+	    
+	  } else if( fed==fed0 && channel_==chan0 && roc_==roc0 && dcol_==dcol0 && pix_==pix0 ) {
+	    // detect multiple pixels 
+	    
+	    count0++;
+	    if(printErrors) 
+	      cout<<" Fed "<<fed
+		//cout<<" Fed "<<fed
+		  <<" double pixel  chan/roc(order)/dcol/pix/adc = "<<channel_<<"/"<<roc_-1<<"/"<<dcol_<<"/"
+		  <<pix_<<"/"<<adc_<<" ("<<col_<<","<<row_<<") "<<count0<<endl;
+	    stat1 = roc_-1;
+	    stat2 = count0;
+	    status = -6;
+	  }
+	} // check pixels
 
       } else { // phase0 
 	col_ = convertToCol(dcol_,pix_);
@@ -1428,9 +1465,15 @@ void SiPixelRawDump::analyze(const  edm::Event& ev, const edm::EventSetup& es) {
 
 	} else if(status<0) {  // error word
 
-	  countErrorsInFed++;
-	  if(printErrors) cout<<"    Bad stats for FED "<<fedId<<" Event "<<eventId<<"/"<<(eventId%256)
-			      <<" count "<<countAllEvents<<" chan "<<fedChannel<<" status "<<status<<endl;
+	  bool skip=false;
+	  if(status==-17 && !SHOW_PERMANENT_MASK) skip=true;
+
+	  if(!skip) {
+	    countErrorsInFed++;
+	    if(printErrors) cout<<"    Bad stats for FED "<<fedId<<" Event "<<eventId<<"/"<<(eventId%256)
+				<<" count "<<countAllEvents<<" chan "<<fedChannel<<" status "<<status<<endl;
+	  }
+
 	  status=abs(status);
 	  // 2 - wrong channel
 	  // 3 - wrong pix or dcol 

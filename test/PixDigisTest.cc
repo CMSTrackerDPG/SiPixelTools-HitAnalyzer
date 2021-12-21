@@ -114,7 +114,7 @@ using namespace std;
 namespace {
   const bool useNewL1 = false;
   const bool useBadL2 = false;
-  const bool Normalise = false;
+  const bool Normalise = true;
 }
 // Enable this to look at simlinks (link simhit->digis)
 // Can be used only with simulated data.
@@ -185,6 +185,7 @@ private:
   TH2F *hdetMap4,*hdetMap3,*hdetMap2,*hdetMap1; 
   TH2F *hpixMap1, *hpixMap2, *hpixMap3,*hpixMap4;
   TH2F *hpdetMaps1_4,*hpdetMaps1_3,*hpdetMaps1_2,*hpdetMaps1_1; 
+  TH2F *hrocMap1,*hrocMap2,*hrocMap3,*hrocMap4; 
   TH2F *hrocMap1_4,*hrocMap1_3,*hrocMap1_2,*hrocMap1_1; 
   TH2F *hrocMapS1,*hrocMapS2,*hrocMapS3,*hrocMapS4; 
   TH1D *hrocEne1,*hrocEne2,*hrocEne3,*hrocEne4; 
@@ -560,6 +561,16 @@ void PixDigisTest::beginJob() {
     hpdetMaps1_3->SetOption("colz");
     //hpdetMaps4 = fs->make<TH2F>("hpdetMaps1_4","l1 with elec<0",9,-4.5,4.5,13,-6.5,6.5);
     //hpdetMaps4->SetOption("colz");
+
+    hrocMap1 = fs->make<TH2F>("hrocMap1","digis L1",8*9,-4.5,4.5,2*13,-6.5,6.5);
+    hrocMap2 = fs->make<TH2F>("hrocMap2","digis L2",8*9,-4.5,4.5,2*29,-14.5,14.5);
+    hrocMap3 = fs->make<TH2F>("hrocMap3","digis L3",8*9,-4.5,4.5,2*45,-22.5,22.5);
+    hrocMap4 = fs->make<TH2F>("hrocMap4","digis L4",8*9,-4.5,4.5,2*65,-32.5,32.5);
+    hrocMap1->SetOption("colz");
+    hrocMap2->SetOption("colz");
+    hrocMap3->SetOption("colz");
+    hrocMap4->SetOption("colz");
+
 
     hrocMap1_1 = fs->make<TH2F>("hrocMap1_1","adc=0",     8*9,-4.5,4.5,2*13,-6.5,6.5);
     hrocMap1_1->SetOption("colz");
@@ -1230,6 +1241,7 @@ void PixDigisTest::analyze(const edm::Event& iEvent,
 	 hpixMap1->Fill(float(col),float(row));
 	 hrocMap1_4->Fill(rocZ,rocPhi);
 	 float energy = electrons * 3.61; // convert electrons to keV
+	 hrocMap1->Fill(rocZ,rocPhi);
 	 hrocMapS1->Fill(rocZ,rocPhi,energy);
 	 hrocEne1->Fill(rocZ,energy);
 	 hpdetMap1->Fill(float(module),float(ladder));
@@ -1290,6 +1302,7 @@ void PixDigisTest::analyze(const edm::Event& iEvent,
 	 helectrons2->Fill(electrons);
 	 hvcal2->Fill(vcal);
 	 float energy = electrons * 3.61; // convert electrons to keV
+	 hrocMap2->Fill(rocZ,rocPhi);
 	 hrocMapS2->Fill(rocZ,rocPhi,energy);
 	 hrocEne2->Fill(rocZ,energy);
 
@@ -1329,6 +1342,7 @@ void PixDigisTest::analyze(const edm::Event& iEvent,
 	 if(rescaleVcal) vcal = ((electrons*1000.) - offset) /  47.5; //L3
 	 else            vcal = ((electrons*1000.) - offset) / conversionFactor; //default 
 	 float energy = electrons * 3.61; // convert electrons to keV
+	 hrocMap3->Fill(rocZ,rocPhi);
 	 hrocMapS3->Fill(rocZ,rocPhi,energy);
 	 hrocEne3->Fill(rocZ,energy);
 	 helectrons3->Fill(electrons); 
@@ -1361,6 +1375,7 @@ void PixDigisTest::analyze(const edm::Event& iEvent,
 	 else            vcal = ((electrons*1000.) - offset) / conversionFactor; //default 
 	 helectrons4->Fill(electrons);
 	 float energy = electrons * 3.61; // convert electrons to keV
+	 hrocMap4->Fill(rocZ,rocPhi);
 	 hrocMapS4->Fill(rocZ,rocPhi,energy);
 	 hrocEne4->Fill(rocZ,energy);
 	 hvcal4->Fill(vcal);
@@ -1804,6 +1819,9 @@ void PixDigisTest::endJob(){
 
   float norm = 1.;
   if(Normalise && count3>0) {norm = 1./float(count3);}
+  else return;
+
+  cout<<"Normalise to "<<count3<<" events "<<norm<<endl;
 
   // Rescale all 2D plots
   hdetMap1->Scale(norm);

@@ -45,7 +45,7 @@ namespace {
   const bool printErrors  = false;
   const bool printData    = false;
   const bool printHeaders = false;
-  int count0=0, count1=0, count2=0, count3=0;
+  int count0=0, count1=0, count2=0, count3=0, count4=0;
   const int FEDs=139;
   const int fedId0=1200;
   const bool findHot=true;
@@ -403,7 +403,8 @@ public:
     count=0; 
     for(int i=0;i<NumPixels;++i) {array[i]=0; data[i]=0;}
     for(int i=0;i<NumROCs;++i) {rocs[i]=0;} 
-    for(int i=0;i<4;++i) {countInLayers[i]=0.;} 
+    for(int i=0;i<4;++i) {countInLayers[i]=0.;countPixInLayers[i]=0.;} 
+    for(int i=0;i<4;++i) {countInLayersCut[i]=0.;countPixInLayersCut[i]=0.;} 
   }
 
   ~HotPixels() {
@@ -415,6 +416,9 @@ public:
   void print(int, int, double, TH2F*);
   void printROCs(int, int);
   double printLayers(double &l1, double &l2, double &l3, double&l4);
+  double printPixLayers(double &l1, double &l2, double &l3, double&l4);
+  double printLayersCut(double &l1, double &l2, double &l3, double&l4);
+  double printPixLayersCut(double &l1, double &l2, double &l3, double&l4);
   int get_counts(int i) {if(i<count) return data[i]; else return -1;}
   int get_countsROC(int i) {if(i<NumROCs) return rocs[i]; else return -1;}
   int codeROC(int channel, int roc); 
@@ -426,7 +430,40 @@ private:
   int data[NumPixels];
   int rocs[NumROCs];
   double countInLayers[4];
+  double countPixInLayers[4];
+  double countInLayersCut[4];
+  double countPixInLayersCut[4];
 };
+// return numbr of noisy pixels per layer 
+double HotPixels::printPixLayersCut(double &l1,double &l2,double &l3,double &l4) {
+  l1 = countPixInLayersCut[0];
+  l2 = countPixInLayersCut[1];
+  l3 = countPixInLayersCut[2];
+  l4 = countPixInLayersCut[3];
+  double l=l1+l2+l3+l4;
+  //    for(int i=0;i<4;++i) {cout<<countInLayers[i]<<" ";} cout<<endl; 
+  return l;
+}
+// return number of hits in noisy pixels 
+double HotPixels::printLayersCut(double &l1,double &l2,double &l3,double &l4) {
+  l1 = countInLayersCut[0];
+  l2 = countInLayersCut[1];
+  l3 = countInLayersCut[2];
+  l4 = countInLayersCut[3];
+  double l=l1+l2+l3+l4;
+  //    for(int i=0;i<4;++i) {cout<<countInLayers[i]<<" ";} cout<<endl; 
+  return l;
+}
+double HotPixels::printPixLayers(double &l1,double &l2,double &l3,double &l4) {
+  l1 = countPixInLayers[0];
+  l2 = countPixInLayers[1];
+  l3 = countPixInLayers[2];
+  l4 = countPixInLayers[3];
+  double l=l1+l2+l3+l4;
+  //    for(int i=0;i<4;++i) {cout<<countInLayers[i]<<" ";} cout<<endl; 
+  return l;
+}
+// return number of hits in noisy pixels 
 double HotPixels::printLayers(double &l1,double &l2,double &l3,double &l4) {
   l1 = countInLayers[0];
   l2 = countInLayers[1];
@@ -498,7 +535,7 @@ void HotPixels::print(int events, int fed_id, double fraction, TH2F* hfedchannel
   if(cut<2) cut=2;
 
   if(fed_id==1200) {
-    cout<<" Threshold for "<<fraction<<" is "<<cut<<" 1% "<<cut1<<" 0.1% "<<cut2<<" 0.01% "<<cut3<<endl;
+    cout<<" Threshold for "<<fraction<<" is "<<cut<<" cuts for 1% "<<cut1<<" 0.1% "<<cut2<<" 0.01% "<<cut3<<endl;
     cout<<"fed chan     module                   tbm roc dcol  pix  colR ";
     cout<<"rowR count  num roc-local"<<endl;
     //cout<<" fed chan name tbm rocp dcol pix colR rowR count num roc "<<endl;
@@ -511,9 +548,10 @@ void HotPixels::print(int events, int fed_id, double fraction, TH2F* hfedchannel
   // }
 
 
-  for(int i=0;i<count;++i) {
+  for(int i=0;i<count;++i) { // loop over pixels with hits 
 
     if(data[i]<=0) {cout<<" no counts "<<data[i]<<endl; continue;}
+    count4++;
 
     int index = array[i];
     if(index<=0) {cout<<" index wrong "<<index<<endl; continue;}
@@ -523,27 +561,32 @@ void HotPixels::print(int events, int fed_id, double fraction, TH2F* hfedchannel
     hfedchannelp->Fill(float(fed_id-1200),float(channel),float(data[i]));
     //if(fed_id==1253 && channel==44) cout<<roc<<" "<<dcol<<" "<<pix<<" "<<data[i]<<endl;
 
-    if(data[i]>cut) {
+    // Get the module name and tbm type 
+    string modName = " ",tbm=" ";
+    modName = MyConvert::moduleNameFromFedChan(fed_id,channel,roc,tbm);
+    
+    int realRocNum = roc;
+    int colROC = -1, rowROC = -1, layer =-1;
+    //string::size_type id;
+    if     ( modName.find("_LYR1_") != string::npos ) layer=1;  
+    else if( modName.find("_LYR2_") != string::npos ) layer=2;  
+    else if( modName.find("_LYR3_") != string::npos ) layer=3;  
+    else if( modName.find("_LYR4_") != string::npos ) layer=4;  
+
+    // all hits 
+    if(layer>0 &&layer<5) {
+	countInLayers[layer-1] += data[i];countPixInLayers[layer-1]++;
+    }
+    // hits above cut
+    if(data[i]>cut) { // check the number of hits is above the threshold cut
       num++;
       count0++;
 
-      // Get the module name and tbm type 
-      string modName = " ",tbm=" ";
-      modName = MyConvert::moduleNameFromFedChan(fed_id,channel,roc,tbm);
-
-
-      int realRocNum = roc;
-      int colROC = -1;
-      int rowROC = -1;
-      int layer =-1;
-      //string::size_type id;
-      if     ( modName.find("_LYR1_") != string::npos ) layer=1;  
-      else if( modName.find("_LYR2_") != string::npos ) layer=2;  
-      else if( modName.find("_LYR3_") != string::npos ) layer=3;  
-      else if( modName.find("_LYR4_") != string::npos ) layer=4;  
-
-      if(layer>0 &&layer<5) countInLayers[layer-1] += data[i];
-
+      // update later count 
+      if(layer>0 &&layer<5) {
+	countInLayersCut[layer-1] += data[i];
+	countPixInLayersCut[layer-1]++;
+      }
       if( layer==1 ) { // layer  1
 	//cout<<" this is layer 1 "<<modName<<endl;
 	// this is still wrong as it does not take the bit change into account WHAT DOES THIS MEAN?
@@ -823,7 +866,7 @@ void FindHotPixelFromRaw::endJob() {
     }
   }
 
-  cout<<" Number of noisy pixels: for selected cut "<<count0<<" for 1% "<<count1<<" for 0.1% "<<count2<<" for 0.01% "<<count3<<endl;
+  cout<<" Number of noisy pixels: for selected cut "<<count0<<" for cut at 1% "<<count1<<" for 0.1% "<<count2<<" for 0.01% "<<count3<<endl;
 
   // print noisy ROCs
   const int cutROC=40;
@@ -837,15 +880,44 @@ void FindHotPixelFromRaw::endJob() {
   }
 
   double tl1=0, tl2=0, tl3=0, tl4=0;
+  double tpl1=0, tpl2=0, tpl3=0, tpl4=0;
   double cl1=0, cl2=0, cl3=0, cl4=0;
+  double pl1=0, pl2=0, pl3=0, pl4=0;
+  cout<<"For pixel hits above the selected threshold threshold"<<endl;
+  for(int i=1200; i<1294;++i) {
+    double c = hotPixels[i-1200].printLayersCut(cl1,cl2,cl3,cl4);
+    double cp = hotPixels[i-1200].printPixLayersCut(pl1,pl2,pl3,pl4);
+    tl1 += cl1; tl2 += cl2; tl3 += cl3; tl4 += cl4;
+    tpl1 += pl1; tpl2 += pl2; tpl3 += pl3; tpl4 += pl4;
+    if(c>0.) cout<<"for fed "<<i
+		 <<" hit count "<<cl1<<" "<<cl2<<" "<<cl3<<" "<<cl4
+		 <<" pixel count "<<pl1<<" "<<pl2<<" "<<pl3<<" "<<pl4
+		 <<endl;
+
+  }
+  cout<<"Total hits count "<<tl1<<" "<<tl2<<" "<<tl3<<" "<<tl4  
+      <<" pixels "<<tpl1<<" "<<tpl2<<" "<<tpl3<<" "<<tpl4<<endl;  
+
+  tl1=0, tl2=0, tl3=0, tl4=0;
+  tpl1=0, tpl2=0, tpl3=0, tpl4=0;
+  cl1=0, cl2=0, cl3=0, cl4=0;
+  pl1=0, pl2=0, pl3=0, pl4=0;
+  cout<<"For all pixel hits "<<endl;
   for(int i=1200; i<1294;++i) {
     double c = hotPixels[i-1200].printLayers(cl1,cl2,cl3,cl4);
+    double cp = hotPixels[i-1200].printPixLayers(pl1,pl2,pl3,pl4);
     tl1 += cl1; tl2 += cl2; tl3 += cl3; tl4 += cl4;
-    if(c>0.) cout<<"for fed "<<i<<" pixel count "<<cl1<<" "<<cl2<<" "<<cl3<<" "<<cl4<<endl;
+    tpl1 += pl1; tpl2 += pl2; tpl3 += pl3; tpl4 += pl4;
+    if(c>0.) cout<<"for fed "<<i
+		 <<" hit count "<<cl1<<" "<<cl2<<" "<<cl3<<" "<<cl4
+		 <<" pixel count "<<pl1<<" "<<pl2<<" "<<pl3<<" "<<pl4
+		 <<endl;
+
   }
-  cout<<"Total counts "<<tl1<<" "<<tl2<<" "<<tl3<<" "<<tl4<<endl;
-  
-  cout<<"test counter "<<countTest<<endl;
+  cout<<"Total hits count "<<tl1<<" "<<tl2<<" "<<tl3<<" "<<tl4  
+      <<" pixels "<<tpl1<<" "<<tpl2<<" "<<tpl3<<" "<<tpl4<<endl;  
+
+  cout<<"all hit pixels "<<count4<<" test counter "<<countTest<<endl;
 }
 
 void FindHotPixelFromRaw::beginJob() {
