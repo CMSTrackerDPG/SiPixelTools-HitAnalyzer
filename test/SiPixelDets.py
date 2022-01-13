@@ -1,6 +1,7 @@
 import FWCore.ParameterSet.Config as cms
 from Configuration.StandardSequences.Eras import eras
-process = cms.Process("SiPixelDets",eras.Run2_2017)
+#process = cms.Process("SiPixelDets",eras.Run2_2017)
+process = cms.Process("SiPixelDets",eras.Run3)
 
 process.load("Configuration.Geometry.GeometryRecoDB_cff")
 
@@ -40,12 +41,15 @@ from Configuration.AlCa.GlobalTag import GlobalTag
 #process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:run1_data', '')
 #process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:run2_mc', '')  # phase 0
 #process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:run2_design', '') # phase 0
-process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:phase1_2017_design', '') # phase 1 WRONG in 92X
+#process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:phase1_2017_design', '') # phase 1 WRONG in 92X
 #process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:phase1_2017_realistic', '') # phase 1 OK
 #process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:upgrade2017', '') # phase 1
 #process.GlobalTag.globaltag = '92X_dataRun2_Express_v7' # 
 #process.GlobalTag.globaltag = '101X_dataRun2_Express_v7' # 
 # design & realistic give same module positions 
+# 2021
+process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:run3_data_express', '')
+#process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:run3_data_prompt', '')
 
 
 process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(1) )
