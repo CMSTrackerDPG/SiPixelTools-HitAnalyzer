@@ -1,25 +1,13 @@
 # dbs search --query='find file, file.numevents where run=172998 and site=caf.cern.ch and dataset=/MinimumBias/Run2011A-PromptReco-v6/RECO' > bla.txt
-# Cosmics 
-#das_client.py --limit=0 --query='file dataset=/Cosmics/Run2015A-PromptReco-v1/RECO run=248566' # NO
-# Collisions 
-# RAW
-#das_client.py --limit=0 --query='file dataset=/ZeroBias1/Run2015A-v1/RAW run=247324' # YES
-#RECO 
-# D
-#das_client.py --limit=0 --query='file dataset=/ZeroBias/Run2015D-PromptReco-v4/RECO run=260627' # YES
-
 # Lumi
 #das_client.py --limit=0 --query='file dataset=/AlCaLumiPixels/Run2015B-LumiPixels-PromptReco-v1/ALCARECO run=251643' # YES
 #das_client.py --limit=0 --query='file dataset=/AlCaLumiPixels/Run2015C-LumiPixels-v1/RAW run=254319' # YES
 #das_client.py --limit=0 --query='file dataset=/AlCaLumiPixels/Run2015D-LumiPixels-PromptReco-v4/ALCARECO run=260490' 
 
 # 2016
-#das_client.py --limit=0 --query='file dataset=/MinimumBias/Commissioning2016-v1/RAW run=266277' # 
 #das_client.py --limit=0 --query='file dataset=/ExpressPhysics/Run2016E-Express-v2/FEVT run=277148' # 
-#/cvmfs/cms.cern.ch/common/das_client  --limit=0 --query='file dataset=/ExpressPhysics/Run2016G-Express-v1/FEVT run=278975' 
 # 2017 
 #/cvmfs/cms.cern.ch/common/das_client  --limit=0 --query='file dataset=/ZeroBias/Run2017C-PromptReco-v3/RECO run=300742' 
-#/cvmfs/cms.cern.ch/common/das_client  --limit=0 --query='file dataset=/ExpressPhysics/Run2017E-Express-v1/FEVT run=303790' 
 #/cvmfs/cms.cern.ch/common/das_client  --limit=0 --query='file dataset=/ExpressPhysics/Run2017F-Express-v1/FEVT run=305282' 
 #/cvmfs/cms.cern.ch/common/dasgoclient  --limit=0 --query='file dataset=/ExpressPhysics/Run2017F-Express-v1/FEVT run=306432' 
 #/cvmfs/cms.cern.ch/common/dasgoclient  --limit=0 --query='file dataset=/ZeroBias/Run2017F-*/RECO'  # works
@@ -47,8 +35,9 @@
 #dasgoclient -query='file dataset=/HIMinimumBias0/HIRun2018A-v1/RAW run=327560'  # RAW HI
 
 # 2021 cosmics, express 
-#dasgoclient -query='file dataset=/ExpressCosmics/Commissioning2021-Express-v1/FEVT run=347272'  
-dasgoclient -query='file dataset=/ExpressPhysics/Commissioning2021-Express-v1/FEVT run=346450'  
-
-# 2021 ZB
+#dasgoclient -query='file dataset=/ExpressCosmics/Commissioning2021-Express-v1/FEVT run=347272'
+#dasgoclient -query='file dataset=/ExpressPhysics/Commissioning2021-Express-v1/FEVT run=346450'
+ # ZB
 #dasgoclient -query='file dataset=/ZeroBias/Commissioning2021-v1/RAW run=346396'  
+# 2022
+dasgoclient -query='file dataset=/ExpressCosmics/Commissioning2022-Express-v1/FEVT run=349079'

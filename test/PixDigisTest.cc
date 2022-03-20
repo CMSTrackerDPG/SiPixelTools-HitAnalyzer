@@ -109,6 +109,8 @@
 //#include "CalibTracker/SiPixelESProducers/interface/SiPixelGainCalibrationForHLTService.h"
 #endif
 
+#define TEST_MODULE // test pixel hits within one module, overlaps and invalid
+
 using namespace std;
 
 namespace {
@@ -188,6 +190,7 @@ private:
   TH2F *hrocMap1,*hrocMap2,*hrocMap3,*hrocMap4; 
   TH2F *hrocMap1_4,*hrocMap1_3,*hrocMap1_2,*hrocMap1_1; 
   TH2F *hrocMapS1,*hrocMapS2,*hrocMapS3,*hrocMapS4; 
+  TH2F *hrocMapD1,*hrocMapD2,*hrocMapD3,*hrocMapD4; 
   TH1D *hrocEne1,*hrocEne2,*hrocEne3,*hrocEne4; 
    
   //* hpixMapNoise; 
@@ -590,6 +593,15 @@ void PixDigisTest::beginJob() {
     hrocMapS3->SetOption("colz");
     hrocMapS4->SetOption("colz");
 
+    hrocMapD1 = fs->make<TH2F>("hrocMapD1","multiple digis L1",8*9,-4.5,4.5,2*13,-6.5,6.5);
+    hrocMapD2 = fs->make<TH2F>("hrocMapD2","multiple digis L2",8*9,-4.5,4.5,2*29,-14.5,14.5);
+    hrocMapD3 = fs->make<TH2F>("hrocMapD3","multiple digis L3",8*9,-4.5,4.5,2*45,-22.5,22.5);
+    hrocMapD4 = fs->make<TH2F>("hrocMapD4","multiple digis L4",8*9,-4.5,4.5,2*65,-32.5,32.5);
+    hrocMapD1->SetOption("colz");
+    hrocMapD2->SetOption("colz");
+    hrocMapD3->SetOption("colz");
+    hrocMapD4->SetOption("colz");
+
     hrocEne1 = fs->make<TH1D>("hrocEne1","energy deposited L1", 8*9,-4.5,4.5);
     hrocEne2 = fs->make<TH1D>("hrocEne2","energy deposited L2", 8*9,-4.5,4.5);
     hrocEne3 = fs->make<TH1D>("hrocEne3","energy deposited L3", 8*9,-4.5,4.5);
@@ -908,7 +920,7 @@ void PixDigisTest::analyze(const edm::Event& iEvent,
   // Iterate on detector units
   edm::DetSetVector<PixelDigi>::const_iterator DSViter;
   for(DSViter = pixelDigis->begin(); DSViter != pixelDigis->end(); DSViter++) {
-    bool valid = true;
+    //bool valid = true;
     unsigned int detid = DSViter->id; // = rawid
     DetId detId(detid);
     //const GeomDetUnit      * geoUnit = geom->idToDetUnit( detId );
@@ -960,7 +972,7 @@ void PixDigisTest::analyze(const edm::Event& iEvent,
     int ladder = 0; // 1-22
     int layer  = 0; // 1-3
     int module = 0; // 1-4
-    bool half  = false; // 
+    //bool half  = false; // 
     bool badL2Modules = false;
     bool newL1Modules = false;
 
@@ -1035,7 +1047,7 @@ void PixDigisTest::analyze(const edm::Event& iEvent,
       ladder = pbn.ladderName();
       layer  = pbn.layerName();
       module = pbn.moduleName();
-      half  = pbn.isHalfModule();
+      //half  = pbn.isHalfModule();
       shell = int(sh);
       // change the module sign for z<0
       if(shell==1 || shell==2) module = -module;
@@ -1073,7 +1085,9 @@ void PixDigisTest::analyze(const edm::Event& iEvent,
 	cout<<" BPix layer/ladder/module (cmssw) "
 	    <<layerC<<" "<<ladderC<<" "<<zindex<<" (online) "
 	    <<pbn.name()<<" "<<sh<<"("<<shell<<") "<<sector<<" "
-	    <<layer<<" "<<ladder<<" "<<module<<" "<<half<< endl;
+	    <<layer<<" "<<ladder<<" "<<module<<" size "<<DSViter->data.size()<< endl;
+	if(DSViter->data.size()==0) cout<<" empty det container "<<endl;
+
 	//cout<<" Barrel det, thick "<<detThick<<" "
 	//  <<" layer, ladder, module "
 	//  <<layer<<" "<<ladder<<" "<<zindex<<endl;
@@ -1131,17 +1145,16 @@ void PixDigisTest::analyze(const edm::Event& iEvent,
     //int oldCol=-1;
 
     // Clear the module matrix
-    if(layer==1) {
+    if(layer>0) {  // do only for bpix
       for(int col=0;col<416;++col)
 	for(int row=0;row<160;++row)
 	  oneModule[col][row]=0;
     }
 
+    //if(PRINT) 
     // Look at digis in this module 
     edm::DetSet<PixelDigi>::const_iterator  di;
-      for(di = DSViter->data.begin(); di != DSViter->data.end(); di++) {
-	//for(di = begin; di != end; di++) {
-	
+    for(di = DSViter->data.begin(); di != DSViter->data.end(); di++) {
 	numberOfDigis++;
 	totalNumOfDigis++;
 	count2++;
@@ -1163,7 +1176,6 @@ void PixDigisTest::analyze(const edm::Event& iEvent,
         else         rocZ = float(module) + 1.0 + (0.125/2.) - (float(rocInCol) * 0.125); //z
         float rocPhi = float(ladder) - 0.5 + (0.5/2.)   + (float(link) * 0.5); 
 	
-
 #ifdef USE_GAINS
 	// Apply the calibration 
 	float electrons = calibrate(detid, adc, col, row) / 1000.; //convert elec to kelec
@@ -1176,21 +1188,24 @@ void PixDigisTest::analyze(const edm::Event& iEvent,
 	  //electrons = int( vcal * theConversionFactor + theOffset); 
           //}
 #endif
-	
-	// Accumuate dcols, do only for L1
-	if(layer==1) {
+	// Accumuate dcols, do only for bpix
+	if(layer>0) {
 	  // fill the module 
-	  oneModule[col][row]++;
-	  int ind = moduleIndex(ladder,module);
-	  int roc = rocId(col,row);
-	  int dcol = (col%52)/2;
-	  dCols[ind][roc][dcol]++;
+	  //if(oneModule[col][row]>0) 
+	  //cout<<"same pixel twice "<<layer<<"/"<<ladder<<"/"<<module<<" col/row "<<col<<"/"<<row<<endl;
+ 	  oneModule[col][row]++;
+	  if(layer==1) {
+	    int ind = moduleIndex(ladder,module);
+	    int roc = rocId(col,row);
+	    int dcol = (col%52)/2;
+	    dCols[ind][roc][dcol]++;
 #ifdef DCOLS
-	  hAllDcols->Fill(float(ind*16*26+roc*26+dcol));
+	    hAllDcols->Fill(float(ind*16*26+roc*26+dcol));
 #endif
+	  } // laye 1
 	  //cout<<layer<<" "<<ladder<<" "<<module<<" "<<col<<" "<<row<<" "
 	  //  <<ind<<" "<<roc<<" "<<dcol<<" "<<dCols[ind][roc][dcol]<<endl;
-	}
+	} // layer>0
 
 	// // Analyse dcols with many hits 
 	// if(col==oldCol) { // same column 
@@ -1212,12 +1227,13 @@ void PixDigisTest::analyze(const edm::Event& iEvent,
        if(row>159) cout<<" Error: row index too large "<<row<<endl;
 
 #ifdef HISTOS
-       bool noise = false;
+       //bool noise = false;
 
 #ifdef SINGLE_MODULES
        float weight=1.; // adc; 
        float pixy = col; float pixx=row;
 #endif
+
        if(layer==1) { // convert adc to kelec
 	 //if(rescaleVcal) electrons = (vcal * 53.9 + offset_L1)/1000.; //L1 at 51.5fb-1 50->53.9
 	 //else            electrons = (vcal * conversionFactor_L1 + offset_L1)/1000.; //default 
@@ -1403,7 +1419,7 @@ void PixDigisTest::analyze(const edm::Event& iEvent,
 	 electrons = (vcal * conversionFactor + offset)/1000.; 
 	 helectronsf->Fill(electrons);
 	 //noise = false; //(ladder==6) || (module==-2) || (col==364) || (row==1);
-	 if(!noise) {		     
+	 //if(!noise) {		     
 	   hadc0ls->Fill(float(lumiBlock),float(adc));
 	   hadc0bx->Fill(float(bx),float(adc));
 	   if(ring==1)      {
@@ -1421,13 +1437,13 @@ void PixDigisTest::analyze(const edm::Event& iEvent,
 	   } else cout<<" wrong ring "<<ring<<endl;
 	   totalNumOfDigisF1++;
 	   numOfDigisPerDetF1++;
-	 } // noise 
+	   //} // noise 
 
        } else if(disk==2) {
 	 electrons = (vcal * conversionFactor + offset)/1000.; 
 	 helectronsf->Fill(electrons);
 	 // noise = (ladder==6) || (module==-2) || (col==364) || (row==1);
-	 if(!noise) {		     
+	 //if(!noise) {		     
 	   hadc0ls->Fill(float(lumiBlock),float(adc));
 	   hadc0bx->Fill(float(bx),float(adc));
 	   if(ring==1)      {
@@ -1445,12 +1461,12 @@ void PixDigisTest::analyze(const edm::Event& iEvent,
 	   } else cout<<" wrong ring "<<ring<<endl;
 	   totalNumOfDigisF2++;
 	   numOfDigisPerDetF2++;
-	 } // noise 
+	   //} // noise 
        } else if(disk==3) {
 	electrons = (vcal * conversionFactor + offset)/1000.; 
 	helectronsf->Fill(electrons);
 	 // noise = (ladder==6) || (module==-2) || (col==364) || (row==1);
-	 if(!noise) {		     
+	 //if(!noise) {		     
 	   hadc0ls->Fill(float(lumiBlock),float(adc));
 	   hadc0bx->Fill(float(bx),float(adc));
 	   if(ring==1) {
@@ -1468,21 +1484,20 @@ void PixDigisTest::analyze(const edm::Event& iEvent,
 	   } else cout<<" wrong ring "<<ring<<endl;
 	   totalNumOfDigisF3++;
 	   numOfDigisPerDetF3++;
-	 } // noise 
+	   //} // noise 
        } // end if layer
-
-       if(noise) valid = false;
-
+       //if(noise) valid = false;
+       
 #endif
        
-      } // end for digis in detunit
+    } // end for digis in detunit
 
       //if(PRINT) 
       //cout<<" for det "<<detid<<" digis = "<<numberOfDigis<<endl;
 
 #ifdef HISTOS
       // Some histos
-      if(valid) {  // to igore noise pixels
+      //if(valid) {  // to igore noise pixels
 	if(subid==2) {   // forward
 	  
 	  hdetrF->Fill(detR);
@@ -1530,8 +1545,7 @@ void PixDigisTest::analyze(const edm::Event& iEvent,
 	  hshellid->Fill(float(shell));
 	  hsectorid->Fill(float(sector));
 
-	  if(layer==1) {
-	    
+	  if(layer==1) {	    
 	    hladder1id->Fill(float(ladder));
 	    hz1id->Fill(float(module));
 	    hdetMap1->Fill(float(module),float(ladder));
@@ -1569,6 +1583,33 @@ void PixDigisTest::analyze(const edm::Event& iEvent,
 	    
 	  } // layer
 
+#ifdef TEST_MODULE
+	  //cout<<"test module "<<endl;
+	  if(layer>0) {  // do only for bpix
+	    for(int col=0;col<416;++col) {
+	      for(int row=0;row<160;++row) {
+		//if(oneModule[col][row]>0) cout<<"pixel hit "<<oneModule[col][row]<<endl;
+		if(oneModule[col][row]>1) {
+		  int roc = rocId(col,row);  // 0-15, column, row
+		  int link = int(roc/8); // link 0 & 1
+		  int rocInCol = roc%8; // 0-7
+		  float rocZ=0;
+		  if(module>0) rocZ = float(module) + (0.125/2.) - (float(rocInCol) * 0.125); //z
+		  else         rocZ = float(module) + 1.0 + (0.125/2.) - (float(rocInCol) * 0.125); //z
+		  float rocPhi = float(ladder) - 0.5 + (0.5/2.)   + (float(link) * 0.5); 
+		  if     (layer==1) hrocMapD1->Fill(rocZ,rocPhi);
+		  else if(layer==2) hrocMapD2->Fill(rocZ,rocPhi);
+		  else if(layer==3) hrocMapD3->Fill(rocZ,rocPhi);
+		  else if(layer==4) hrocMapD4->Fill(rocZ,rocPhi);
+		  cout<<"same pixel hit more than once "<<oneModule[col][row]
+		      <<" module "<<layer<<"/"<<ladder<<"/"<<module
+		      <<" col/row "<<col<<"/"<<row<<" roc(cmssw) "<<roc<<endl;
+		}
+	      }
+	    }
+	  }
+#endif
+
 	  // DCOL code 
 	  if(layer==1) {
 	    const int dcolThr = 100;
@@ -1579,8 +1620,6 @@ void PixDigisTest::analyze(const edm::Event& iEvent,
 	    for(int col=0;col<416;col+=2) {
 	      //cout<<col<<endl;
 	      int dcolCount=0;  // hits in a dcol
-
-
 
 	      // ROC 
 	      if( (col>0)  && (col%52 == 0) ) { // 1 roc finished 
@@ -1704,7 +1743,7 @@ void PixDigisTest::analyze(const edm::Event& iEvent,
 	} // if bpix	
 	
 
-      } // if valid
+	//} // if valid
 #endif
 
   } // end for det-units

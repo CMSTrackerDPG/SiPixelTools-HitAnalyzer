@@ -695,9 +695,9 @@ edm::EDGetTokenT<HFRecHitCollection> HFHitsToken_;
   TProfile2D *hrocSizeXMap3, *hrocSizeYMap3,*hrocClucharMap3,*hrocPixcharMap3;
   TProfile2D *hrocSizeXMap4, *hrocSizeYMap4,*hrocClucharMap4,*hrocPixcharMap4;
 
-  TH1D *hrocLadder1, *hrocZ11, *hrocZ12;
-  TH1D *hpixRocRate1,*hpixRocRate2,*hpixRocRate3,*hpixRocRate4, 
-    *hcluRocRate1,*hcluRocRate2,*hcluRocRate3,*hcluRocRate4;
+  //TH1D *hrocLadder1, *hrocZ11, *hrocZ12;
+  //TH1D *hpixRocRate1,*hpixRocRate2,*hpixRocRate3,*hpixRocRate4, 
+  //*hcluRocRate1,*hcluRocRate2,*hcluRocRate3,*hcluRocRate4;
 
 #endif
 
@@ -1199,17 +1199,13 @@ void PixClusterAna::beginJob() {
   hevent = fs->make<TH1D>("hevent","event",100,0,10000000.);
   //horbit = fs->make<TH1D>("horbit","orbit",100, 0,100000000.);
 
-  hlumi1  = fs->make<TH1D>("hlumi1", "LS", 2000,0,2000.);
-  hlumi0  = fs->make<TH1D>("hlumi0", "LS", 2000,0,2000.);
-  hlumi   = fs->make<TH1D>("hlumi", "LS",   2000,0,2000.);
-  //hlumi10 = fs->make<TH1D>("hlumi10", "LS", 2000,0,2000.);
-  //hlumi11 = fs->make<TH1D>("hlumi11", "lumi11",   2000,0,2000.);
-  //hlumi12 = fs->make<TH1D>("hlumi12", "lumi12",   2000,0,2000.);
-  //hlumi13 = fs->make<TH1D>("hlumi13", "lumi13",   2000,0,2000.);
-  //hlumi14 = fs->make<TH1D>("hlumi14", "lumi14",   2000,0,2000.);
+  const float hlumiH=10000.;
+  hlumi1  = fs->make<TH1D>("hlumi1","LS", 1000,0,hlumiH);
+  hlumi0  = fs->make<TH1D>("hlumi0","LS", 1000,0,hlumiH);
+  hlumi   = fs->make<TH1D>("hlumi", "LS", 1000,0,hlumiH);
 
-  hbx0    = fs->make<TH1D>("hbx0",   "bx",   4000,0,4000.);  
-  hbx    = fs->make<TH1D>("hbx",   "bx",     4000,0,4000.);  
+  hbx0   = fs->make<TH1D>("hbx0",  "bx",   4000,0,4000.);  
+  hbx    = fs->make<TH1D>("hbx",   "bx",   4000,0,4000.);  
 
   hgz1 = fs->make<TH1D>("hgz1","layer1, clus vs z",600,-30.,30.);
   hgz2 = fs->make<TH1D>("hgz2","layer2, clus vs z",600,-30.,30.);
@@ -1523,28 +1519,27 @@ void PixClusterAna::beginJob() {
    hrocPixcharMap4 = fs->make<TProfile2D>("hrocPixcharMap4"," ",8*9,-4.5,4.5,2*65,-32.5,32.5,0.,1000.);
    hrocPixcharMap4->SetOption("colz");
    
-   hrocLadder1 = fs->make<TH1D>("hrocLadder1"," ",2*13,-6.5,6.5);
-   hrocZ11 = fs->make<TH1D>("hrocZ11","roc pix occ. l1 inner",8*9,-4.5,4.5);
-   hrocZ12 = fs->make<TH1D>("hrocZ12","roc pix occ. l1 outer",8*9,-4.5,4.5);
+   //hrocLadder1 = fs->make<TH1D>("hrocLadder1","roc ladder L1",2*13,-6.5,6.5);
+   //hrocZ11 = fs->make<TH1D>("hrocZ11","roc pix occ. l1 inner",8*9,-4.5,4.5);
+   //hrocZ12 = fs->make<TH1D>("hrocZ12","roc pix occ. l1 outer",8*9,-4.5,4.5);
    
-   hpixRocRate1 = fs->make<TH1D>("hpixRocRate1"," ",8*9,-4.5,4.5);
-   hpixRocRate2 = fs->make<TH1D>("hpixRocRate2"," ",8*9,-4.5,4.5);
-   hpixRocRate3 = fs->make<TH1D>("hpixRocRate3"," ",8*9,-4.5,4.5);
-   hpixRocRate4 = fs->make<TH1D>("hpixRocRate4"," ",8*9,-4.5,4.5);
-   hcluRocRate1 = fs->make<TH1D>("hcluRocRate1"," ",8*9,-4.5,4.5);
-   hcluRocRate2 = fs->make<TH1D>("hcluRocRate2"," ",8*9,-4.5,4.5);
-   hcluRocRate3 = fs->make<TH1D>("hcluRocRate3"," ",8*9,-4.5,4.5);
-   hcluRocRate4 = fs->make<TH1D>("hcluRocRate4"," ",8*9,-4.5,4.5);
+   //hpixRocRate1 = fs->make<TH1D>("hpixRocRate1","Roc pix rate in z L1",8*9,-4.5,4.5);
+   //hpixRocRate2 = fs->make<TH1D>("hpixRocRate2"," ",8*9,-4.5,4.5);
+   //hpixRocRate3 = fs->make<TH1D>("hpixRocRate3"," ",8*9,-4.5,4.5);
+   //hpixRocRate4 = fs->make<TH1D>("hpixRocRate4"," ",8*9,-4.5,4.5);
+   //hcluRocRate1 = fs->make<TH1D>("hcluRocRate1"," ",8*9,-4.5,4.5);
+   //hcluRocRate2 = fs->make<TH1D>("hcluRocRate2"," ",8*9,-4.5,4.5);
+   //hcluRocRate3 = fs->make<TH1D>("hcluRocRate3"," ",8*9,-4.5,4.5);
+   //hcluRocRate4 = fs->make<TH1D>("hcluRocRate4"," ",8*9,-4.5,4.5);
 #endif
 
    sizeH = 1000;
-   highH = 3000.; 
+   highH = hlumiH; 
    hclusls = fs->make<TProfile>("hclusls","clus vs ls",sizeH,0.,highH,0.0,50000.);
    hpixls  = fs->make<TProfile>("hpixls", "pix vs ls ",sizeH,0.,highH,0.0,200000.);
 
 #ifdef PV
    hpvls = fs->make<TProfile>("hpvls","pvs vs ls",sizeH,0.,highH,0.0,10000.);
-   //hpvlsn = fs->make<TProfile>("hpvlsn","pvs/lumi vs ls",sizeH,0.,highH,0.0,1000.);
    hpvs   = fs->make<TH1D>("hpvs", "pvs",100,-0.5,99.5);
    hpixpv  = fs->make<TProfile>("hpixpv","pv vs pix", 100,0.,100,0.0,100000.);
    hclupv  = fs->make<TProfile>("hclupv","pv vs clus",100,0.,100,0.0,50000.);
@@ -1722,7 +1717,7 @@ void PixClusterAna::beginJob() {
 
 #ifdef LS_TESTS
    sizeH = 250;
-   highH =  250.; 
+   highH =  hlumiH; 
    hcharClu1ls = fs->make<TProfile>("hcharClu1ls","clu char 1 vs ls",sizeH,0.,highH,0.0,400.);
    hcharPix1ls = fs->make<TProfile>("hcharPix1ls","pix char 1 vs ls",sizeH,0.,highH,0.0,400.);
    hsizeClu1ls = fs->make<TProfile>("hsizeClu1ls","clu size 1 vs ls",sizeH,0.,highH,0.0,400.);
@@ -1735,11 +1730,11 @@ void PixClusterAna::beginJob() {
    hcharClu4ls = fs->make<TProfile>("hcharClu4ls","clu char 4 vs ls",sizeH,0.,highH,0.0,400.);
    hcharPix4ls = fs->make<TProfile>("hcharPix4ls","pix char 4 vs ls",sizeH,0.,highH,0.0,400.);
    hsizeClu4ls = fs->make<TProfile>("hsizeClu4ls","clu size 4 vs ls",sizeH,0.,highH,0.0,400.);
-
+   sizeH = 1000;
    hpixb4l  = fs->make<TProfile>("hpixb4l", "pixb4 vs ls ", sizeH,0.,highH,0.0,100000.);
    hclusb4l = fs->make<TProfile>("hclusb4l","clusb4 vs ls", sizeH,0.,highH,0.0,30000.);
    hpixb1l  = fs->make<TProfile>("hpixb1l", "pixb1 vs ls", sizeH,0.,highH,0.0,100000.);
-   hclusb1l = fs->make<TProfile>("hclusb1l","clusb1 vs s",sizeH,0.,highH,0.0,30000.);
+   hclusb1l = fs->make<TProfile>("hclusb1l","clusb1 vs ls",sizeH,0.,highH,0.0,30000.);
    hpixb2l  = fs->make<TProfile>("hpixb2l", "pixb2 vs ls ",sizeH,0.,highH,0.0,100000.);
    hclusb2l = fs->make<TProfile>("hclusb2l","clusb2 vs ls",sizeH,0.,highH,0.0,30000.);
    hpixb3l  = fs->make<TProfile>("hpixb3l", "pixb3 vs ls",sizeH,0.,highH,0.0,100000.);
@@ -1754,6 +1749,8 @@ void PixClusterAna::beginJob() {
 
 
 #ifdef Lumi
+   sizeH = 250;
+   highH =  hlumiH; 
    hinstbx = fs->make<TProfile>("hinstbx", "inst lumi vs bx ",4000,-0.5,3999.5,0.0,100.);
    hinst  = fs->make<TH1D>("hinst", "inst lumi",100,0.0,10.);
    hinstls  = fs->make<TProfile>("hinstls", "inst bx lumi vs ls ",sizeH,0.,highH,0.0,1000.);
@@ -2128,18 +2125,18 @@ void PixClusterAna::endJob(){
   hrocMap3->Scale(norm);
   hrocMap4->Scale(norm);
 
-  hpixRocRate1->Scale(norm1/2.); // nptmalize to roc
-  hpixRocRate2->Scale(norm2/2.);
-  hpixRocRate3->Scale(norm3/2.);
-  hpixRocRate4->Scale(norm4/2.);
-  hcluRocRate1->Scale(norm1/2.);
-  hcluRocRate2->Scale(norm2/2.);
-  hcluRocRate3->Scale(norm3/2.);
-  hcluRocRate4->Scale(norm4/2.);
+  //hpixRocRate1->Scale(norm1/2.); // nptmalize to roc
+  // hpixRocRate2->Scale(norm2/2.);
+  //hpixRocRate3->Scale(norm3/2.);
+  //hpixRocRate4->Scale(norm4/2.);
+  //hcluRocRate1->Scale(norm1/2.);
+  //hcluRocRate2->Scale(norm2/2.);
+  //hcluRocRate3->Scale(norm3/2.);
+  //hcluRocRate4->Scale(norm4/2.);
 
-  hrocLadder1->Scale(norm/64.); // 8 modules in a ladder, 8 rocs in z per module  
-  hrocZ11->Scale(norm1); // only in or outer ladder so 2 times less 
-  hrocZ12->Scale(norm1);
+  //hrocLadder1->Scale(norm/64.); // 8 modules in a ladder, 8 rocs in z per module  
+  //hrocZ11->Scale(norm1); // only in or outer ladder so 2 times less 
+  //hrocZ12->Scale(norm1);
 #endif
 
 #ifdef TESTING_ADC
@@ -3136,8 +3133,8 @@ void PixClusterAna::analyze(const edm::Event& e,
 #ifdef ROC_RATE
 	    hrocMap1->Fill(rocZ,rocPhi);
 	    hrocPixcharMap1->Fill(rocZ,rocPhi,adc);
-	    hrocLadder1->Fill(rocPhi);
-	    hpixRocRate1->Fill(rocZ);
+	    //hrocLadder1->Fill(rocPhi);
+	    //hpixRocRate1->Fill(rocZ);
 #endif
 	    hpcols1->Fill(pixy);
 	    hprows1->Fill(pixx);
@@ -3151,11 +3148,11 @@ void PixClusterAna::analyze(const edm::Event& e,
 	
 #ifdef LAY1_SPLIT    
 	    if(inner) {
-	      hpixcharge11->Fill(adc); hrocZ11->Fill(rocZ);
+	      hpixcharge11->Fill(adc); //hrocZ11->Fill(rocZ);
 	      if(ring12) hpixcharge1InR12->Fill(adc);
 	      else       hpixcharge1InR34->Fill(adc);
 	    }  else { // out
-	      hpixcharge12->Fill(adc); hrocZ12->Fill(rocZ);
+	      hpixcharge12->Fill(adc); //hrocZ12->Fill(rocZ);
 	      if(ring12) hpixcharge1OutR12->Fill(adc);
 	      else       hpixcharge1OutR34->Fill(adc);
 	    }  
@@ -3287,7 +3284,7 @@ void PixClusterAna::analyze(const edm::Event& e,
 #ifdef ROC_RATE
 	      hrocMap2->Fill(rocZ,rocPhi);
 	      hrocPixcharMap2->Fill(rocZ,rocPhi,adc);
-	      hpixRocRate2->Fill(rocZ);
+	      //hpixRocRate2->Fill(rocZ);
 #endif	      
 #ifdef PHI_PROFILES
 	      hpixcharPhi2->Fill(gPhi,adc);
@@ -3379,7 +3376,7 @@ void PixClusterAna::analyze(const edm::Event& e,
 #ifdef ROC_RATE
 	    hrocMap3->Fill(rocZ,rocPhi);
 	    hrocPixcharMap3->Fill(rocZ,rocPhi,adc);
-	    hpixRocRate3->Fill(rocZ);
+	    //hpixRocRate3->Fill(rocZ);
 #endif
 
 #ifdef SINGLE_MODULES
@@ -3469,7 +3466,7 @@ void PixClusterAna::analyze(const edm::Event& e,
 #ifdef ROC_RATE
 	    hrocMap4->Fill(rocZ,rocPhi);
 	    hrocPixcharMap4->Fill(rocZ,rocPhi,adc);
-	    hpixRocRate4->Fill(rocZ);
+	    //hpixRocRate4->Fill(rocZ);
 #endif
 
 #ifdef LS_TESTS
@@ -3597,7 +3594,7 @@ void PixClusterAna::analyze(const edm::Event& e,
 #endif
 
 #ifdef ROC_RATE
-	    hcluRocRate1->Fill(rocZ);
+	  //hcluRocRate1->Fill(rocZ);
 	    hrocClucharMap1->Fill(rocZ,rocPhi,ch);
 	    hrocSizeXMap1->Fill(rocZ,rocPhi,sizeX);
 	    hrocSizeYMap1->Fill(rocZ,rocPhi,sizeY);
@@ -3792,7 +3789,7 @@ void PixClusterAna::analyze(const edm::Event& e,
 	    //htest3->Fill(ch,float(size));
 
 #ifdef ROC_RATE
-	    hcluRocRate2->Fill(rocZ);
+	    //hcluRocRate2->Fill(rocZ);
 	    hrocClucharMap2->Fill(rocZ,rocPhi,ch);
 	    hrocSizeXMap2->Fill(rocZ,rocPhi,sizeX);
 	    hrocSizeYMap2->Fill(rocZ,rocPhi,sizeY);
@@ -3877,7 +3874,7 @@ void PixClusterAna::analyze(const edm::Event& e,
 	  hsizeyz3->Fill(zPos,sizeY);
 
 #ifdef ROC_RATE
-	  hcluRocRate3->Fill(rocZ);
+	  //hcluRocRate3->Fill(rocZ);
 	  hrocClucharMap3->Fill(rocZ,rocPhi,ch);
 	  hrocSizeXMap3->Fill(rocZ,rocPhi,sizeX);
 	  hrocSizeYMap3->Fill(rocZ,rocPhi,sizeY);
@@ -3969,7 +3966,7 @@ void PixClusterAna::analyze(const edm::Event& e,
 	  //hsizeXCluls->Fill(lumiBlock,sizeX);
 
 #ifdef ROC_RATE
-	  hcluRocRate4->Fill(rocZ);
+	  //hcluRocRate4->Fill(rocZ);
 	  hrocClucharMap4->Fill(rocZ,rocPhi,ch);
 	  hrocSizeXMap4->Fill(rocZ,rocPhi,sizeX);
 	  hrocSizeYMap4->Fill(rocZ,rocPhi,sizeY);

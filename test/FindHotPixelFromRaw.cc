@@ -883,7 +883,7 @@ void FindHotPixelFromRaw::endJob() {
   double tpl1=0, tpl2=0, tpl3=0, tpl4=0;
   double cl1=0, cl2=0, cl3=0, cl4=0;
   double pl1=0, pl2=0, pl3=0, pl4=0;
-  cout<<"For pixel hits above the selected threshold threshold"<<endl;
+  cout<<"For pixel hits above the selected threshold for fraction "<<fraction_<<endl;
   for(int i=1200; i<1294;++i) {
     double c = hotPixels[i-1200].printLayersCut(cl1,cl2,cl3,cl4);
     double cp = hotPixels[i-1200].printPixLayersCut(pl1,pl2,pl3,pl4);
@@ -895,14 +895,15 @@ void FindHotPixelFromRaw::endJob() {
 		 <<endl;
 
   }
-  cout<<"Total hits count "<<tl1<<" "<<tl2<<" "<<tl3<<" "<<tl4  
-      <<" pixels "<<tpl1<<" "<<tpl2<<" "<<tpl3<<" "<<tpl4<<endl;  
+  cout<<"Total hits for fraction> "<<fraction_<<" is: hits "
+      <<tl1<<" "<<tl2<<" "<<tl3<<" "<<tl4  
+      <<" pixels: "<<tpl1<<" "<<tpl2<<" "<<tpl3<<" "<<tpl4<<endl;  
 
   tl1=0, tl2=0, tl3=0, tl4=0;
   tpl1=0, tpl2=0, tpl3=0, tpl4=0;
   cl1=0, cl2=0, cl3=0, cl4=0;
   pl1=0, pl2=0, pl3=0, pl4=0;
-  cout<<"For all pixel hits "<<endl;
+  cout<<"For all pixel hits, no fraction cut "<<endl;
   for(int i=1200; i<1294;++i) {
     double c = hotPixels[i-1200].printLayers(cl1,cl2,cl3,cl4);
     double cp = hotPixels[i-1200].printPixLayers(pl1,pl2,pl3,pl4);
@@ -917,7 +918,7 @@ void FindHotPixelFromRaw::endJob() {
   cout<<"Total hits count "<<tl1<<" "<<tl2<<" "<<tl3<<" "<<tl4  
       <<" pixels "<<tpl1<<" "<<tpl2<<" "<<tpl3<<" "<<tpl4<<endl;  
 
-  cout<<"all hit pixels "<<count4<<" test counter "<<countTest<<endl;
+  cout<<"all hit pixels "<<count4<<" for a specific channel "<<countTest<<endl;
 }
 
 void FindHotPixelFromRaw::beginJob() {
