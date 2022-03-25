@@ -51,6 +51,7 @@ using namespace std;
 #define TEST_LAYERS
 
 namespace {
+  const bool FULL_DECODE = true;
   bool printErrors  = false;
   bool printData    = false;
   bool printHeaders = false;
@@ -58,8 +59,6 @@ namespace {
   const bool CHECK_PIXELS = true;
   const bool PRINT_BASELINE = false;
   const bool SHOW_PERMANENT_MASK = false; //ignore channelks which are always masked 
-  // to store the previous pixel 
-  int fed0 = -1, chan0 = -1, roc0 = -1, dcol0 = -1, pix0 =-1, count0=-1;
   int countDecodeErrors1=0, countDecodeErrors2=0;
 #ifdef PHASE1
   const int n_of_FEDs = 139;
@@ -77,25 +76,183 @@ namespace {
 // Class to get names, hide in namespace to avoid conflicts 
 class MyConvert {
 public:
-  MyConvert() {}
+  MyConvert();
   ~MyConvert() {}
   static string moduleNameFromFedChan(int fed,int fedChan, int roc, string & tbm);
+  string moduleNameFromFedChan(int fed,int fedChan);
   static int layerFromName(string name);
+  int layerFromFedChan(int fed, int fedChan);
+  static int ladderFromName(string name);
+  static int moduleFromName(string name);
+  static int shellFromName(string name);
 
 private:
+  int layerNumber[139][48];
+  string moduleName[139][48];
 };
+
+MyConvert::MyConvert() {
+
+  for(int fed=0; fed<139; ++fed) {
+    for(int chan=0; chan<48; ++chan) {
+      layerNumber[fed][chan]=0;
+      moduleName[fed][chan]="";
+    }
+  }
+
+  ifstream infile;                        // input file, name data_file uniqe
+  infile.open("translation.dat",ios::in); // open data file
+
+  if (infile.fail()) {
+    cout << " File not found " << endl;
+    return; // 
+  }
+
+  //string line;
+  char line[500];
+  infile.getline(line,500,'\n');
+  
+  //bool print = false;
+  string name, modName=" ";
+  int fec,mfec,mfecChan,hub,port,rocId,fed,fedChan,rocOrder;
+  string tbm = " ";
+  int fedOld=-1, fedChanOld=-1;
+  for(int i=0;i<1000000;++i) {
+    // first get the name, then  decide whether it is barrel and endcap
+    infile>>name;
+    infile>>tbm>>fec>>mfec>>mfecChan>>hub>>port>>rocId>>fed>>fedChan>>rocOrder;
+    
+    // if(name==" ")continue;
+    // if (name[0]=='F') {
+    //   // endcap doesn't have the TBM token to read
+    //   infile>>tbm>>fec>>mfec>>mfecChan>>hub>>port>>rocId>>fed>>fedChan>>rocOrder;
+    // } else {
+    //   infile>>tbm>>fec>>mfec>>mfecChan>>hub>>port>>rocId>>fed>>fedChan>>rocOrder;
+    // }
+    // cout<<name<<endl;
+
+    if ( infile.eof() != 0 ) {
+      //cout<< " end of file " << endl;
+      break;;
+    } else if (infile.fail()) { // check for errors
+      cout << "Cannot read data file" << endl;
+      return;
+    }
+    
+    if(fed==fedOld && fedChanOld==fedChan) continue;
+    fedOld = fed;
+    fedChanOld = fedChan;
+
+    if (fed<1294) { // do only for bpix 
+      //barrel module name requested, do not use the roc0 parameter
+
+      // strip out the _ROC section from the name because it is not needed to identify the ROC number
+      string::size_type idx;
+      idx = name.find("_ROC");
+      if(idx != string::npos) {
+	modName = name.substr(0,(idx));
+	moduleName[fed-1200][fedChan-1] = modName;
+	int layer = layerFromName(modName);
+	layerNumber[fed-1200][fedChan-1] = layer;
+
+      }
+
+    } else {  // fpix 
+      modName = name; 
+      moduleName[fed-1200][fedChan-1] = modName;
+      // skip layer number
+    } 
+  }  // end line loop
+  
+  infile.close();  
+
+  // print 
+  // for(int fed=0; fed<94; ++fed) {
+  //   for(int chan=0; chan<48; ++chan) {
+  //     cout<<"fed "<<(fed+1200)<<" chan "<<(chan+1)<<" module "<<moduleName[fed][chan]
+  // 	  <<" layer "<<layerNumber[fed][chan];
+  //     if(layerNumber[fed][chan]>0) cout<<" found ";
+  //     else cout<<" not found ";
+  //     cout<<endl;
+  //   }
+  // }
+
+} // end constructor 
+
+string MyConvert::moduleNameFromFedChan(int fed,int fedChan) {
+  string module="";
+  if(fed<1200 || fed>1338 || fedChan<1 || fedChan>48) {
+    cout<<" wrong fed/channel "<<fed<<"/"<<fedChan<<endl;
+    return module;
+  }
+  module = moduleName[fed-1200][fedChan-1];
+  //if(fed<1294 && module=="") cout<<"module name not fund "<<fed<<"/"<<fedChan<<endl;
+  return module;
+}
+int MyConvert::layerFromFedChan(int fed, int fedChan) {
+  int layer = 0;
+  if(fed<1200 || fed>1338 || fedChan<1 || fedChan>48) {
+    cout<<" wrong fed/channel "<<fed<<"/"<<fedChan<<endl;
+    return layer;
+  }
+  layer = layerNumber[fed-1200][fedChan-1];
+  if(fed<1294 && layer==0) cout<<"layer number not fund "<<fed<<"/"<<fedChan<<endl;
+  return layer;
+}
 
 // layer number form module name 
 int MyConvert::layerFromName(string modName) {
   int layer=0;
-
-  if(modName == " ") layer = -1;  // non existant 
-  if     ( modName.find("_LYR1_") != string::npos ) layer=1;  
-  else if( modName.find("_LYR2_") != string::npos ) layer=2;  
-  else if( modName.find("_LYR3_") != string::npos ) layer=3;  
-  else if( modName.find("_LYR4_") != string::npos ) layer=4;  
-
+  string::size_type idx;
+  for(int i=1; i<=4; ++i) {
+    string name = "_LYR" + std::to_string(i);
+    idx=modName.find(name);
+    if(idx != string::npos) {layer=i; break;}
+  }
   return layer;
+}
+// laddder number from module name 
+int MyConvert::ladderFromName(string modName) {
+  int ladder=0;
+  string::size_type idx;
+  for(int i=1;i<=32;++i) {
+    string name = "_LDR" + std::to_string(i);
+    idx=modName.find(name);
+    if(idx != string::npos) {ladder=i; break;}
+  }
+  // add sign for I/O
+  int shell = shellFromName(modName);
+  if(shell==1 || shell==3) ladder *= (-1);
+  return ladder;
+}
+// module number from module name 
+int MyConvert::moduleFromName(string modName) {
+  int module=0;
+  string::size_type idx;
+  for(int i=1;i<=4;++i) {
+    string name = "_MOD" + std::to_string(i);
+    idx=modName.find(name);
+    if(idx != string::npos) {module=i; break;}
+  }
+  // add sign for +-z
+  int shell = shellFromName(modName);
+  if(shell==1 || shell==2) module *= (-1);
+  return module;
+}
+// shell number from module name 
+int MyConvert::shellFromName(string modName) {
+  int shell=0;
+  //1-BmO,2-BmI,3-BpO,4-BpI
+  string::size_type idx;
+  idx = modName.find("_BmO");
+  if(idx != string::npos) {shell=1; return shell;}
+  idx = modName.find("_BmI");
+  if(idx != string::npos) {shell=2; return shell;}
+  idx = modName.find("_BpO");
+  if(idx != string::npos) {shell=3; return shell;}
+  idx = modName.find("_BpI");
+  if(idx != string::npos) {shell=4; return shell;}
+  return 0;
 }
 
 // Method returns the module name and the tbm type as strings
@@ -106,7 +263,6 @@ string MyConvert::moduleNameFromFedChan(int fed0,int fedChan0, int roc0, string 
 
   ifstream infile;                        // input file, name data_file uniqe
   infile.open("translation.dat",ios::in); // open data file
-
 
   if (infile.fail()) {
     cout << " File not found " << endl;
@@ -163,7 +319,7 @@ string MyConvert::moduleNameFromFedChan(int fed0,int fedChan0, int roc0, string 
             }
             break;
         }
-    } else {  // DOES NOT YET WORK FOR BPIX
+    } else {  // DOES NOT YET WORK FOR FPIX
         // endcap module name requested, use the roc0 parameter
         if(fed==fedOld && fedChanOld==fedChan && rocOld==rocOrder) continue;
         fedOld = fed;
@@ -194,15 +350,16 @@ string MyConvert::moduleNameFromFedChan(int fed0,int fedChan0, int roc0, string 
 /////////////////////////////////////////////////////////////////////////////
 class MyDecode {
 public:
-  MyDecode() {}
+  MyDecode();
   ~MyDecode() {}
   int error(int error,int & fedChannel, int fed, int & stat1, int & stat2, bool print=false);
   int data(int word, int & fedChannel, int fed, int & stat1, int & stat2, bool print=false);
-  static int header(unsigned long long word64, int fed, bool print, unsigned int & bx);
-  static int trailer(unsigned long long word64, int fed, bool print);
+  int header(unsigned long long word64, int fed, bool print, unsigned int & bx);
+  int trailer(unsigned long long word64, int fed, bool print);
   static int convertToCol(int dcol,int pix);
   static int convertToRow(int pix);
-  static int checkLayerLink(int fed, int chan);
+  int getLayer(int fed, int chan);
+  string getModName(int fed, int chan);
   int get_adc(void) {return adc_;}
   int get_roc(void) {return roc_;}
   int get_dcol(void) {return dcol_;}
@@ -214,15 +371,26 @@ public:
 private:
   int channel_, adc_, roc_, dcol_, pix_, col_, row_;
   int selectedFED_, selectedChannel_;
-};
-/////////////////////////////////////////////////////////////////////////////
-//Returns 1,2,3 for layer 1,2,3 full modules, 11,12,13 for 1/2 modules
-// 0 for fpix
-// needs fedid 0-31, and channel 1-36.  DOES NOT WORK FOR PHASE1!!!!
-int MyDecode::checkLayerLink(int fed, int chan) {
-  int layer = 0;
+  // to store the previous pixel 
+  int fed0, chan0, roc0, dcol0, pix0, col0, row0, count0;
 
+  MyConvert converter;
+};
+MyDecode::MyDecode() {
+  cout<<"Construct MyDecode "<<endl;
+  selectedFED_=-1; selectedChannel_=-1;
+  cout<<selectedFED_<<" "<<selectedChannel_<<endl;
+  fed0 = -1, chan0 = -1, roc0 = -1, dcol0 =-1, pix0 =-1, col0=-1, row0=-1, count0=-1;
+}
+/////////////////////////////////////////////////////////////////////////////
+//Returns 1,2,3,4 for layer 1,2,3,4, 0 for fpix
+int MyDecode::getLayer(int fed, int chan) {
+  int layer = converter.layerFromFedChan(fed,chan);
   return layer;
+}
+string MyDecode::getModName(int fed, int chan) {
+  string name = converter.moduleNameFromFedChan(fed,chan);
+  return name;
 }
 void MyDecode::setPrint(int fed, int chan) {
   selectedFED_=fed;
@@ -464,15 +632,9 @@ int MyDecode::data(int word, int & fedChannel, int fed, int & stat1, int & stat2
   const unsigned int dclmsk = 0x1f0000;
 
 #ifdef PHASE1
-  //const unsigned int rocmsk  = 0x1e00000;  // 4 bits 
-  //const unsigned int chnlmsk = 0xfe000000; // 7 bits 
-  //const unsigned int rocshift = 21;
-  //const unsigned int linkshift = 25;
-
   // for layer-1
   const unsigned int rowmsk = 0x7f00; 
   const unsigned int colmsk = 0x1f8000;
-
 #endif
   // for both phase0 and phase1
   const unsigned int rocmsk  = 0x3e00000;   // 5 bits
@@ -480,6 +642,8 @@ int MyDecode::data(int word, int & fedChannel, int fed, int & stat1, int & stat2
   const unsigned int rocshift = 21;
   const unsigned int linkshift = 26;
   int status = 0;
+
+  bool bpix = (fed<1294); // identify bpix channels 
 
   roc_ = ((word&rocmsk)>>rocshift); // rocs start from 1
   // Check for embeded special words
@@ -492,21 +656,48 @@ int MyDecode::data(int word, int & fedChannel, int fed, int & stat1, int & stat2
       dcol_=(word&dclmsk)>>16;
       pix_=(word&pxlmsk)>>8;
 
-
       adc_=(word&plsmsk);
       fedChannel = channel_;
 
-      if(phase1) {
+      if(!phase1) {cout<<"must be phase1 "<<endl; return 0;}
 
-	col_=(word&colmsk)>>15;
-	row_=(word&rowmsk)>>8;
+      if(print || CHECK_PIXELS ) {  // info 
 
-	// will need here a loopup table which can distuinguish layer 1 links
-	// to decide if we read dcol/pis or col/row
-	if(print && (selectedChannel_==-1 || selectedChannel_==channel_)) 
-	  cout<<" Fed "<<fed<<" Channel- "<<channel_<<" ROC(order)- "<<(roc_-1)<<" DCOL- "
-	      <<dcol_<<" Pixel- "<<pix_<<" (OR col-"<<col_<<" row-"<<row_<<") ADC- "<<adc_<<endl;
+	string modName = getModName(fed,fedChannel);
+	int layer = getLayer(fed,fedChannel);
+	bool printOn = (print && (selectedChannel_==-1 || selectedChannel_==channel_) );
 
+	if(!FULL_DECODE) {
+	  col_=(word&colmsk)>>15;
+	  row_=(word&rowmsk)>>8;
+	  if(printOn) cout<<" Fed "<<fed<<" Channel- "<<channel_<<" ROC(order)- "<<(roc_-1)<<" DCOL- "
+			  <<dcol_<<" Pixel- "<<pix_<<" (OR col-"<<col_<<" row-"<<row_<<") ADC- "<<adc_<<endl;
+	} else {
+	  //int roc=0;
+	  //string tbm;
+	  //string modName0 = MyConvert::moduleNameFromFedChan(fed,fedChannel,roc,tbm);
+	  //int layer0 = MyConvert::layerFromName(modName0);
+	  //if(bpix && (layer != layer0)) cout<<"wrong layer "<<layer<<" "<<layer0<<endl;
+	  //if(bpix && (modName != modName0)) cout<<"wrong module name "<<modName<<" "<<modName0<<endl;
+	  
+	  if(layer==1) { // for L1 
+	    col_=(word&colmsk)>>15;
+	    row_=(word&rowmsk)>>8;
+	    if(printOn) {
+	      cout<<" Fed "<<fed<<" Channel- "<<channel_<<" Mod "<<modName<<" ROC(order)- "<<(roc_-1)<<" DCOL- "
+		  <<dcol_<<" col- "<<col_<<" row- "<<row_<<" ADC- "<<adc_<<endl;
+	      //if(pix_==0) cout<<"for layer 1 there can be pix-0 hits"<<endl;
+	    }
+	  } else { // layer 2-4
+	    int colEvenOdd = pix_%2;  // module(2), 0-1st sol, 1-2nd col.
+	    // Transform
+	    col_ = dcol_ * 2 + colEvenOdd; // col address, starts from 0
+	    row_ = abs( int(pix_/2) - 80); // row addres, starts from 0
+	    if(printOn) cout<<" Fed "<<fed<<" Channel- "<<channel_<<" Mod "<<modName<<" ROC(order)- "<<(roc_-1)<<" DCOL- "
+			    <<dcol_<<" Pixel- "<<pix_<<" col- "<<col_<<" row- "<<row_<<" ADC- "<<adc_<<endl;
+	  }
+	}
+	
 	status=1;
 
 	if(CHECK_PIXELS) {
@@ -517,27 +708,31 @@ int MyDecode::data(int word, int & fedChannel, int fed, int & stat1, int & stat2
 		  <<roc_-1<<"/"<<dcol_<<"/"<<pix_<<"/"<<adc_<<endl;
 	    status = -4;	    
 	  }
+
 	  
 	  // Check pixels
-	  if(pix_==0) {  // PIX=0
+	  if(layer!=1 && pix_==0) {  // PIX=0
 	    // Detect pixel 0 events
 	    if(printErrors) 
 	      cout<<" Fed "<<fed
-		  <<" pix=0 chan/roc(order)/dcol/pix/adc = "<<channel_<<"/"<<roc_-1<<"/"<<dcol_<<"/"
-		  <<pix_<<"/"<<adc_<<" ("<<col_<<","<<row_<<")"<<endl;
+		  <<" pix=0 chan/roc(order)/dcol/pix/adc = "<<channel_<<"/"<<roc_-1<<"/"
+		  <<dcol_<<"/"<<pix_<<"/"<<adc_
+		  <<" ("<<col_<<","<<row_<<")"
+		  <<" mod "<<modName<<" layer "<<layer<<endl;
 	    count0++;
 	    stat1 = roc_-1;
 	    stat2 = count0;
 	    status = -5;
 	    
 	  } else if( fed==fed0 && channel_==chan0 && roc_==roc0 && dcol_==dcol0 && pix_==pix0 ) {
-	    // detect multiple pixels 
+	    // detect multiple pixels in sequence  
 	    
 	    count0++;
 	    if(printErrors) 
 	      cout<<" Fed "<<fed
 		  <<" double pixel  chan/roc(order)/dcol/pix/adc = "<<channel_<<"/"<<roc_-1<<"/"<<dcol_<<"/"
-		  <<pix_<<"/"<<adc_<<" ("<<col_<<","<<row_<<") "<<count0<<endl;
+		  <<pix_<<"/"<<adc_<<" ("<<col_<<","<<row_<<") "
+		  <<" mod "<<modName<<" layer "<<layer<<endl;
 	    stat1 = roc_-1;
 	    stat2 = count0;
 	    status = -6;
@@ -551,22 +746,27 @@ int MyDecode::data(int word, int & fedChannel, int fed, int & stat1, int & stat2
 	      if(dcol_<dcol0) {
 	     	cout<<"dcol number lower "<<dcol_<<" "<<dcol0
 		    <<" for fed/chan/roc "<<fed<<" "<<channel_
-	     	    <<" "<<roc_<<endl;
-	    //   } else if(dcol_==dcol0) { // same dcol
-	    // 	if(pix_<pix0) cout<<"pix number lower "<<pix_<<" "<<pix0<<" "<<dcol_<<" "<<dcol0
-	    // 			  <<" for fed/chan/roc "<<fed<<" "<<channel_
-	    // 			  <<" "<<roc_<<endl;
-	      }
-	    }
-	  }
+	     	    <<" "<<(roc_-1)
+		    <<" mod "<<modName<<" layer "<<layer<<endl;
+		status = -7;
+	      } else if(dcol_==dcol0 && col_==col0 && layer!=1) { // same col, skip L1
+		// check pixel (row) order
+		if( (((col_%2)==0)&&(row_<row0) ) ||  // for even cols rows should go down  
+		    (((col_%2)==1)&&(row_>row0) ) ) {  // for odd cols rows should go up  
+		  cout<<"row number lower "<<row_<<" "<<row0<<" col "<<col_<<" "<<col0
+		      <<" for fed/chan/roc "<<fed<<"/"<<channel_
+		      <<"/"<<roc_<<" layer "<<layer<<" "<<modName<<endl;
+		  status = -3;
+		} // check pixel
+	      } // ccheck dcol
+	    } // check fed/chan
+	  } // if checkOrder 
 
-	  fed0 = fed; chan0 =channel_; roc0 =roc_; dcol0 =dcol_; pix0=pix_;
+	  fed0 = fed; chan0 =channel_; roc0 =roc_; dcol0 =dcol_; pix0=pix_; col0=col_; row0=row_;
 
 	} // check pixels
 
-      } else { // phase0 
-	cout<<"phase 0 code deleted "<<endl;
-      } // phase 
+      } // info
 
     } else { // channel
 
@@ -592,6 +792,7 @@ int MyDecode::data(int word, int & fedChannel, int fed, int & stat1, int & stat2
 
   return status;
 }
+
 ////////////////////////////////////////////////////////////////////////////
 
 class SiPixelRawDump : public edm::one::EDAnalyzer<edm::one::SharedResources> {
@@ -603,7 +804,8 @@ public:
   void endJob() override;
   /// get data, convert to digis attach againe to Event
   void analyze(const edm::Event&, const edm::EventSetup&) override;
-  void analyzeHits(int fed, int channel, int roc, int dcol, int pix, int adc);
+  void analyzeHits(int fed, int channel);
+  void analyzeErrors(int fed, int channel, int errorType, int status1, int status2);
 
 private:
   edm::ParameterSet theConfig;
@@ -628,10 +830,19 @@ private:
   int decodeErrors[n_of_FEDs][n_of_Channels];
   int decodeErrors000[n_of_FEDs][n_of_Channels];  // pix 0 problem
   int decodeErrorsDouble[n_of_FEDs][n_of_Channels];  // double pix  problem
+  int decodeErrorsRow[n_of_FEDs][n_of_Channels];  // row order  problem
+  int decodeErrorsDcol[n_of_FEDs][n_of_Channels];  // dcol order  problem
   int layerIndex[n_of_FEDs][n_of_Channels];  // layer number
   int errorType[20];
+  int countErrors[20];
   int fedId0;
   int max1,max2,max3,max4,max0;
+  // to distribute information 
+  int run, event, bx, lumiBlock;
+  int countPixelsBPix, countPixelsFPix;
+  int countPixelsBPix1, countPixelsBPix2,countPixelsBPix3,countPixelsBPix4;
+  int countErrorsInFed, countErrorsInFed1, countErrorsInFed2;
+  bool saveLast, saveFirst;
 
 #ifdef OUTFILE
   ofstream outfile;
@@ -646,7 +857,6 @@ private:
   TH1D *hpixels, *hpixels0, *hpixels1, *hpixels2, *hpixels3, *hpixels4;
   TH1D *htotPixels,*htotPixels0, *htotPixels1, *htotPixels2, *htotPixels3, *htotPixels4, *htotPixels5, 
     *htotPixels6, *htotPixels7, *htotPixels8;
-
 
   TProfile *htotPixelsls,*hbpixPixelsls,*hbpixPixels1ls,*hbpixPixels2ls,*hbpixPixels3ls,*hbpixPixels4ls,
     *hfpixPixelsls;  
@@ -665,7 +875,6 @@ private:
   TH2F *hfed2d, *hsize2d;
   TProfile *hsizels,*havsizebx,*hsizep;
 
-
   // errors 
   TH1D *herrors, *htotErrors;
   TH1D *herrorType1, *herrorType1Fed, *herrorType1Chan,*herrorType2, *herrorType2Fed, *herrorType2Chan;
@@ -676,19 +885,17 @@ private:
 
   TH1D *htimeoutFed, *hpkamFed, *hnorFed, *heneFed, *hautomaskedFed, *htimeoutChan;
 
-  TH2F *hfed2DErrors1,*hfed2DErrors2,*hfed2DErrors3,*hfed2DErrors4,*hfed2DErrors5,
-    *hfed2DErrors6,*hfed2DErrors7,*hfed2DErrors8,*hfed2DErrors9,*hfed2DErrors10,*hfed2DErrors11,*hfed2DErrors12,
-    *hfed2DErrors13,*hfed2DErrors14,*hfed2DErrors15,*hfed2DErrors16,*hfed2DErrors17,*hfed2DErrors18;
+  TH2F *hfed2DErrors[20];
 
   TProfile *herrorType1ls, *herrorType2ls,*herrorType1bx,*herrorType2bx;
-  TProfile *herror1ls,*herror2ls,*herror3ls,*herror4ls,*herror5ls,*herror6ls,*herror7ls,*herror8ls,
-    *herror9ls,*herror10ls,*herror11ls,*herror12ls,*herror13ls,*herror14ls,*herror15ls,*herror16ls,
-    *herror17ls,*herror18ls,*herror19ls; 
+  TProfile *herrorls[20];
+
   TH1D *herrorTimels, *herrorPkamls;
+  //TH2F *herrorVsLs10, *herrorVsLs11, *herrorVsLs12, *herrorVsLs13, *herrorVsLs15, *herrorVsLs16, 
+  // *herrorVsLs17, *herrorVsLs18;
 
-  TH2F *herrorVsLs10, *herrorVsLs11, *herrorVsLs12, *herrorVsLs13, *herrorVsLs15, *herrorVsLs16, 
-    *herrorVsLs17, *herrorVsLs18;
-
+  TH2F *hpix0Map[4],*hdoubleMap[4],*hdcolLowMap[4],*hpixOrderMap[4];
+ 
 #ifdef IND_FEDS
   TH2F *hfed2DErrors1ls,*hfed2DErrors2ls,*hfed2DErrors3ls,*hfed2DErrors4ls,*hfed2DErrors5ls,
     *hfed2DErrors6ls,*hfed2DErrors7ls,*hfed2DErrors8ls,*hfed2DErrors9ls,*hfed2DErrors10ls,*hfed2DErrors11ls,*hfed2DErrors12ls,
@@ -706,15 +913,17 @@ SiPixelRawDump::SiPixelRawDump( const edm::ParameterSet& cfg) : theConfig(cfg) {
 } 
 //----------------------------------------------------------------------------------------
 void SiPixelRawDump::endJob() {
-  string errorName[20] = {" "," ","wrong channel","wrong pix or dcol","wrong roc","pix=0",
-			  " double-pix"," "," "," ","timeout","ENE","NOR","autoreset","overflow",
+  string errorName[20] = {" "," ","wrong channel","wrong pix","wrong roc","pix=0",
+			  " double-pix","wrong dcol","rocReset"," ","timeout","ENE","NOR","autoreset","overflow",
 			  "trailer","pkam","masked","automasked","reset/resync"};
 
   cout<<"2 - wrong channel"<<endl
-      <<"3 - wrong pix or dcol"<<endl 
+      <<"3 - wrong pix"<<endl 
       <<"4 - wrong roc"<<endl
       <<"5 - pix=0"<<endl
       <<"6 - double pixel"<<endl 
+      <<"7 - wrong dcol"<<endl 
+      <<"8 - rocReset"<<endl 
       <<"10 - timeout"<<endl
       <<"11 - ene"<<endl
       <<"12 - nor"<<endl
@@ -760,15 +969,18 @@ void SiPixelRawDump::endJob() {
 	    <<" - "<<setw(8)<<fedErrorsAutoMask[i][j]<<"/"<<setw(8)<<fedErrorsMask[i][j]<<" - "<<setw(8)<<fedErrorsAutoReset[i][j]<<endl;
     }
   }
-  cout<<" Decode errors "<<endl<<"Fed Channel Errors Pix_000 Double_Pix"<<endl;
+  cout<<" Decode errors "<<endl<<"Fed Channel Other Pix_000 Double_Pix Row-order Dcol-order"<<endl;
   for(int i = 0; i < n_of_FEDs; ++i) {
     for(int j=0;j<n_of_Channels;++j) {
-      int tmp = decodeErrors[i][j] + decodeErrors000[i][j] + decodeErrorsDouble[i][j];
+      int tmp = decodeErrors[i][j] + decodeErrors000[i][j] + decodeErrorsDouble[i][j] + decodeErrorsRow[i][j]+ decodeErrorsDcol[i][j];
       if(tmp>10) 
 	cout<<" "<<(i+fedId0)<<" -  "<<(j+1)<<"   -  "
 	    <<decodeErrors[i][j]<<"  -    "
 	    <<decodeErrors000[i][j]<<"  -   "
-	    <<decodeErrorsDouble[i][j]<<endl;
+	    <<decodeErrorsDouble[i][j]<<"  -  "
+	    <<decodeErrorsRow[i][j]<<"  -  "
+	    <<decodeErrorsDcol[i][j]
+	    <<endl;
     }
   }
 
@@ -844,12 +1056,13 @@ void SiPixelRawDump::beginJob() {
   lastLS=0; firstLS=9999;
   maskedChannels.clear();
   maskedChannels0.clear();
-  string tbm=" ";
-  int roc=-1;
+  //string tbm=" ";
+  //int roc=-1;
   for(int i = 0; i < n_of_FEDs; ++i) {
     sumFedPixels[i]=0;
     for(int j=0;j<n_of_Channels;++j) {
       decodeErrors[i][j]=0; decodeErrors000[i][j]=0; decodeErrorsDouble[i][j]=0;
+      decodeErrorsRow[i][j]=0; decodeErrorsDcol[i][j]=0;
       fedErrors[i][j]=0; fedErrorsENE[i][j]=0; fedErrorsTime[i][j]=0; 
       fedErrorsOver[i][j]=0;fedErrorsPKAM[i][j]=0;fedErrorsAutoReset[i][j]=0;
       fedErrorsAutoMask[i][j]=0;fedErrorsMask[i][j]=0;
@@ -858,9 +1071,11 @@ void SiPixelRawDump::beginJob() {
       if( i > fedIdBpixMax ) layerIndex[i][j]=0; // signal fpix
       else {
 	// Get the module name and tbm type 
-	string modName = MyConvert::moduleNameFromFedChan((i+fedId0),(j+1),roc,tbm);
-	if(modName != " ") { // skip nonexistant (empty) channels 
-	  int layer = MyConvert::layerFromName(modName);
+	//string modName = MyConvert::moduleNameFromFedChan((i+fedId0),(j+1),roc,tbm);
+	string modName = decode.getModName((i+fedId0),(j+1));
+	if(modName != "") { // skip nonexistant (empty) channels 
+	  //int layer = MyConvert::layerFromName(modName);
+	  int layer = decode.getLayer( (i+fedId0), (j+1) );
 	  if(layer>=0 && layer<=4) layerIndex[i][j]=layer;
 	  else cout<<"error "<<(i+fedId0)<<" "<<(j+1)<<" "<<modName<<" "<<layer<<endl;
 	  //cout<<(i+fedId0)<<" "<<(j+1)<<" "<<modName<<" "<<layer<<endl;
@@ -969,9 +1184,6 @@ void SiPixelRawDump::beginJob() {
   hbx1    = fs->make<TH1D>("hbx1",   "bx fed payload",    4000,0,4000.);  
   hbx2    = fs->make<TH1D>("hbx2",   "bad (cmssw) bx",    4000,0,4000.);  
 
-
-
-
   hsize2d = fs->make<TH2F>( "hsize2d", "size vs fed",n_of_FEDs,-0.5,static_cast<float>(n_of_FEDs) - 0.5, 100,0,1000); // ALL
   hsizep  = fs->make<TProfile>( "hsizep", "size vs fed",n_of_FEDs,-0.5,static_cast<float>(n_of_FEDs) - 0.5,0,100000); // ALL
   //hsize2dls = fs->make<TH2F>( "hsize2dls", "size vs lumi",100,0,1000, 50,0.,500.); // ALL
@@ -1023,12 +1235,10 @@ void SiPixelRawDump::beginJob() {
   hadc0ls = fs->make<TProfile>("hadc0ls","adc0 vs ls",1000,0,1000,     0.,255.);
   hadc0bx = fs->make<TProfile>("hadc0bx","adc0 vs bx",4000,-0.5,3999.5,0.,255.);
 
-
   herrors = fs->make<TH1D>( "herrors", "FED errors per event", 100, -0.5, 99.5);
   htotErrors = fs->make<TH1D>( "htotErrors", "tot errors per event", 1000, -0.5, 999.5);
   hfed2d = fs->make<TH2F>( "hfed2d", "error type versus fed#", n_of_FEDs,-0.5,static_cast<float>(n_of_FEDs)-0.5,
 			   21, -0.5, 20.5); // ALL
-
 
   herrorType1     = fs->make<TH1D>( "herrorType1", "errors-1(fed) per type", 
 				    20, -0.5, 19.5);
@@ -1090,56 +1300,39 @@ void SiPixelRawDump::beginJob() {
   //herrorOverls3 = fs->make<TH1D>("herrorOverls3","overflows vs ls lay3",1000,0,1000);
   //herrorOverls0 = fs->make<TH1D>("herrorOverls0","overflows vs ls disk",1000,0,1000);
 
-  herror1ls = fs->make<TProfile>("herror1ls","error 1 vs ls",300,0,300,0,1000.);
-  //herror2ls = fs->make<TProfile>("herror2ls","error 2 vs ls",300,0,300,0,1000.);
-  herror3ls = fs->make<TProfile>("herror3ls","error 3 vs ls",300,0,300,0,1000.);
-  herror4ls = fs->make<TProfile>("herror4ls","error 4 vs ls",300,0,300,0,1000.);
-  herror5ls = fs->make<TProfile>("herror5ls","error 5 vs ls",300,0,300,0,1000.);
-  herror6ls = fs->make<TProfile>("herror6ls","error 6 vs ls",300,0,300,0,1000.);
-  //herror7ls = fs->make<TProfile>("herror7ls","error 7 vs ls",300,0,300,0,1000.);
-  herror8ls  = fs->make<TProfile>("herror8ls","error 8 vs ls",300,0,300,0,1000.);
-  herror9ls  = fs->make<TProfile>("herror9ls","error 9 vs ls",300,0,300,0,1000.);
-  herror10ls = fs->make<TProfile>("herror10ls","error 10 vs ls",300,0,300,0,1000.);
-  herror11ls = fs->make<TProfile>("herror11ls","error 11 vs ls",300,0,300,0,1000.);
-  herror12ls = fs->make<TProfile>("herror12ls","error 12 vs ls",300,0,300,0,1000.);
-  herror13ls = fs->make<TProfile>("herror13ls","error 13 vs ls",300,0,300,0,1000.);
-  herror14ls = fs->make<TProfile>("herror14ls","error 14 vs ls",300,0,300,0,1000.);
-  herror15ls = fs->make<TProfile>("herror15ls","error 15 vs ls",300,0,300,0,1000.);
-  herror16ls = fs->make<TProfile>("herror16ls","error 16 vs ls",300,0,300,0,1000.);
-  herror17ls = fs->make<TProfile>("herror17ls","error 17 vs ls",300,0,300,0,10000.);
-  herror18ls = fs->make<TProfile>("herror18ls","error 18 vs ls",300,0,300,0,1000.);
-  herror19ls = fs->make<TProfile>("herror19ls","error 19 vs ls",300,0,300,0,1000.);
+  string name, title;
+  for(int i=1; i<20; ++i) { // loop over error types  
+    string num = std::to_string(i+1);
+    name="herror"+num+"ls"; title="errors vs ls, type"+num;        
+    herrorls[i] = fs->make<TProfile>(name.c_str(),title.c_str(),300,0.,300.,0.,1000.);
+    name="hfed2DErrors"+num; title="errors per fed/chan, type"+num;        
+    hfed2DErrors[i] = fs->make<TH2F>(name.c_str(),title.c_str(),n_of_FEDs,-0.5,static_cast<float>(n_of_FEDs) - 0.5, n_of_Channels, -0.5,maxChan);
+  }
+  // herrorVsLs10 = fs->make<TH2F>("herrorVsLs10", "TO versus ls",100,0.,100., n_of_Channels, -0.5,maxChan);
+  // herrorVsLs11 = fs->make<TH2F>("herrorVsLs11", "ENE versus ls",100,0.,100., n_of_Channels, -0.5,maxChan);
+  // herrorVsLs12 = fs->make<TH2F>("herrorVsLs12", "NOR versus ls",100,0.,100., n_of_Channels, -0.5,maxChan);
+  // herrorVsLs13 = fs->make<TH2F>("herrorVsLs13", "AR versus ls",100,0.,100., n_of_Channels, -0.5,maxChan);
+  // herrorVsLs15 = fs->make<TH2F>("herrorVsLs15", "Trailer versus ls",100,0.,100., n_of_Channels, -0.5,maxChan);
+  // herrorVsLs16 = fs->make<TH2F>("herrorVsLs16", "PKAM versus ls",100,0.,100., n_of_Channels, -0.5,maxChan);
+  // herrorVsLs17 = fs->make<TH2F>("herrorVsLs17", "Masked versus ls",100,0.,100., n_of_Channels, -0.5,maxChan);
+  // herrorVsLs18 = fs->make<TH2F>("herrorVsLs18", "AM versus ls",100,0.,100., n_of_Channels, -0.5,maxChan);
 
-
-  // Error Type ploted versus fed and channel #
-  //hfed2DErrors1 = fs->make<TH2F>("hfed2DErrors1", "errors type 1 per FED", n_of_FEDs,-0.5,static_cast<float>(n_of_FEDs) - 0.5, n_of_Channels, -0.5,maxChan);
-  //hfed2DErrors2 = fs->make<TH2F>("hfed2DErrors2", "errors type 2per FED", n_of_FEDs,-0.5,static_cast<float>(n_of_FEDs) - 0.5, n_of_Channels, -0.5,maxChan);
-  hfed2DErrors3 = fs->make<TH2F>("hfed2DErrors3", "errors type 3 per FED", n_of_FEDs,-0.5,static_cast<float>(n_of_FEDs) - 0.5, n_of_Channels, -0.5,maxChan);
-  hfed2DErrors4 = fs->make<TH2F>("hfed2DErrors4", "errors type 4 per FED", n_of_FEDs,-0.5,static_cast<float>(n_of_FEDs) - 0.5, n_of_Channels, -0.5,maxChan);
-  hfed2DErrors5 = fs->make<TH2F>("hfed2DErrors5", "errors type 5 per FED", n_of_FEDs,-0.5,static_cast<float>(n_of_FEDs) - 0.5, n_of_Channels, -0.5,maxChan);
-  hfed2DErrors6 = fs->make<TH2F>("hfed2DErrors6", "errors type 6 per FED", n_of_FEDs,-0.5,static_cast<float>(n_of_FEDs) - 0.5, n_of_Channels, -0.5,maxChan);
-  //hfed2DErrors7 = fs->make<TH2F>("hfed2DErrors7", "errors type 7 per FED", n_of_FEDs,-0.5,static_cast<float>(n_of_FEDs) - 0.5, n_of_Channels, -0.5,maxChan);
-  //hfed2DErrors8 = fs->make<TH2F>("hfed2DErrors8", "errors type 8 per FED", n_of_FEDs,-0.5,static_cast<float>(n_of_FEDs) - 0.5, n_of_Channels, -0.5,maxChan);
-  hfed2DErrors9 = fs->make<TH2F>("hfed2DErrors9", "errors type 9 per FED", n_of_FEDs,-0.5,static_cast<float>(n_of_FEDs) - 0.5, n_of_Channels, -0.5,maxChan);
-  hfed2DErrors10 = fs->make<TH2F>("hfed2DErrors10", "errors type 10 per FED", n_of_FEDs,-0.5,static_cast<float>(n_of_FEDs) - 0.5, n_of_Channels, -0.5,maxChan);
-  hfed2DErrors11 = fs->make<TH2F>("hfed2DErrors11", "errors type 11 per FED", n_of_FEDs,-0.5,static_cast<float>(n_of_FEDs) - 0.5, n_of_Channels, -0.5,maxChan);
-  hfed2DErrors12 = fs->make<TH2F>("hfed2DErrors12", "errors type 12 per FED", n_of_FEDs,-0.5,static_cast<float>(n_of_FEDs) - 0.5, n_of_Channels, -0.5,maxChan);
-  hfed2DErrors13 = fs->make<TH2F>("hfed2DErrors13", "errors type 13 per FED", n_of_FEDs,-0.5,static_cast<float>(n_of_FEDs) - 0.5, n_of_Channels, -0.5,maxChan);
-  hfed2DErrors14 = fs->make<TH2F>("hfed2DErrors14", "errors type 14 per FED", n_of_FEDs,-0.5,static_cast<float>(n_of_FEDs) - 0.5, n_of_Channels, -0.5,maxChan);
-  hfed2DErrors15 = fs->make<TH2F>("hfed2DErrors15", "errors type 15 per FED", n_of_FEDs,-0.5,static_cast<float>(n_of_FEDs) - 0.5, n_of_Channels, -0.5,maxChan);
-  hfed2DErrors16 = fs->make<TH2F>("hfed2DErrors16", "errors type 16 per FED", n_of_FEDs,-0.5,static_cast<float>(n_of_FEDs) - 0.5, n_of_Channels, -0.5,maxChan);
-  hfed2DErrors17 = fs->make<TH2F>("hfed2DErrors17", "errors type 17 per FED", n_of_FEDs,-0.5,static_cast<float>(n_of_FEDs) - 0.5, n_of_Channels, -0.5,maxChan);  
-  hfed2DErrors18 = fs->make<TH2F>("hfed2DErrors18", "errors type 18 per FED", n_of_FEDs,-0.5,static_cast<float>(n_of_FEDs) - 0.5, n_of_Channels, -0.5,maxChan);
-
-  herrorVsLs10 = fs->make<TH2F>("herrorVsLs10", "TO versus ls",100,0.,100., n_of_Channels, -0.5,maxChan);
-  herrorVsLs11 = fs->make<TH2F>("herrorVsLs11", "ENE versus ls",100,0.,100., n_of_Channels, -0.5,maxChan);
-  herrorVsLs12 = fs->make<TH2F>("herrorVsLs12", "NOR versus ls",100,0.,100., n_of_Channels, -0.5,maxChan);
-  herrorVsLs13 = fs->make<TH2F>("herrorVsLs13", "AR versus ls",100,0.,100., n_of_Channels, -0.5,maxChan);
-  herrorVsLs15 = fs->make<TH2F>("herrorVsLs15", "Trailer versus ls",100,0.,100., n_of_Channels, -0.5,maxChan);
-  herrorVsLs16 = fs->make<TH2F>("herrorVsLs16", "PKAM versus ls",100,0.,100., n_of_Channels, -0.5,maxChan);
-  herrorVsLs17 = fs->make<TH2F>("herrorVsLs17", "Masked versus ls",100,0.,100., n_of_Channels, -0.5,maxChan);
-  herrorVsLs18 = fs->make<TH2F>("herrorVsLs18", "AM versus ls",100,0.,100., n_of_Channels, -0.5,maxChan);
-
+  
+  string histoName[4] = {"hpix0Map","hdoubleMap","hdcolLowMap","hpixOrderMap"};
+  string titleName[4] = {"pix0 hits in L","double hits in L","dcol low hits in L","wrong pix order in L"};
+  int sizeH[4] = {13,29,45,65};
+  float binH[4]={6.5,14.5,22.5,32.5};
+  //string name, title;
+  for(int i=0; i<4; ++i) { // loop over bpix layers 
+    string num = std::to_string(i+1);
+    for(int j=0; j<4; ++j) { // loop over error type 
+      name=histoName[j]+num; title=titleName[j]+num;        
+      if(j==0)      hpix0Map[i] =   fs->make<TH2F>(name.c_str(),title.c_str(),9,-4.5,4.5,sizeH[i],-binH[i],binH[i]);
+      else if(j==1) hdoubleMap[i] = fs->make<TH2F>(name.c_str(),title.c_str(),9,-4.5,4.5,sizeH[i],-binH[i],binH[i]);
+      else if(j==2) hdcolLowMap[i] =fs->make<TH2F>(name.c_str(),title.c_str(),9,-4.5,4.5,sizeH[i],-binH[i],binH[i]);
+      else if(j==3) hpixOrderMap[i]=fs->make<TH2F>(name.c_str(),title.c_str(),9,-4.5,4.5,sizeH[i],-binH[i],binH[i]);
+    }
+  }
 
 #ifdef IND_FEDS
   hfed2DErrors1ls  = fs->make<TH2F>("hfed2DErrors1ls", "errors type 6 vs lumi",300,0,300, n_of_FEDs,-0.5,static_cast<float>(n_of_FEDs) - 0.5); //
@@ -1166,13 +1359,246 @@ void SiPixelRawDump::beginJob() {
   for(int i = 0; i < n_of_FEDs; ++i) {if(i<39) outfile<<i<<","; else outfile<<i<<endl;}
 #endif
 
+  countPixelsBPix=0;
+  countPixelsBPix1=0, countPixelsBPix2=0,countPixelsBPix3=0,countPixelsBPix4=0;
+  countPixelsFPix=0;
+
 }
 //-----------------------------------------------------------------------
-void SiPixelRawDump::analyzeHits(int fed, int channel, int roc, int dcol, int pix, int adc) {
-  //TH2F *hchannelRoc, *hchannelRocs, *hchannelPixels, *hchannelPixPerRoc;
+void SiPixelRawDump::analyzeHits(int fedId, int fedChannel) {
+
+  hchannelFED->Fill(float(fedChannel-1),float(fedId-fedId0));
+  int adc = decode.get_adc();
+
+  int layer0 = layerIndex[fedId-fedId0][fedChannel-1];
+  int layer = decode.getLayer(fedId,fedChannel);
+  if(layer!=layer0) cout<<"Wrong layer numebr "<<layer<<" "<<layer0<<endl;
+  
+  if(layer==1)      
+    {countPixelsBPix++;countPixelsBPix1++;hadc1->Fill(float(adc));hadc1ls->Fill(float(lumiBlock),float(adc));
+      hadc1bx->Fill(float(bx),float(adc));}
+  else if(layer==2) 
+    {countPixelsBPix++;countPixelsBPix2++;hadc2->Fill(float(adc));hadc2ls->Fill(float(lumiBlock),float(adc));
+      hadc2bx->Fill(float(bx),float(adc));}
+  else if(layer==3) 
+    {countPixelsBPix++;countPixelsBPix3++;hadc3->Fill(float(adc));hadc3ls->Fill(float(lumiBlock),float(adc));
+      hadc3bx->Fill(float(bx),float(adc));}
+  else if(layer==4) 
+    {countPixelsBPix++;countPixelsBPix4++;hadc4->Fill(float(adc));hadc4ls->Fill(float(lumiBlock),float(adc));
+      hadc4bx->Fill(float(bx),float(adc));}
+  else if(layer==0)  // fpix 
+    {countPixelsFPix++;hadc0->Fill(float(adc));hadc0ls->Fill(float(lumiBlock),float(adc));hadc0bx->Fill(float(bx),float(adc));}
+  else cout<<" invalid layer "<<layer<<endl;
+  
 }
 
+//----------------------------------------------------------------------------
+void SiPixelRawDump::analyzeErrors(int fedId, int fedChannel, int status, int stat1, int stat2) {
+  // 2 - wrong channel
+  // 3 - wrong pix or dcol 
+  // 4 - wrong roc
+  // 5 - pix=0
+  // 6 - double pixel
+  // 7 - wrong dcol order
+  // 8 - ROC reset
+  // 9 - NTP
+  // 10 - timeout ()
+  // 11 - ene ()
+  // 12 - nor ()
+  // 13 - autoreset ()
+  // 14 - overflow ()
+  // 15 - trailer ()
+  // 16 - pkam  (30)
+  // 17 - masked
+  // 18 - automasked
+  // 19 - tbm reset 
+  
+  if(status<20) errorType[status]++;
+  hfed2d->Fill(float(fedId-fedId0),float(status)); // fed # versus type
+	  
+  if(status>=8) {  // hard errors
+    // Type - 1 Errors
+    herrorType1->Fill(float(status));
+    if(status!=17) {
+      countErrorsInFed1++;
+      herrorType1Fed->Fill(float(fedId-fedId0));
+      herrorType1Chan->Fill(float(fedChannel));
+      hfedErrorType1ls->Fill(float(lumiBlock),float(fedId-fedId0)); // hard errors
+      hfed2DErrorsType1->Fill(float(fedId-fedId0),float(fedChannel));
+      fedErrors[fedId-fedId0][(fedChannel-1)]++; // skip masked 
+    }
+  
+    switch(status) {
 
+    case(8) : { // roc reset  
+      countErrors[8]++;
+      break; }
+      
+    case(9) : { // 
+      countErrors[9]++;
+      hfed2DErrors[9]->Fill(float(fedId-fedId0),float(fedChannel));
+      break; }
+      
+    case(10) : { // Timeout
+      htimeoutFed->Fill(float(fedId-fedId0));
+      htimeoutChan->Fill(float(fedChannel));
+      countErrors[10]++;
+      fedErrorsTime[fedId-fedId0][(fedChannel-1)]++;
+      hfed2DErrors[10]->Fill(float(fedId-fedId0),float(fedChannel));
+      herrorTimels->Fill(float(lumiBlock));
+      //if(fedId==selectedFED) herrorVsLs10->Fill(lumiBlock,fedChannel);
+      break; } 
+      
+    case(11) : {  // ENE
+      heneFed->Fill(float(fedId-fedId0));
+      countErrors[11]++;
+      hfed2DErrors[11]->Fill(float(fedId-fedId0),float(fedChannel));
+      fedErrorsENE[fedId-fedId0][(fedChannel-1)]++;
+      //if(fedId==selectedFED) herrorVsLs11->Fill(lumiBlock,fedChannel);
+      break; }
+      
+    case(12) : {  // NOR
+      hnorFed->Fill(float(fedId-fedId0));
+      countErrors[12]++;
+      hfed2DErrors[12]->Fill(float(fedId-fedId0),float(fedChannel));
+      //hfed2DErrors12ls->Fill(float(lumiBlock),float(fedId-fedId0)); //errors
+      fedErrorsOver[fedId-fedId0][(fedChannel-1)]++;   // use oveflow to count NORs for phase1 
+      //if(fedId==selectedFED) herrorVsLs12->Fill(lumiBlock,fedChannel);
+      break; }
+      
+    case(13) : {  // Autoreset
+      countErrors[13]++;
+      hfed2DErrors[13]->Fill(float(fedId-fedId0),float(fedChannel));
+      fedErrorsAutoReset[fedId-fedId0][(fedChannel-1)]++;
+      //if(fedId==selectedFED) herrorVsLs13->Fill(lumiBlock,fedChannel);
+      //hfed2DErrors13ls->Fill(float(lumiBlock),float(fedId-fedId0)); //errors
+      break; }
+      
+    case(14) : {  // OVER
+      countErrors[14]++;
+      //fedErrorsOver[fedId-fedId0][(fedChannel-1)]++;
+      hfed2DErrors[14]->Fill(float(fedId-fedId0),float(fedChannel));
+      //hfed2DErrors14ls->Fill(float(lumiBlock),float(fedId-fedId0)); //errors
+      //if(fedId==selectedFED) herrorVsLs14->Fill(lumiBlock,fedChannel);
+      break; }
+      
+    case(15) : {  // TBM Trailer
+      countErrors[15]++;
+      hfed2DErrors[15]->Fill(float(fedId-fedId0),float(fedChannel));
+      //hfed2DErrors15ls->Fill(float(lumiBlock),float(fedId-fedId0)); //errors
+      //if(fedId==selectedFED) herrorVsLs15->Fill(lumiBlock,fedChannel);
+      break; }
+      
+    case(16) : { // pkam
+      countErrors[16]++;
+      hfed2DErrors[16]->Fill(float(fedId-fedId0),float(fedChannel));
+      herrorPkamls->Fill(float(lumiBlock));
+      hpkamFed->Fill(float(fedId-fedId0));
+      fedErrorsPKAM[fedId-fedId0][(fedChannel-1)]++;
+      //if(fedId==selectedFED) herrorVsLs16->Fill(lumiBlock,fedChannel);
+      break; }
+      
+    case(17) : { // masked 
+      countErrors[17]++;
+      hfed2DErrors[17]->Fill(float(fedId-fedId0),float(fedChannel));
+      fedErrorsMask[fedId-fedId0][(fedChannel-1)]++;
+      //if(fedId==selectedFED) herrorVsLs17->Fill(lumiBlock,fedChannel);
+      if( (countAllEvents>1) && (fedErrorsMask[fedId-fedId0][(fedChannel-1)]==1) )
+	cout<<" new masked channel "<<countAllEvents<<" ls "<<lumiBlock<<" fed "<<fedId<<" ch "<<fedChannel<<endl;
+      if(saveLast) maskedChannels.push_back(make_pair(fedId,fedChannel));
+      if(saveFirst)maskedChannels0.push_back(make_pair(fedId,fedChannel));
+      break; }
+      
+    case(18) : { // automasked 
+      countErrors[18]++;
+      hautomaskedFed->Fill(float(fedId-fedId0));
+      fedErrorsAutoMask[fedId-fedId0][(fedChannel-1)]++;
+      hfed2DErrors[18]->Fill(float(fedId-fedId0),float(fedChannel));
+      //cout<<lumiBlock<<" "<<fedId<<" "<<fedChannel<<endl;
+      //if(fedId==selectedFED) herrorVsLs18->Fill(lumiBlock,fedChannel);
+      break; }
+      
+    case(19) : { // tbm reset        
+      countErrors[19]++;
+      //hfed2DErrors19->Fill(float(fedId-fedId0),float(fedChannel));
+      //if(fedId==selectedFED) herrorVsLs19->Fill(lumiBlock,fedChannel);
+      break; }
+    } // end switch 
+
+  
+  } else if(status>0) {  // decode errors
+    // Type 2 errors
+    countErrorsInFed2++;
+    hfedErrorType2ls->Fill(float(lumiBlock),float(fedId-fedId0)); // decode errors
+    hfed2DErrorsType2->Fill(float(fedId-fedId0),float(fedChannel));
+    herrorType2->Fill(float(status));
+    herrorType2Fed->Fill(float(fedId-fedId0));
+    herrorType2Chan->Fill(float(fedChannel));
+
+    // need layer, ladder, module 
+    string modName = decode.getModName(fedId,fedChannel);
+    int layer = decode.getLayer(fedId,fedChannel);
+    int ladder = MyConvert::ladderFromName(modName);
+    int module = MyConvert::moduleFromName(modName);
+    //cout<<fedId<<" "<<fedChannel<<" "<<layer<<" "<<ladder<<" "<<module<<endl;
+
+    switch(status) {
+      
+    case(3) : {  //  inv. pix
+      countErrors[3]++;
+      hfed2DErrors[3]->Fill(float(fedId-fedId0),float(fedChannel));
+      decodeErrorsRow[fedId-fedId0][(fedChannel-1)]++;
+      //hfed2DErrors3ls->Fill(float(lumiBlock),float(fedId-fedId0)); //errors
+      hpixOrderMap[layer-1]->Fill(float(module),float(ladder));
+      break; }
+      
+    case(4) : {  // inv roc
+      countErrors[4]++;
+      hfed2DErrors[4]->Fill(float(fedId-fedId0),float(fedChannel));
+      decodeErrors[fedId-fedId0][(fedChannel-1)]++;
+      //hfed2DErrors4ls->Fill(float(lumiBlock),float(fedId-fedId0)); //errors
+      break; }
+      
+    case(5) : {  // pix=0
+      countErrors[5]++;
+      hfed2DErrors[5]->Fill(float(fedId-fedId0),float(fedChannel));
+      //hfed2DErrors5ls->Fill(float(lumiBlock),float(fedId-fedId0)); //errors
+      hroc000->Fill(float(stat1)); // count rocs
+      hcount000->Fill(float(stat2));
+      hcount0002->Fill(float(fedId-fedId0),float(stat2));
+      decodeErrors000[fedId-fedId0][(fedChannel-1)]++;
+      hpix0Map[layer-1]->Fill(float(module),float(ladder));
+      break; }
+      
+    case(6) : {  // double pix
+      countErrors[6]++;
+      hfed2DErrors[6]->Fill(float(fedId-fedId0),float(fedChannel));
+      //hfed2DErrors6ls->Fill(float(lumiBlock),float(fedId-fedId0)); //errors
+      hrocDouble->Fill(float(stat1)); // count rocs
+      hcountDouble->Fill(float(stat2));
+      hcountDouble2->Fill(float(fedId-fedId0),float(stat2));
+      decodeErrorsDouble[fedId-fedId0][(fedChannel-1)]++;
+      hdoubleMap[layer-1]->Fill(float(module),float(ladder));
+      break; }
+      
+    case(7) : {  // lower dcol
+      countErrors[7]++;
+      hfed2DErrors[7]->Fill(float(fedId-fedId0),float(fedChannel));
+      decodeErrorsDcol[fedId-fedId0][(fedChannel-1)]++;
+      hdcolLowMap[layer-1]->Fill(float(module),float(ladder));
+      break;}
+      
+    case(1) : {  // unknown
+      countErrors[1]++;
+      //hfed2DErrors1->Fill(float(fedId-fedId0),float(fedChannel));
+      //hfed2DErrors1ls->Fill(float(lumiBlock),float(fedId-fedId0)); //errors
+      decodeErrors[fedId-fedId0][(fedChannel-1)]++;
+      break; }
+      
+    }  // end switch
+  } // end if
+
+}
 //----------------------------------------------------------------------------
 void SiPixelRawDump::analyze(const  edm::Event& ev, const edm::EventSetup& es) {
   const bool printEventInfo = false;
@@ -1187,10 +1613,10 @@ void SiPixelRawDump::analyze(const  edm::Event& ev, const edm::EventSetup& es) {
 #endif
 
   // Access event information
-  int run       = ev.id().run();
-  int event     = ev.id().event();
-  int lumiBlock = ev.luminosityBlock();
-  int bx        = ev.bunchCrossing(); // CMSSW bx
+  run       = ev.id().run();
+  event     = ev.id().event();
+  lumiBlock = ev.luminosityBlock();
+  bx        = ev.bunchCrossing(); // CMSSW bx
   //int orbit     = ev.orbitNumber();
   static int oldEvent=0; // ,LS=0;
   
@@ -1200,7 +1626,7 @@ void SiPixelRawDump::analyze(const  edm::Event& ev, const edm::EventSetup& es) {
   hbx0->Fill(float(bx));
   //horbit->Fill(float(orbit));
 
-  bool saveLast=false, saveFirst=false;
+  saveLast=false; saveFirst=false;
   if(lumiBlock>lastLS) {
     lastLS=lumiBlock;
     saveLast=true;
@@ -1211,7 +1637,6 @@ void SiPixelRawDump::analyze(const  edm::Event& ev, const edm::EventSetup& es) {
     saveFirst=true;
     if(maskedChannels0.size()>0) maskedChannels0.clear();
   }
-
 
   if(printEventInfo) {
     // if(countAllEvents<100 || (countAllEvents&1000)==0 )
@@ -1266,18 +1691,10 @@ void SiPixelRawDump::analyze(const  edm::Event& ev, const edm::EventSetup& es) {
   //ev.getByLabel( label, instance, buffers);
   ev.getByToken(rawData , buffers);  // the new bytoken 
 
-  //PixelDataFormatter formatter(0);  // only for digis
-  //bool dummyErrorBool;
-
-  //typedef unsigned int Word32;
-  //typedef long long Word64;
   typedef uint32_t Word32;
   typedef uint64_t Word64;
   int status=0;
   int countPixels=0;
-  int countPixelsBPix=0;
-  int countPixelsBPix1=0, countPixelsBPix2=0,countPixelsBPix3=0,countPixelsBPix4=0;
-  int countPixelsFPix=0;
   int eventId = -1;
   int countErrorsPerEvent=0;
   int countErrorsPerEvent1=0;
@@ -1286,8 +1703,8 @@ void SiPixelRawDump::analyze(const  edm::Event& ev, const edm::EventSetup& es) {
   int stat1=-1, stat2=-1;
   int fedchannelsize[n_of_Channels];
   bool wrongBX=false;
-  int countErrors[20] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-  //int countErrorsInEvent=0;
+  for(int i=0;i<20;++i) countErrors[i] = 0;
+  countPixelsFPix=0; countPixelsBPix=0; countPixelsBPix1=0; countPixelsBPix2=0; countPixelsBPix3=0;countPixelsBPix4=0;
 
 
   // Loop over FEDs
@@ -1331,7 +1748,7 @@ void SiPixelRawDump::analyze(const  edm::Event& ev, const edm::EventSetup& es) {
     //cout<<hex<<*header<<dec<<endl;
 
     unsigned int bxid = 0;
-    eventId = MyDecode::header(*header, fedId, printHeaders, bxid);
+    eventId = decode.header(*header, fedId, printHeaders, bxid);
     //if(fedId = fedIds.first) 
     if(bx != int(bxid) ) { 
       wrongBX=true;
@@ -1345,15 +1762,12 @@ void SiPixelRawDump::analyze(const  edm::Event& ev, const edm::EventSetup& es) {
 
     const Word64* trailer = reinterpret_cast<const Word64* >(rawData.data())+(nWords-1);
     //cout<<hex<<*trailer<<dec<<endl;
-    status = MyDecode::trailer(*trailer,fedId, printHeaders);
+    status = decode.trailer(*trailer,fedId, printHeaders);
 
+    countErrorsInFed=0;countErrorsInFed1=0;countErrorsInFed2=0; 
     int countPixelsInFed=0;
-    int countErrorsInFed=0;
-    int countErrorsInFed1=0;
-    int countErrorsInFed2=0;
     int fedChannel = 0;
     int num=0;
-
     // Loop over payload words
     for (const Word64* word = header+1; word != trailer; word++) {
       static const Word64 WORD32_mask  = 0xffffffff;
@@ -1371,252 +1785,26 @@ void SiPixelRawDump::analyze(const  edm::Event& ev, const edm::EventSetup& es) {
 	if(printLocal>3) cout<<" "<<num<<" "<<hex<<w<<dec<<endl;
 	status = decode.data(w,fedChannel, fedId, stat1, stat2, printData);
 	if(selectedChannel>-1 && fedChannel!=selectedChannel) continue;
-	int layer = layerIndex[fedId-fedId0][fedChannel-1];
 
 	if(status>0) {  // data
 	  countPixels++;
 	  countPixelsInFed++;
 	  fedchannelsize[fedChannel-1]++;
-	  hchannelFED->Fill(float(fedChannel-1),float(fedId-fedId0));
-	  int adc = decode.get_adc();
-
-	  if(layer==1)      
-	    {countPixelsBPix++;countPixelsBPix1++;hadc1->Fill(float(adc));hadc1ls->Fill(float(lumiBlock),float(adc));
-	      hadc1bx->Fill(float(bx),float(adc));}
-	  else if(layer==2) 
-	    {countPixelsBPix++;countPixelsBPix2++;hadc2->Fill(float(adc));hadc2ls->Fill(float(lumiBlock),float(adc));
-	      hadc2bx->Fill(float(bx),float(adc));}
-	  else if(layer==3) 
-	    {countPixelsBPix++;countPixelsBPix3++;hadc3->Fill(float(adc));hadc3ls->Fill(float(lumiBlock),float(adc));
-	      hadc3bx->Fill(float(bx),float(adc));}
-	  else if(layer==4) 
-	    {countPixelsBPix++;countPixelsBPix4++;hadc4->Fill(float(adc));hadc4ls->Fill(float(lumiBlock),float(adc));
-	      hadc4bx->Fill(float(bx),float(adc));}
-	  else if(layer==0)  // fpix 
-	    {countPixelsFPix++;hadc0->Fill(float(adc));hadc0ls->Fill(float(lumiBlock),float(adc));hadc0bx->Fill(float(bx),float(adc));}
-	  else cout<<" invalid layer "<<layer<<endl;
+	  analyzeHits(fedId, fedChannel);
 
 	} else if(status<0) {  // error word
-
 	  bool skip=false;
 	  if(status==-17 && !SHOW_PERMANENT_MASK) skip=true;
-
 	  if(!skip) {
 	    countErrorsInFed++;
 	    if(printErrors) cout<<"    Bad stats for FED "<<fedId<<" Event "<<eventId<<"/"<<(eventId%256)
 				<<" count "<<countAllEvents<<" chan "<<fedChannel<<" status "<<status<<endl;
 	  }
-
 	  status=abs(status);
-	  // 2 - wrong channel
-	  // 3 - wrong pix or dcol 
-	  // 4 - wrong roc
-	  // 5 - pix=0
-	  // 6 - double pixel
-	  // 8 - ROC reset
-	  // 9 - NTP
-	  // 10 - timeout ()
-	  // 11 - ene ()
-	  // 12 - nor ()
-	  // 13 - autoreset ()
-	  // 14 - overflow ()
-	  // 15 - trailer ()
-	  // 16 - pkam  (30)
-	  // 17 - masked
-	  // 18 - automasked
-	  // 19 - tbm reset 
-	  
-	  switch(status) {
+	  analyzeErrors(fedId, fedChannel, status, stat1, stat2);
 
-	  case(10) : { // Timeout
-
-	    htimeoutFed->Fill(float(fedId-fedId0));
-	    htimeoutChan->Fill(float(fedChannel));
-	    countErrors[10]++;
-	    fedErrorsTime[fedId-fedId0][(fedChannel-1)]++;
-	    hfed2DErrors10->Fill(float(fedId-fedId0),float(fedChannel));
-	    herrorTimels->Fill(float(lumiBlock));
-	    if(fedId==selectedFED) herrorVsLs10->Fill(lumiBlock,fedChannel);
-	    break; } 
-
-	  case(11) : {  // ENE
-
-	    heneFed->Fill(float(fedId-fedId0));
-	    countErrors[11]++;
-	    hfed2DErrors11->Fill(float(fedId-fedId0),float(fedChannel));
-	    fedErrorsENE[fedId-fedId0][(fedChannel-1)]++;
-	    if(fedId==selectedFED) herrorVsLs11->Fill(lumiBlock,fedChannel);
-	    break; }
-
-	  case(12) : {  // NOR
-
-	    hnorFed->Fill(float(fedId-fedId0));
-	    countErrors[12]++;
-	    hfed2DErrors12->Fill(float(fedId-fedId0),float(fedChannel));
-	    //hfed2DErrors12ls->Fill(float(lumiBlock),float(fedId-fedId0)); //errors
-	    fedErrorsOver[fedId-fedId0][(fedChannel-1)]++;   // use oveflow to count NORs for phase1 
-	    if(fedId==selectedFED) herrorVsLs12->Fill(lumiBlock,fedChannel);
-	    break; }
-
-
-	  case(13) : {  // Autoreset
-
-	    countErrors[13]++;
-	    hfed2DErrors13->Fill(float(fedId-fedId0),float(fedChannel));
-	    fedErrorsAutoReset[fedId-fedId0][(fedChannel-1)]++;
-	    if(fedId==selectedFED) herrorVsLs13->Fill(lumiBlock,fedChannel);
-	    //hfed2DErrors13ls->Fill(float(lumiBlock),float(fedId-fedId0)); //errors
-	    break; }
-
-	  case(14) : {  // OVER
-
-	    countErrors[14]++;
-	    //fedErrorsOver[fedId-fedId0][(fedChannel-1)]++;
-	    hfed2DErrors14->Fill(float(fedId-fedId0),float(fedChannel));
-	    //hfed2DErrors14ls->Fill(float(lumiBlock),float(fedId-fedId0)); //errors
-	    //if(fedId==selectedFED) herrorVsLs14->Fill(lumiBlock,fedChannel);
-	    break; }
-
-	  case(15) : {  // TBM Trailer
-
-	    countErrors[15]++;
-	    hfed2DErrors15->Fill(float(fedId-fedId0),float(fedChannel));
-	    //hfed2DErrors15ls->Fill(float(lumiBlock),float(fedId-fedId0)); //errors
-	    if(fedId==selectedFED) herrorVsLs15->Fill(lumiBlock,fedChannel);
-	    break; }
-
-	  case(16) : { // pkam
-
-	    countErrors[16]++;
-	    hfed2DErrors16->Fill(float(fedId-fedId0),float(fedChannel));
-	    herrorPkamls->Fill(float(lumiBlock));
-	    hpkamFed->Fill(float(fedId-fedId0));
-	    fedErrorsPKAM[fedId-fedId0][(fedChannel-1)]++;
-	    if(fedId==selectedFED) herrorVsLs16->Fill(lumiBlock,fedChannel);
-	    break; }
-
-
-	  case(17) : { // masked 
-
-	    countErrors[17]++;
-	    hfed2DErrors17->Fill(float(fedId-fedId0),float(fedChannel));
-	    fedErrorsMask[fedId-fedId0][(fedChannel-1)]++;
-	    if(fedId==selectedFED) herrorVsLs17->Fill(lumiBlock,fedChannel);
-	    if( (countAllEvents>1) && (fedErrorsMask[fedId-fedId0][(fedChannel-1)]==1) )
-	      cout<<" new masked channel "<<countAllEvents<<" ls "<<lumiBlock<<" fed "<<fedId<<" ch "<<fedChannel<<endl;
-
-	    if(saveLast) maskedChannels.push_back(make_pair(fedId,fedChannel));
-	    if(saveFirst)maskedChannels0.push_back(make_pair(fedId,fedChannel));
-
-	    break; }
-
-	  case(18) : { // automasked 
-
-	    countErrors[18]++;
-	    hautomaskedFed->Fill(float(fedId-fedId0));
-	    fedErrorsAutoMask[fedId-fedId0][(fedChannel-1)]++;
-	    hfed2DErrors18->Fill(float(fedId-fedId0),float(fedChannel));
-	    //cout<<lumiBlock<<" "<<fedId<<" "<<fedChannel<<endl;
-	    if(fedId==selectedFED) herrorVsLs18->Fill(lumiBlock,fedChannel);
-	    break; }
-
-	  case(19) : { // tbm reset  
-
-	    countErrors[19]++;
-	    //hfed2DErrors19->Fill(float(fedId-fedId0),float(fedChannel));
-	    //if(fedId==selectedFED) herrorVsLs19->Fill(lumiBlock,fedChannel);
-	    break; }
-
-	  case(9) : { // 
-
-	    countErrors[9]++;
-	    hfed2DErrors9->Fill(float(fedId-fedId0),float(fedChannel));
-	    break; }
-
-	  case(8) : { // roc reset  
-
-	    countErrors[8]++;
-	    //hfed2DErrors8->Fill(float(fedId-fedId0),float(fedChannel));
-	    break; }
-
-
-	  case(3) : {  //  inv. pix-dcol
-	    countErrors[3]++;
-	    hfed2DErrors3->Fill(float(fedId-fedId0),float(fedChannel));
-	    //hfed2DErrors3ls->Fill(float(lumiBlock),float(fedId-fedId0)); //errors
-	    break; }
-
-	  case(4) : {  // inv roc
-	    countErrors[4]++;
-	    hfed2DErrors4->Fill(float(fedId-fedId0),float(fedChannel));
-	    //hfed2DErrors4ls->Fill(float(lumiBlock),float(fedId-fedId0)); //errors
-	    break; }
-
-	  case(5) : {  // pix=0
-	    countErrors[5]++;
-	    hfed2DErrors5->Fill(float(fedId-fedId0),float(fedChannel));
-	    //hfed2DErrors5ls->Fill(float(lumiBlock),float(fedId-fedId0)); //errors
-
-	    hroc000->Fill(float(stat1)); // count rocs
-	    hcount000->Fill(float(stat2));
-	    hcount0002->Fill(float(fedId-fedId0),float(stat2));
-	    break; }
-
-	  case(6) : {  // double pix
-
-	    countErrors[6]++;
-	    hfed2DErrors6->Fill(float(fedId-fedId0),float(fedChannel));
-	    //hfed2DErrors6ls->Fill(float(lumiBlock),float(fedId-fedId0)); //errors
-
-	    hrocDouble->Fill(float(stat1)); // count rocs
-	    hcountDouble->Fill(float(stat2));
-	    hcountDouble2->Fill(float(fedId-fedId0),float(stat2));
-	    break; }
-
-	  case(1) : {  // unknown
-	    countErrors[1]++;
-	    //hfed2DErrors1->Fill(float(fedId-fedId0),float(fedChannel));
-	    //hfed2DErrors1ls->Fill(float(lumiBlock),float(fedId-fedId0)); //errors
-	    break; }
-
-	  }  // end switch
-	  
-	  if(status<20) errorType[status]++;
-
-
-	  hfed2d->Fill(float(fedId-fedId0),float(status)); // fed # versus type
-	  
-	  if(status>=8) {  // hard errors
-	    // Type - 1 Errors
-	    herrorType1->Fill(float(status));
-	    if(status!=17) {
-	      countErrorsInFed1++;
-	      herrorType1Fed->Fill(float(fedId-fedId0));
-	      herrorType1Chan->Fill(float(fedChannel));
-	      hfedErrorType1ls->Fill(float(lumiBlock),float(fedId-fedId0)); // hard errors
-	      hfed2DErrorsType1->Fill(float(fedId-fedId0),float(fedChannel));
-	      fedErrors[fedId-fedId0][(fedChannel-1)]++; // skip masked 
-	    }
-
-	  } else if(status>0) {  // decode errors
-	    // Type 2 errors
-
-	    countErrorsInFed2++;
-	    hfedErrorType2ls->Fill(float(lumiBlock),float(fedId-fedId0)); // decode errors
-	    hfed2DErrorsType2->Fill(float(fedId-fedId0),float(fedChannel));
-
-	    herrorType2->Fill(float(status));
-	    herrorType2Fed->Fill(float(fedId-fedId0));
-	    herrorType2Chan->Fill(float(fedChannel));
-
-	    if(status==5)      decodeErrors000[fedId-fedId0][(fedChannel-1)]++;
-	    else if(status==6) decodeErrorsDouble[fedId-fedId0][(fedChannel-1)]++;
-	    else               decodeErrors[fedId-fedId0][(fedChannel-1)]++;
-	  }
-
-	}
+	} // error/data
       } // for  1/2 word
-
     } // loop over longlong  words
 
     countTotErrors += countErrorsInFed;
@@ -1712,23 +1900,9 @@ void SiPixelRawDump::analyze(const  edm::Event& ev, const edm::EventSetup& es) {
   herrorType1ls->Fill(float(lumiBlock),float(countErrorsPerEvent1));
   herrorType2ls->Fill(float(lumiBlock),float(countErrorsPerEvent2));
 
-  if(countErrors[1]>0) herror1ls->Fill(float(lumiBlock),float(countErrors[1]));
-  if(countErrors[3]>0) herror3ls->Fill(float(lumiBlock),float(countErrors[3]));
-  if(countErrors[4]>0) herror4ls->Fill(float(lumiBlock),float(countErrors[4]));
-  if(countErrors[5]>0) herror5ls->Fill(float(lumiBlock),float(countErrors[5]));
-  if(countErrors[6]>0) herror6ls->Fill(float(lumiBlock),float(countErrors[6]));
-  if(countErrors[8]>0) herror8ls->Fill(float(lumiBlock),float(countErrors[8]));
-  if(countErrors[9]>0) herror9ls->Fill(float(lumiBlock),float(countErrors[9]));
-  if(countErrors[10]>0) herror10ls->Fill(float(lumiBlock),float(countErrors[10]));
-  if(countErrors[11]>0) herror11ls->Fill(float(lumiBlock),float(countErrors[11]));
-  if(countErrors[12]>0) herror12ls->Fill(float(lumiBlock),float(countErrors[12]));
-  if(countErrors[13]>0) herror13ls->Fill(float(lumiBlock),float(countErrors[13]));
-  if(countErrors[14]>0) herror14ls->Fill(float(lumiBlock),float(countErrors[14]));
-  if(countErrors[15]>0) herror15ls->Fill(float(lumiBlock),float(countErrors[15]));
-  if(countErrors[16]>0) herror16ls->Fill(float(lumiBlock),float(countErrors[16]));
-  if(countErrors[17]>0) herror17ls->Fill(float(lumiBlock),float(countErrors[17]));
-  if(countErrors[18]>0) herror18ls->Fill(float(lumiBlock),float(countErrors[18]));
-  if(countErrors[19]>0) herror19ls->Fill(float(lumiBlock),float(countErrors[19]));
+  for(int i=0; i<20; ++i) {
+    if(countErrors[i]>0) herrorls[i]->Fill(float(lumiBlock),float(countErrors[i]));
+  }
 
   herrorType1bx->Fill(float(bx),float(countErrorsPerEvent1));
   herrorType2bx->Fill(float(bx),float(countErrorsPerEvent2));
@@ -1763,6 +1937,7 @@ void SiPixelRawDump::analyze(const  edm::Event& ev, const edm::EventSetup& es) {
 // 3 - wrong pix or dcol 
 // 5 - pix=0
 // 6 - double pix
+// 7 - wrong dcol order 
 
   // 10 - timeout ()
   // 11 - ene ()
