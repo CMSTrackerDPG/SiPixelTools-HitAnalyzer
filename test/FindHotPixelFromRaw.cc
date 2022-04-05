@@ -284,7 +284,7 @@ class MyConvert {
 public:
   MyConvert() {}
   ~MyConvert() {}
-  static string moduleNameFromFedChan(int fed,int fedChan, int roc, string & tbm);
+  static string rocModuleNameFromFedChan(int fed,int fedChan, int roc, string & tbm);
   static int layerFromName(string name);
 
 private:
@@ -305,8 +305,8 @@ int MyConvert::layerFromName(string modName) {
 // Method returns the module name and the tbm type as strings
 // input: int fed, fedChan
 // output: string name, tbm ("A" or "B")
-string MyConvert::moduleNameFromFedChan(int fed0,int fedChan0, int roc0, string & tbm0) {
-  if ( fed0<1200 || fed0>1293) return " ";
+string MyConvert::rocModuleNameFromFedChan(int fed0,int fedChan0, int roc0, string & tbm0) {
+  if ( fed0<1200 || fed0>1338) return " ";
   //if ( fed0<32 && (fedChan0<1 || fedChan0>36) ) return " ";  // barrel channels not bigger than 36
   //if ( fed0>31 && (fedChan0<1 || fedChan0>24) ) return " ";  // endcap channels not bigger than 24
 
@@ -326,23 +326,25 @@ string MyConvert::moduleNameFromFedChan(int fed0,int fedChan0, int roc0, string 
   string name, modName=" ";
   int fec,mfec,mfecChan,hub,port,rocId,fed,fedChan,rocOrder;
   string tbm = " ";
-  int fedOld=-1, fedChanOld=-1, rocOld=-1;
+  //int fedOld=-1, fedChanOld=-1; // rocOld=-1;
   bool found = false;
+  //int rocNumber;
+
   for(int i=0;i<100000;++i) {
     //bool print = false;
 
     // first get the name, then  decide whether it is barrel and endcap
     infile>>name;
+    infile>>tbm>>fec>>mfec>>mfecChan>>hub>>port>>rocId>>fed>>fedChan>>rocOrder;
     
     if(name==" ")continue;
 
-    if (name[0]=='F') {
-        // endcap doesn't have the TBM token to read
-        infile>>fec>>mfec>>mfecChan>>hub>>port>>rocId>>fed>>fedChan>>rocOrder;
-    } else {
-        infile>>tbm>>fec>>mfec>>mfecChan>>hub>>port>>rocId>>fed>>fedChan>>rocOrder;
-    }
-
+    // if (name[0]=='F') {
+    //     // endcap doesn't have the TBM token to read
+    //     infile>>fec>>mfec>>mfecChan>>hub>>port>>rocId>>fed>>fedChan>>rocOrder;
+    // } else {
+    //     infile>>tbm>>fec>>mfec>>mfecChan>>hub>>port>>rocId>>fed>>fedChan>>rocOrder;
+    // }
     
     if ( infile.eof() != 0 ) {
       cout<< " end of file " << endl;
@@ -353,28 +355,31 @@ string MyConvert::moduleNameFromFedChan(int fed0,int fedChan0, int roc0, string 
     }
 
     if (fed0<1294) {
-        //barrel module name requested, do not use the roc0 parameter
-        if(fed==fedOld && fedChanOld==fedChan) continue;
-        fedOld = fed;
-        fedChanOld = fedChan;
+      //barrel module name requested, do not use the roc0 parameter
+      // skip same fed/channel
+      //if(fed==fedOld && fedChanOld==fedChan) continue;
+      //fedOld = fed;
+      //fedChanOld = fedChan;
 
-        if(fed==fed0 && fedChan==fedChan0) {  // found
-            found = true;
-            tbm0=tbm;
-            // strip out the _ROC section from the name because it is not needed to identify the ROC number
-            string::size_type idx;
-            idx = name.find("_ROC");
-            if(idx != string::npos) {
-                modName = name.substr(0,(idx));
-            }
-            break;
-        }
+      if(fed==fed0 && fedChan==fedChan0 && rocOrder==roc0) {  // found
+	//if(fed==fed0 && fedChan==fedChan0) {  // found
+	found = true;
+	tbm0=tbm;
+	// strip out the _ROC section from the name because it is not needed to identify the ROC number
+	modName = name;
+	// string::size_type idx;
+	// idx = name.find("_ROC");
+	// if(idx != string::npos) {
+	//   modName = name.substr(0,idx);
+	//   string rocName = name[idx+4];
+	//   rocNumber = atoi(rocName);
+	// }
+	break;
+      }
+
     } else {
         // endcap module name requested, use the roc0 parameter
-        if(fed==fedOld && fedChanOld==fedChan && rocOld==rocOrder) continue;
-        fedOld = fed;
-        fedChanOld = fedChan;
-        rocOld = rocOrder;
+        //if(fed==fedOld && fedChanOld==fedChan && rocOld==rocOrder) continue;
 
         if(fed==fed0 && fedChan==fedChan0 && rocOrder==roc0) {  // found
             found = true;
@@ -383,6 +388,9 @@ string MyConvert::moduleNameFromFedChan(int fed0,int fedChan0, int roc0, string 
             modName = name; 
             break;
         }
+        //fedOld = fed;
+        //fedChanOld = fedChan;
+        //rocOld = rocOrder;
     }
   }  // end line loop
   
@@ -525,7 +533,7 @@ void HotPixels::print(int events, int fed_id, double fraction, TH2F* hfedchannel
   // for layer-1
   const unsigned int rowmsk = 0x7f00; 
   const unsigned int colmsk = 0x1f8000;
-  int channel=0, roc=0, dcol=0, pix=0;
+  int channel=0, rocOrder=0, dcol=0, pix=0;
   int num =0;
   int cut1 = events/100;
   int cut2 = events/1000;
@@ -541,13 +549,6 @@ void HotPixels::print(int events, int fed_id, double fraction, TH2F* hfedchannel
     //cout<<" fed chan name tbm rocp dcol pix colR rowR count num roc "<<endl;
   }
 
-  // if(fed_id==32) {
-  //   cout<<endl;
-  //   cout<<"fed chan     module                   plq roc dcol  pix  colR ";
-  //   cout<<"rowR count  num roc-local"<<endl;
-  // }
-
-
   for(int i=0;i<count;++i) { // loop over pixels with hits 
 
     if(data[i]<=0) {cout<<" no counts "<<data[i]<<endl; continue;}
@@ -556,17 +557,26 @@ void HotPixels::print(int events, int fed_id, double fraction, TH2F* hfedchannel
     int index = array[i];
     if(index<=0) {cout<<" index wrong "<<index<<endl; continue;}
 
-    decode(index, channel, roc, dcol, pix);
+    decode(index, channel, rocOrder, dcol, pix);
 
     hfedchannelp->Fill(float(fed_id-1200),float(channel),float(data[i]));
-    //if(fed_id==1253 && channel==44) cout<<roc<<" "<<dcol<<" "<<pix<<" "<<data[i]<<endl;
+    //if(fed_id==1253 && channel==44) cout<<rocOrder<<" "<<dcol<<" "<<pix<<" "<<data[i]<<endl;
 
     // Get the module name and tbm type 
     string modName = " ",tbm=" ";
-    modName = MyConvert::moduleNameFromFedChan(fed_id,channel,roc,tbm);
+    int rocNumber=-1;
+    //modName = MyConvert::moduleNameFromFedChan(fed_id,channel,roc,tbm);
+    string  name = MyConvert::rocModuleNameFromFedChan(fed_id,channel,rocOrder,tbm);
+    string::size_type idx;
+    idx = name.find("_ROC");
+    if(idx != string::npos) {
+      modName = name.substr(0,idx);
+      string rocName = name.substr(idx+4,name.length());
+      rocNumber = atoi(rocName.c_str());
+    }
     
-    int realRocNum = roc;
-    int colROC = -1, rowROC = -1, layer =-1;
+    int realRocNum = -1;
+    int colROC = -1, rowROC = -1, layer = 0;
     //string::size_type id;
     if     ( modName.find("_LYR1_") != string::npos ) layer=1;  
     else if( modName.find("_LYR2_") != string::npos ) layer=2;  
@@ -587,6 +597,11 @@ void HotPixels::print(int events, int fed_id, double fraction, TH2F* hfedchannel
 	countInLayersCut[layer-1] += data[i];
 	countPixInLayersCut[layer-1]++;
       }
+
+      // Below there is code to find the real ROC number, it is just for 
+      // verification, the real ROC number is already known from the roc
+      // order. Keep for testsing 
+      
       if( layer==1 ) { // layer  1
 	//cout<<" this is layer 1 "<<modName<<endl;
 	// this is still wrong as it does not take the bit change into account WHAT DOES THIS MEAN?
@@ -595,23 +610,25 @@ void HotPixels::print(int events, int fed_id, double fraction, TH2F* hfedchannel
 	colROC = (tmp&colmsk)>>15;
 	rowROC = (tmp&rowmsk)>>8;
 
+	// Find F or H L1 module flavour
 	bool fModule = false;// this is an h-module 
 	if( modName.find("F_MOD") != string::npos) fModule=true;
 
+
 	if(fModule) { // F-module 
 
-	  if     (tbm=="A1") realRocNum = roc; // shift for TBM-N
-	  else if(tbm=="A2") realRocNum = roc + 2; // shift for TBM-N
-	  else if(tbm=="B1") realRocNum = roc + 12; // shift for TBM-N
-	  else if(tbm=="B2") realRocNum = roc + 14; // shift for TBM-N
+	  if     (tbm=="A1") realRocNum = rocOrder; // shift for TBM-N
+	  else if(tbm=="A2") realRocNum = rocOrder + 2; // shift for TBM-N
+	  else if(tbm=="B1") realRocNum = rocOrder + 12; // shift for TBM-N
+	  else if(tbm=="B2") realRocNum = rocOrder + 14; // shift for TBM-N
 	  else cout<<" unknown "<<tbm<<endl;
 
 	} else { // H-module
 
-	  if     (tbm=="A1") realRocNum = roc + 4; // shift for TBM-N
-	  else if(tbm=="A2") realRocNum = roc + 6; // shift for TBM-N
-	  else if(tbm=="B1") realRocNum = roc + 8; // shift for TBM-N
-	  else if(tbm=="B2") realRocNum = roc + 10; // shift for TBM-N
+	  if     (tbm=="A1") realRocNum = rocOrder + 4; // shift for TBM-N
+	  else if(tbm=="A2") realRocNum = rocOrder + 6; // shift for TBM-N
+	  else if(tbm=="B1") realRocNum = rocOrder + 8; // shift for TBM-N
+	  else if(tbm=="B2") realRocNum = rocOrder + 10; // shift for TBM-N
 	  else cout<<" unknown "<<tbm<<endl;
 
 	}
@@ -626,46 +643,45 @@ void HotPixels::print(int events, int fed_id, double fraction, TH2F* hfedchannel
 	//cout<<index<<" ";
 
 	if(layer==2) {
-	  if     (tbm=="A1") realRocNum = roc; // shift for TBM-N
-	  else if(tbm=="A2") realRocNum = roc + 4; // shift for TBM-N
-	  else if(tbm=="B1") realRocNum = roc + 8; // shift for TBM-N
-	  else if(tbm=="B2") realRocNum = roc + 12; // shift for TBM-N
+	  if     (tbm=="A1") realRocNum = rocOrder; // shift for TBM-N
+	  else if(tbm=="A2") realRocNum = rocOrder + 4; // shift for TBM-N
+	  else if(tbm=="B1") realRocNum = rocOrder + 8; // shift for TBM-N
+	  else if(tbm=="B2") realRocNum = rocOrder + 12; // shift for TBM-N
 	  else cout<<" unknown "<<tbm<<endl;
 
 
 	} else if (layer==3 || layer==4)  {
-	  if(tbm=="A1") realRocNum = roc; // shift for TBM-N
-	  else if(tbm=="A2") realRocNum = roc + 8; // shift for TBM-N
+	  if(tbm=="A1") realRocNum = rocOrder; // shift for TBM-N
+	  else if(tbm=="A2") realRocNum = rocOrder + 8; // shift for TBM-N
+	  else cout<<" unknown "<<tbm<<endl;
+	
+	} else if (layer==0)  {
+	  if(tbm=="A") realRocNum = rocOrder; // shift for TBM-N
+	  else if(tbm=="B") realRocNum = rocOrder + 8; // shift for TBM-N
 	  else cout<<" unknown "<<tbm<<endl;
 	}
 
       }
 
+      if(rocNumber != realRocNum) cout<<"ERROR - something wrong in roc number "
+				     <<rocNumber<<" "<<realRocNum<<endl; 
+
       if (modName[0]=='F') {
-          //endcap module: retrieve the ROC number from the name
-          int plaquet = -1;
-          string::size_type idx = modName.find("_PLQ");
-          if(idx != string::npos) {
-              char digit[1] = {'\0'};
-              digit[0] = modName[idx+4];
-              plaquet = atoi( digit );
-              digit[0] = modName[idx+9];
-              realRocNum = atoi( digit );
-          }
-	 
-          cout<<setw(3) <<fed_id   << " "   << setw(3) << channel    << " "  << setw(30) << modName.substr(0,(idx)) << "  "
-                        << plaquet << " "   << setw(3) << realRocNum << "  " << setw(3)  << dcol    << "  " << setw(3)
+          cout<<setw(3) <<fed_id   << " "   << setw(3) << channel    << " "  << setw(30) << modName << "  "
+                        << tbm << " "   << setw(3) << rocNumber << "  " << setw(3)  << dcol    << "  " << setw(3)
                         << pix     << "   " << setw(3) << colROC     << "  " << setw(3)  << rowROC  << "  " << setw(4)
-                        << data[i] << "  "  << setw(3) << num        << "  " << setw(3)  << roc << endl;
+	      << data[i] << "  "  << setw(3) << num        << "  " << setw(3)  << rocOrder <<endl;
+	  // << " "<<name<<" "<<realRocNum<<endl;
 
       } else {  // Bpix
 
-          string::size_type idx = modName.find("_ROC");
-          string name = (idx!=string::npos)? modName.substr(0,(idx)) : modName;
-          cout<<setw(3) <<fed_id   << " "   << setw(3) << channel    << " "  << setw(30) << name << "  "
-                        << tbm     << " "   << setw(3) << realRocNum << "  " << setw(3)  << dcol    << "  " << setw(3)
+	//string::size_type idx = modName.find("_ROC");
+	//string name = (idx!=string::npos)? modName.substr(0,(idx)) : modName;
+          cout<<setw(3) <<fed_id   << " "   << setw(3) << channel    << " "  << setw(30) << modName << "  "
+                        << tbm     << " "   << setw(3) << rocNumber << "  " << setw(3)  << dcol    << "  " << setw(3)
                         << pix     << "   " << setw(3) << colROC     << "  " << setw(3)  << rowROC  << "  " << setw(4)
-                        << data[i] << "  "  << setw(3) << num        << "  " << setw(3)  << roc << endl;
+	      << data[i] << "  "  << setw(3) << num        << "  " << setw(3)  << rocOrder  << endl;
+	  //" "<<name<<" "<<realRocNum<<endl;
 
        }
 
@@ -675,10 +691,10 @@ void HotPixels::print(int events, int fed_id, double fraction, TH2F* hfedchannel
     if(data[i]>cut2) count2++;
     if(data[i]>cut3) {
       count3++;
-      // ROC
-      int indexROC = codeROC(channel,roc);
+      // save for noisy rocs list 
+      int indexROC = codeROC(channel,rocOrder);
       if(indexROC<NumROCs) rocs[indexROC]++;
-      else cout<<" index too big "<<indexROC<<endl;
+      else cout<<"roc index too big "<<indexROC<<endl;
     }
   } // for
 
@@ -697,7 +713,7 @@ void HotPixels::print(int events, int fed_id, double fraction, TH2F* hfedchannel
 }
 
 void HotPixels::printROCs(int fed_id, int cut) {
-  int channel=0, roc=0;
+  int channel=0, rocOrder=0;
 
   if(fed_id==1200) {
     cout<<" Noisy ROCs, Threshold = "<<cut<<endl;
@@ -714,28 +730,27 @@ void HotPixels::printROCs(int fed_id, int cut) {
   for(int n=0;n<NumROCs;++n) {
     if(rocs[n]>0) {
       if(rocs[n]>cut) {
-	decodeROC(n,channel, roc);
+	decodeROC(n,channel, rocOrder);
 	// Get the module name and tbm type 
 	string modName = " ",tbm=" ";
-	modName = MyConvert::moduleNameFromFedChan(fed_id,channel,roc,tbm);
+	int rocNumber=-1;
+	// this is maodule and roc name 
+	string name = MyConvert::rocModuleNameFromFedChan(fed_id,channel,rocOrder,tbm);
+	string::size_type idx;
+	idx = name.find("_ROC");
+	if(idx != string::npos) {
+	  modName = name.substr(0,idx);
+	  string rocName = name.substr(idx+4,name.length());
+	  rocNumber = atoi(rocName.c_str());
+	}
 
-	int realRocNum = roc;
-
+	// just for testin of the real roc number 
+	int realRocNum = -1;
         if (modName[0]=='F') {
           //endcap module: retrieve the ROC number from the name
-
-          // int plaquet = -1;
-          // string::size_type idx = modName.find("_PLQ");
-          // if(idx != string::npos) {
-          //   char digit[1] = {'\0'};
-          //   digit[0] = modName[idx+4];
-          //   plaquet = atoi( digit );
-          //   digit[0] = modName[idx+9];
-          //   realRocNum = atoi( digit );
-          // }
-          // cout<<setw(3)<<fed_id<<" "<<setw(3)<<channel<<" "<<setw(30)<<modName<<"  "<<plaquet<<"  "
-          //     <<realRocNum<<"  "<<rocs[n]<<endl; 
-
+	  if(tbm=="A") realRocNum = rocOrder; // shift for TBM-N
+	  else if(tbm=="B") realRocNum = rocOrder + 8; // shift for TBM-N
+	  else cout<<" unknown "<<tbm<<endl;
 
         } else { // bpix 
 
@@ -755,18 +770,18 @@ void HotPixels::printROCs(int fed_id, int cut) {
 	    
 	    if(fModule) { // F-module 
 	      
-	      if     (tbm=="A1") realRocNum = roc; // shift for TBM-N
-	      else if(tbm=="A2") realRocNum = roc + 2; // shift for TBM-N
-	      else if(tbm=="B1") realRocNum = roc + 12; // shift for TBM-N
-	      else if(tbm=="B2") realRocNum = roc + 14; // shift for TBM-N
+	      if     (tbm=="A1") realRocNum = rocOrder; // shift for TBM-N
+	      else if(tbm=="A2") realRocNum = rocOrder + 2; // shift for TBM-N
+	      else if(tbm=="B1") realRocNum = rocOrder + 12; // shift for TBM-N
+	      else if(tbm=="B2") realRocNum = rocOrder + 14; // shift for TBM-N
 	      else cout<<" unknown "<<tbm<<endl;
 	      
 	    } else { // H-module
 	      
-	      if     (tbm=="A1") realRocNum = roc + 4; // shift for TBM-N
-	      else if(tbm=="A2") realRocNum = roc + 6; // shift for TBM-N
-	      else if(tbm=="B1") realRocNum = roc + 8; // shift for TBM-N
-	      else if(tbm=="B2") realRocNum = roc + 10; // shift for TBM-N
+	      if     (tbm=="A1") realRocNum = rocOrder + 4; // shift for TBM-N
+	      else if(tbm=="A2") realRocNum = rocOrder + 6; // shift for TBM-N
+	      else if(tbm=="B1") realRocNum = rocOrder + 8; // shift for TBM-N
+	      else if(tbm=="B2") realRocNum = rocOrder + 10; // shift for TBM-N
 	      else cout<<" unknown "<<tbm<<endl;
 	      
 	    }
@@ -775,23 +790,25 @@ void HotPixels::printROCs(int fed_id, int cut) {
 	    
 	    if(layer==2) {
 	      //cout<<" layer2 "<<endl;
-	      if     (tbm=="A1") realRocNum = roc; // shift for TBM-N
-	      else if(tbm=="A2") realRocNum = roc + 4; // shift for TBM-N
-	      else if(tbm=="B1") realRocNum = roc + 8; // shift for TBM-N
-	      else if(tbm=="B2") realRocNum = roc + 12; // shift for TBM-N
+	      if     (tbm=="A1") realRocNum = rocOrder; // shift for TBM-N
+	      else if(tbm=="A2") realRocNum = rocOrder + 4; // shift for TBM-N
+	      else if(tbm=="B1") realRocNum = rocOrder + 8; // shift for TBM-N
+	      else if(tbm=="B2") realRocNum = rocOrder + 12; // shift for TBM-N
 	      else cout<<" unknown "<<tbm<<endl;
 	      
 	    } else if (layer==3 || layer==4)  {
 	      //cout<<" layer3/4 "<<endl;
-	      if(tbm=="A1") realRocNum = roc; // shift for TBM-N
-	      else if(tbm=="A2") realRocNum = roc + 8; // shift for TBM-N
+	      if(tbm=="A1") realRocNum = rocOrder; // shift for TBM-N
+	      else if(tbm=="A2") realRocNum = rocOrder + 8; // shift for TBM-N
 	      else cout<<" unknown "<<tbm<<endl;
 	    }
 	    
 	  }
+	  if(rocNumber != realRocNum) cout<<"ERROR - something wrong in roc number "
+				     <<rocNumber<<" "<<realRocNum<<endl; 
 
           cout<<setw(3)<<fed_id<<" "<<setw(3)<<channel<<" "<<setw(30)<<modName<<"  "<<tbm<<"  "
-              <<realRocNum<<" ("<<roc<<") "<<rocs[n]<<endl;
+              <<rocNumber<<" ("<<rocOrder<<") "<<rocs[n]<<endl;
         }
 
       }

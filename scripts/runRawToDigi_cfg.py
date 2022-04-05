@@ -1,33 +1,26 @@
 import FWCore.ParameterSet.Config as cms
 from Configuration.StandardSequences.Eras import eras
-process = cms.Process("MyRawToDigi",eras.Run2_2017)
+process = cms.Process("MyRawToDigi",eras.Run3)
 
 process.load("FWCore.MessageLogger.MessageLogger_cfi")
-#process.load('Configuration.StandardSequences.GeometryRecoDB_cff')
 process.load("Configuration.Geometry.GeometryRecoDB_cff")
 process.load("Configuration.StandardSequences.MagneticField_38T_cff")
-#process.load('Configuration.StandardSequences.MagneticField_AutoFromDBCurrent_cff')
 process.load("Configuration.StandardSequences.Services_cff")
-
 process.load("Configuration.StandardSequences.FrontierConditions_GlobalTag_cff")
 from Configuration.AlCa.GlobalTag import GlobalTag
 # to use no All 
-# 2015
-#process.GlobalTag.globaltag = 'GR_P_V56' # works for 2469763
-#process.GlobalTag.globaltag = 'GR_P_V56' # for 247607
-# 2017
-#process.GlobalTag.globaltag = '92X_dataRun2_Express_v2' # 90X
-#process.GlobalTag.globaltag = '92X_dataRun2_Express_v4' # 92X
-#process.GlobalTag.globaltag = '92X_dataRun2_Express_v7' # cmssw927
 # 2016
 #process.GlobalTag.globaltag = '80X_dataRun2_Prompt_v3' # for 266277
 #process.GlobalTag.globaltag = '80X_dataRun2_Prompt_v8' # for 272
 # AUTO conditions 
-process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:run2_data', '')
+#process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:run2_data', '')
 #process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:run1_data', '')
 #process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:run2_mc', '')
 #process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:run2_design', '')
 #process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:upgrade2017', '')
+process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:run3_data_express', '')
+#process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:run3_data_prompt', '')
+
 
 import HLTrigger.HLTfilters.hltHighLevel_cfi as hlt
 # accept if 'path_1' succeeds
@@ -53,17 +46,17 @@ process.hltfilter = hlt.hltHighLevel.clone(
     )
 
 
-process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(1000))
+process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(100000))
 
 process.source = cms.Source("PoolSource",
  # fileNames =  cms.untracked.vstring('file:rawdata.root')
  fileNames =  cms.untracked.vstring(
 
-"/store/data/Run2018D/ZeroBias/RAW/v1/000/325/170/00000/FF9E45DF-DC15-E749-8E0C-0EE9A37361CD.root",
-
-# "/store/express/Run2017C/ExpressPhysics/FEVT/Express-v2/000/300/633/00000/0085677A-AC7B-E711-B37E-02163E01A1C6.root",
-
-#    "file:/afs/cern.ch/work/d/dkotlins/public/MC/mu/pt100_71_pre7/raw/raw2.root"
+"/store/express/Commissioning2021/ExpressPhysics/FEVT/Express-v1/000/346/512/00000/05d4e531-3560-40bd-ba85-d18f4fa78981.root",
+#"/store/express/Commissioning2021/ExpressPhysics/FEVT/Express-v1/000/346/512/00000/22cbd905-6a6d-4632-888f-fe96c32ad40e.root",
+#"/store/express/Commissioning2021/ExpressPhysics/FEVT/Express-v1/000/346/512/00000/e936125e-53eb-4e71-bafe-c027cb550a1d.root",
+#"/store/express/Commissioning2021/ExpressPhysics/FEVT/Express-v1/000/346/512/00000/bc3801d1-c45f-4ff8-bb44-6d9915e7cdd5.root",
+#"/store/express/Commissioning2021/ExpressPhysics/FEVT/Express-v1/000/346/512/00000/704bfd06-68ac-4e4d-9be7-59ce0fef0cb9.root",
 
  )
 )
@@ -86,14 +79,12 @@ process.source = cms.Source("PoolSource",
 
 process.load("EventFilter.SiPixelRawToDigi.SiPixelRawToDigi_cfi")
 # for simultaions 
-#process.siPixelDigis.InputLabel = 'siPixelRawData'
+#process.siPixelDigis.cpu.InputLabel = 'siPixelRawData'
 # for data
-#process.siPixelDigis.InputLabel = 'source'
-process.siPixelDigis.InputLabel = 'rawDataCollector'
-process.siPixelDigis.IncludeErrors = True
-process.siPixelDigis.Timing = False 
-#process.siPixelDigis.UsePilotBlade = True 
-process.siPixelDigis.UsePhase1 = True 
+#process.siPixelDigis.cpu.InputLabel = 'source'
+process.siPixelDigis.cpu.InputLabel = 'rawDataCollector'
+process.siPixelDigis.cpu.IncludeErrors = True
+process.siPixelDigis.cpu.UsePhase1 = True 
 
 process.MessageLogger = cms.Service("MessageLogger",
     debugModules = cms.untracked.vstring('siPixelDigis'),
@@ -112,7 +103,6 @@ process.out = cms.OutputModule("PoolOutputModule",
     outputCommands = cms.untracked.vstring("drop *","keep *_siPixelDigis_*_*")
 )
 
-
 process.a = cms.EDAnalyzer("PixDigisTest",
     Verbosity = cms.untracked.bool(False),
     phase1 = cms.untracked.bool(True),
@@ -129,14 +119,37 @@ process.d = cms.EDAnalyzer("PixelFedErrorDumper",
     InputLabel = cms.untracked.string('siPixelDigis'),
 )
 
+process.r = cms.EDAnalyzer("SiPixelRawDump", 
+    Timing = cms.untracked.bool(False),
+    IncludeErrors = cms.untracked.bool(True),
+#   In 2015 data, label = rawDataCollector, extension = _LHC                                
+    InputLabel = cms.untracked.string('rawDataCollector'),
+# for MC
+#    InputLabel = cms.untracked.string('siPixelRawData'),
+#   For PixelLumi stream                           
+#    InputLabel = cms.untracked.string('hltFEDSelectorLumiPixels'),
+# for dump files 
+#    InputLabel = cms.untracked.string('source'),
+# old
+#    InputLabel = cms.untracked.string('siPixelRawData'),
+#    InputLabel = cms.untracked.string('source'),
+#    InputLabel = cms.untracked.string("ALCARECOTkAlMinBias"), # does not work
+                           CheckPixelOrder = cms.untracked.bool(True),
+# 0 - nothing, 1 - error , 2- data, 3-headers, 4-hex
+                           Verbosity = cms.untracked.int32(0),
+# threshold, print fed/channel num of errors if tot_errors > events * PrintThreshold, default 0,001 
+    PrintThreshold = cms.untracked.double(0.001)
+)
 
 process.TFileService = cms.Service("TFileService",
     fileName = cms.string('digis_histo.root')
 )
 
+#
+#process.p = cms.Path(process.r)
 #process.p = cms.Path(process.siPixelDigis)
-#process.p = cms.Path(process.siPixelDigis*process.a)
-process.p = cms.Path(process.hltfilter*process.siPixelDigis*process.a)
+process.p = cms.Path(process.r*process.siPixelDigis*process.a)
+#process.p = cms.Path(process.hltfilter*process.siPixelDigis*process.a)
 #process.p = cms.Path(process.hltfilter*process.siPixelDigis*process.a*process.d)
 # disable data write to disk 
 #process.ep = cms.EndPath(process.out)
