@@ -40,6 +40,8 @@ using namespace edm;
 SiPixelDets::SiPixelDets(edm::ParameterSet const& conf) : 
   conf_(conf), phase1_(false) {
   usesResource("TFileService");
+  trackerTopoToken_ = esConsumes<TrackerTopology, TrackerTopologyRcd>();
+  trackerGeomToken_ = esConsumes<TrackerGeometry, TrackerDigiGeometryRecord>();
   //phase1_ = conf_.getUntrackedParameter<bool>("phase1",false);		
   //BPixParameters_ = conf_.getUntrackedParameter<Parameters>("BPixParameters");
   //FPixParameters_ = conf_.getUntrackedParameter<Parameters>("FPixParameters");
@@ -65,8 +67,21 @@ void SiPixelDets::analyze(const edm::Event& e, const edm::EventSetup& es) {
   const bool doReversedTest = false;
 
  
-  edm::ESHandle<TrackerGeometry> tkgeom;
-  es.get<TrackerDigiGeometryRecord>().get( tkgeom );
+  //edm::ESHandle<TrackerGeometry> tkgeom;
+  //es.get<TrackerDigiGeometryRecord>().get( tkgeom );
+
+  //Retrieve tracker topology from geometry
+  //edm::ESHandle<TrackerTopology> tTopo;
+  //es.get<IdealGeometryRecord>().get(tTopo);
+  //es.get<TrackerTopologyRcd>().get(tTopo);
+  //const TrackerTopology* tt = tTopo.product();
+
+  edm::ESHandle<TrackerGeometry> tkgeom = es.getHandle(trackerGeomToken_);
+  const TrackerGeometry &theTracker(*tkgeom);
+  edm::ESHandle<TrackerTopology> tTopoH = es.getHandle(trackerTopoToken_);
+  const TrackerTopology *tTopo=tTopoH.product();
+  //const TrackerTopology *tt=tTopoH.product();
+
 
   if(PRINT) cout<<" There are "<<tkgeom->detUnits().size() <<" detectors"<<std::endl;
 
@@ -85,11 +100,6 @@ void SiPixelDets::analyze(const edm::Event& e, const edm::EventSetup& es) {
 
   if(phase1_) cout<<"This is for phase1 geometry "<<endl;
 
-  //Retrieve tracker topology from geometry
-  edm::ESHandle<TrackerTopology> tTopo;
-  //es.get<IdealGeometryRecord>().get(tTopo);
-  es.get<TrackerTopologyRcd>().get(tTopo);
-  const TrackerTopology* tt = tTopo.product();
 
   // Mag field 
   edm::ESHandle<MagneticField> magfield;
@@ -164,12 +174,12 @@ void SiPixelDets::analyze(const edm::Event& e, const edm::EventSetup& es) {
       if(PRINT) cout<<" Barrel layer, ladder, module "
 	  <<layerC<<" "<<ladderC<<" "<<zindex<<endl;
 
-      //printDet(detId, tt);
+      //printDet(detId, tTopo);
 
       // Convert to online 
-      PixelBarrelName pbn(detId, tt, phase1_); // use det-id
-      //PixelBarrelName pbn(detId, tt, false); // use det-id, select phase0
-      //PixelBarrelName pbn(detId, tt, true); // use det-id, select phase1
+      PixelBarrelName pbn(detId, tTopo, phase1_); // use det-id
+      //PixelBarrelName pbn(detId, tTopo, false); // use det-id, select phase0
+      //PixelBarrelName pbn(detId, tTopo, true); // use det-id, select phase1
       //PixelBarrelName pbn(pxdetid); // or pixel det id 
       PixelBarrelName::Shell sh = pbn.shell(); //enum
       int sector = pbn.sectorName();
@@ -179,7 +189,7 @@ void SiPixelDets::analyze(const edm::Event& e, const edm::EventSetup& es) {
       bool half  = pbn.isHalfModule();
       string name= pbn.name();
       PixelModuleName::ModuleType moduleType = pbn.moduleType();
-      DetId det=pbn.getDetId(tt);
+      DetId det=pbn.getDetId(tTopo);
 
       // Sometimes we also use the additional sign convention 
       int ladderSigned=ladder;
@@ -224,7 +234,7 @@ void SiPixelDets::analyze(const edm::Event& e, const edm::EventSetup& es) {
 	int module2 = pbn2.moduleName();
 	string name2= pbn2.name();
 	PixelModuleName::ModuleType moduleType2 = pbn2.moduleType();
-	DetId det2=pbn2.getDetId(tt);
+	DetId det2=pbn2.getDetId(tTopo);
 	if(name !=name2)  cout<<" wrong  name "<<endl;
 	if(shell !=sh2)  cout<<" wrong shell "<<endl;
 	if(sector !=sector2)  cout<<" wrong sector "<<endl;
@@ -270,9 +280,9 @@ void SiPixelDets::analyze(const edm::Event& e, const edm::EventSetup& es) {
 		    <<", panel="<<panel<<endl;
  
       // Convert to online 
-      PixelEndcapName pen(detId,tt,phase1_); // use det-id phase0
-      //PixelEndcapName pen(detId,tt,false); // use det-id phase0
-      //PixelEndcapName pen(detId,tt,true); // use det-id phase1
+      PixelEndcapName pen(detId,tTopo,phase1_); // use det-id phase0
+      //PixelEndcapName pen(detId,tTopo,false); // use det-id phase0
+      //PixelEndcapName pen(detId,tTopo,true); // use det-id phase1
       PixelEndcapName::HalfCylinder sh = pen.halfCylinder(); //enum
       string nameF = pen.name();
       int diskName = pen.diskName();
@@ -280,7 +290,7 @@ void SiPixelDets::analyze(const edm::Event& e, const edm::EventSetup& es) {
       int pannelName = pen.pannelName();
       int plaquetteName = pen.plaquetteName();
       int ringName = pen.ringName();
-      DetId det=pen.getDetId(tt);
+      DetId det=pen.getDetId(tTopo);
       //PixelEndcapName::HalfCylinder part = pen.halfCylinder();
       PixelModuleName::ModuleType moduleType = pen.moduleType();
       if(PRINT) cout<<sh<<" "<<nameF<<" "<<diskName<<" "<<bladeName<<" "<<pannelName<<" "
@@ -314,7 +324,7 @@ void SiPixelDets::analyze(const edm::Event& e, const edm::EventSetup& es) {
 	int bladeName2 = pen2.bladeName();
 	int pannelName2 = pen2.pannelName();
 	int plaquetteName2 = pen2.plaquetteName();
-	DetId det2=pen2.getDetId(tt);
+	DetId det2=pen2.getDetId(tTopo);
 	PixelModuleName::ModuleType moduleType2 = pen2.moduleType();
 	if(nameF != nameF2)  cout<<" wrong name "<<endl;
 	if(sh !=sh2)  cout<<" wrong shell "<<endl;

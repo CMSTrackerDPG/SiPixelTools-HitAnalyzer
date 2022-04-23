@@ -150,6 +150,9 @@ private:
 #ifdef USE_SIM_LINKS
   edm::EDGetTokenT< edm::DetSetVector<PixelDigiSimLink> > tPixelDigiSimLink;
 #endif
+  edm::ESGetToken<TrackerTopology, TrackerTopologyRcd> trackerTopoToken_;
+  edm::ESGetToken<TrackerGeometry, TrackerDigiGeometryRecord> trackerGeomToken_;
+
   float count0, count1, count2, count3;
   int select1, select2;
 
@@ -264,6 +267,9 @@ PixDigisTest::PixDigisTest(const edm::ParameterSet& iConfig) {
 #ifdef USE_SIM_LINKS
   tPixelDigiSimLink = consumes < edm::DetSetVector<PixelDigiSimLink> > ( src_);
 #endif 
+  trackerTopoToken_ = esConsumes<TrackerTopology, TrackerTopologyRcd>();
+  trackerGeomToken_ = esConsumes<TrackerGeometry, TrackerDigiGeometryRecord>();
+
   phase1_ = iConfig.getUntrackedParameter<bool>( "phase1",false);
   select1 = iConfig.getUntrackedParameter<int>("Select1",0);
   select2 = iConfig.getUntrackedParameter<int>("Select2",0);
@@ -811,9 +817,20 @@ void PixDigisTest::analyze(const edm::Event& iEvent,
   const bool rescaleVcal = false; // to try escaling vcal to account for radiation
 
   //Retrieve tracker topology from geometry
-  edm::ESHandle<TrackerTopology> tTopo;
-  iSetup.get<TrackerTopologyRcd>().get(tTopo);
-  const TrackerTopology* tt = tTopo.product();
+  //edm::ESHandle<TrackerTopology> tTopo;
+  //iSetup.get<TrackerTopologyRcd>().get(tTopo);
+  //const TrackerTopology* tt = tTopo.product();
+  // Get event setup (to get global transformation)
+  //edm::ESHandle<TrackerGeometry> geom;
+  //iSetup.get<TrackerDigiGeometryRecord>().get( geom );
+  //const TrackerGeometry& theTracker(*geom);
+
+  edm::ESHandle<TrackerGeometry> geom = iSetup.getHandle(trackerGeomToken_);
+  const TrackerGeometry &theTracker(*geom);
+  edm::ESHandle<TrackerTopology> tTopo = iSetup.getHandle(trackerTopoToken_);
+  const TrackerTopology *tt=tTopo.product();
+
+
 
 #ifdef USE_GAINS
   //Setup gain calibration service
@@ -883,10 +900,6 @@ void PixDigisTest::analyze(const edm::Event& iEvent,
   iEvent.getByToken( tPixelDigiSimLink,   pixelSimLinks);
 #endif
 
-  // Get event setup (to get global transformation)
-  edm::ESHandle<TrackerGeometry> geom;
-  iSetup.get<TrackerDigiGeometryRecord>().get( geom );
-  const TrackerGeometry& theTracker(*geom);
 
   int numberOfDetUnits = 0;
   int totalNumOfDigis = 0;

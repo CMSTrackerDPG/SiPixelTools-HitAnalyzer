@@ -64,6 +64,8 @@ class PixRecHitTest : public edm::one::EDAnalyzer<edm::one::SharedResources> {
   edm::InputTag src_;
   bool print, phase1_;
   edm::EDGetTokenT<edmNew::DetSetVector<SiPixelRecHit>>tPixelRecHit;
+  edm::ESGetToken<TrackerTopology, TrackerTopologyRcd> trackerTopoToken_;
+  edm::ESGetToken<TrackerGeometry, TrackerDigiGeometryRecord> trackerGeomToken_;
 
   TH1F *hpixid,*hpixsubid,
     *hlayerid,
@@ -122,6 +124,8 @@ PixRecHitTest::PixRecHitTest(edm::ParameterSet const& conf) :
     phase1_ = conf.getUntrackedParameter<bool>("phase1",false);
     cout<<" Verbosity "<<print<<endl;
     tPixelRecHit = consumes<edmNew::DetSetVector<SiPixelRecHit>>( src_ );
+ trackerTopoToken_ = esConsumes<TrackerTopology, TrackerTopologyRcd>();
+  trackerGeomToken_ = esConsumes<TrackerGeometry, TrackerDigiGeometryRecord>();
 
 }
 //----------------------------------------------------------------------
@@ -373,14 +377,20 @@ void PixRecHitTest::analyze(const edm::Event& e,
   //const bool localPrint = true;
 
   // Get event setup (to get global transformation)
-  edm::ESHandle<TrackerGeometry> geom;
-  es.get<TrackerDigiGeometryRecord>().get( geom );
-  const TrackerGeometry& theTracker(*geom);
+  //edm::ESHandle<TrackerGeometry> geom;
+  //es.get<TrackerDigiGeometryRecord>().get( geom );
+  //const TrackerGeometry& theTracker(*geom);
 
   //Retrieve tracker topology from geometry
-  edm::ESHandle<TrackerTopology> tTopoH;
-  es.get<TrackerTopologyRcd>().get(tTopoH);
+  //edm::ESHandle<TrackerTopology> tTopoH;
+  //es.get<TrackerTopologyRcd>().get(tTopoH);
+  //const TrackerTopology *tTopo=tTopoH.product();
+
+  edm::ESHandle<TrackerGeometry> geom = es.getHandle(trackerGeomToken_);
+  const TrackerGeometry &theTracker(*geom);
+  edm::ESHandle<TrackerTopology> tTopoH = es.getHandle(trackerTopoToken_);
   const TrackerTopology *tTopo=tTopoH.product();
+
 
   edm::Handle< edmNew::DetSetVector<SiPixelRecHit> > recHitColl;
   //e.getByLabel( src_ , recHitColl);

@@ -96,6 +96,9 @@ class PixClusterTest : public edm::one::EDAnalyzer<edm::one::SharedResources> {
   edm::ParameterSet conf_;
   edm::InputTag src_;
   edm::EDGetTokenT<edmNew::DetSetVector<SiPixelCluster>>tPixelCluster;
+  edm::ESGetToken<TrackerTopology, TrackerTopologyRcd> trackerTopoToken_;
+  edm::ESGetToken<TrackerGeometry, TrackerDigiGeometryRecord> trackerGeomToken_;
+
   bool printLocal;
   bool phase1_;
   int countEvents, countAllEvents;
@@ -153,6 +156,9 @@ PixClusterTest::PixClusterTest(edm::ParameterSet const& conf)
 
   cout<<" Construct for phase "<<phase1_<<" print "<<printLocal<<endl;
   tPixelCluster = consumes<edmNew::DetSetVector<SiPixelCluster>>( src_ );
+
+  trackerTopoToken_ = esConsumes<TrackerTopology, TrackerTopologyRcd>();
+  trackerGeomToken_ = esConsumes<TrackerGeometry, TrackerDigiGeometryRecord>();
 
 }
 // Virtual destructor needed.
@@ -452,14 +458,20 @@ void PixClusterTest::analyze(const edm::Event& e,
   const bool debugLocal = false;
 
   // Get event setup 
-  edm::ESHandle<TrackerGeometry> geom;
-  es.get<TrackerDigiGeometryRecord>().get( geom );
-  const TrackerGeometry& theTracker(*geom);
+  //edm::ESHandle<TrackerGeometry> geom;
+  //es.get<TrackerDigiGeometryRecord>().get( geom );
+  //const TrackerGeometry& theTracker(*geom);
+  edm::ESHandle<TrackerGeometry> geom = es.getHandle(trackerGeomToken_);
+  const TrackerGeometry &theTracker(*geom);
+
+
 
 #ifdef NEW_ID
   //Retrieve tracker topology from geometry
-  edm::ESHandle<TrackerTopology> tTopoH;
-  es.get<TrackerTopologyRcd>().get(tTopoH);
+  //edm::ESHandle<TrackerTopology> tTopoH;
+  //es.get<TrackerTopologyRcd>().get(tTopoH);
+  //const TrackerTopology *tTopo=tTopoH.product();
+  edm::ESHandle<TrackerTopology> tTopoH = es.getHandle(trackerTopoToken_);
   const TrackerTopology *tTopo=tTopoH.product();
 #endif
 

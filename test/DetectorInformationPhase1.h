@@ -37,6 +37,9 @@
 #include "TrackingTools/TrackAssociator/interface/TrackAssociatorParameters.h"
 #include "TrackingTools/TrackAssociator/interface/TrackDetectorAssociator.h"
 
+#include "Geometry/TrackerGeometryBuilder/interface/TrackerGeometry.h"
+#include "Geometry/Records/interface/TrackerDigiGeometryRecord.h"
+
 class TFile;
 class DetId; 
 
@@ -44,9 +47,9 @@ class DetectorInformationPhase1 {
 
  public:
   
-  DetectorInformationPhase1(const edm::EventSetup& iSetup);
+  DetectorInformationPhase1( const SiPixelFedCablingMap *cabling, const TrackerGeometry *geom);
   ~DetectorInformationPhase1();
-  void dumpDetIds(const edm::EventSetup& iSetup, const TrackerTopology* tt);
+  void dumpDetIds(const TrackerTopology* tt, const TrackerGeometry *geom);
   void ROClist(const DetId &pID);
   void bpixNames(const DetId &pID, int &DBlayer, int &DBladder, int &DBmodule, const TrackerTopology* tt);
   void fpixNames(const DetId &pID, int &DBdisk, int &DBblade, int &DBpanel, int &DBplaquette,  const TrackerTopology* tt);
@@ -56,7 +59,9 @@ class DetectorInformationPhase1 {
  private:
   int             fVerbose; 
   //std::string     fRootFileName; 
-  edm::ESHandle<SiPixelFedCablingMap> fCablingMap;
+  const SiPixelFedCablingMap *fCablingMap;
+  //edm::ESGetToken<TrackerTopology, TrackerTopologyRcd> trackerTopoToken_;
+  //edm::ESGetToken<TrackerGeometry, TrackerDigiGeometryRecord> trackerGeomToken_;
 
   //TFile *fFile; 
 

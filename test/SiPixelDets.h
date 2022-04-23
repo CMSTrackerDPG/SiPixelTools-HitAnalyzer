@@ -11,7 +11,7 @@
 //#include "FWCore/MessageLogger/interface/MessageLogger.h"
 
 //#include "DataFormats/Common/interface/Handle.h"
-//#include "Geometry/TrackerGeometryBuilder/interface/TrackerGeometry.h"
+#include "Geometry/TrackerGeometryBuilder/interface/TrackerGeometry.h"
 
 #include "DataFormats/DetId/interface/DetId.h"
 #include "DataFormats/TrackerCommon/interface/TrackerTopology.h"
@@ -34,6 +34,9 @@ class SiPixelDets : public edm::one::EDAnalyzer<edm::one::SharedResources>
 
   edm::ParameterSet conf_;
   bool phase1_;
+  edm::ESGetToken<TrackerTopology, TrackerTopologyRcd> trackerTopoToken_;
+  edm::ESGetToken<TrackerGeometry, TrackerDigiGeometryRecord> trackerGeomToken_;
+
   //typedef std::vector< edm::ParameterSet > Parameters;
   //Parameters BPixParameters_;
   //Parameters FPixParameters_;

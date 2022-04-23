@@ -206,6 +206,9 @@ class PixClustersWithTracks : public edm::one::EDAnalyzer<edm::one::SharedResour
   edm::EDGetTokenT<reco::VertexCollection> VertexCollectionToken;
   edm::EDGetTokenT<std::vector<reco::Track>> TrackToken;
 
+  edm::ESGetToken<TrackerTopology, TrackerTopologyRcd> trackerTopoToken_;
+  edm::ESGetToken<TrackerGeometry, TrackerDigiGeometryRecord> trackerGeomToken_;
+
   TH1D *hcharge1,*hcharge2, *hcharge3, *hcharge4, 
     *hcharge5, *hcharge6, *hcharge7; 
   TH1D *hsize1,*hsize2,*hsize3,*hsize4, 
@@ -480,6 +483,9 @@ PixClustersWithTracks::PixClustersWithTracks(edm::ParameterSet const& conf)
   TrigResultsToken           = consumes <edm::TriggerResults>(edm::InputTag("TriggerResults","","HLT"));
   VertexCollectionToken      = consumes <reco::VertexCollection>(edm::InputTag("offlinePrimaryVertices"));
   TrackToken                 = consumes <std::vector<reco::Track>>(src_) ;
+
+  trackerTopoToken_ = esConsumes<TrackerTopology, TrackerTopologyRcd>();
+  trackerGeomToken_ = esConsumes<TrackerGeometry, TrackerDigiGeometryRecord>();
 
   DEBUG = false; // debug print flag
 
@@ -1851,19 +1857,21 @@ void PixClustersWithTracks::analyze(const edm::Event& e,
 
 
   // -- Does this belong into beginJob()?
-  //ESHandle<TrackerGeometry> TG;
-  //iSetup.get<TrackerDigiGeometryRecord>().get(TG);
-  //const TrackerGeometry* theTrackerGeometry = TG.product();
-  //const TrackerGeometry& theTracker(*theTrackerGeometry);
   // Get event setup 
-  edm::ESHandle<TrackerGeometry> geom;
-  es.get<TrackerDigiGeometryRecord>().get( geom );
-  const TrackerGeometry& theTracker(*geom);
-
+  //edm::ESHandle<TrackerGeometry> geom;
+  //es.get<TrackerDigiGeometryRecord>().get( geom );
+  //const TrackerGeometry& theTracker(*geom);
   //Retrieve tracker topology from geometry
-  edm::ESHandle<TrackerTopology> tTopoH;
-  es.get<TrackerTopologyRcd>().get(tTopoH);
+  //edm::ESHandle<TrackerTopology> tTopoH;
+  //es.get<TrackerTopologyRcd>().get(tTopoH);
+  //const TrackerTopology *tTopo=tTopoH.product();
+
+  edm::ESHandle<TrackerGeometry> geom = es.getHandle(trackerGeomToken_);
+  const TrackerGeometry &theTracker(*geom);
+  edm::ESHandle<TrackerTopology> tTopoH = es.getHandle(trackerTopoToken_);
   const TrackerTopology *tTopo=tTopoH.product();
+
+
 
 #ifdef TRAJECTORY
   //string _ttrhBuilder = "WithAngleAndTemplate"; // in construct

@@ -88,6 +88,9 @@ private:
   bool PRINT;
   string mode_; // select bpix/fpix
   edm::EDGetTokenT<PSimHitContainer> tPixelSimHits;
+  edm::ESGetToken<TrackerTopology, TrackerTopologyRcd> trackerTopoToken_;
+  edm::ESGetToken<TrackerGeometry, TrackerDigiGeometryRecord> trackerGeomToken_;
+
   int numEvents;
   double numSimHits, numSimHitsGood; 
   bool phase1_;
@@ -141,6 +144,8 @@ PixSimHitsTest::PixSimHitsTest(const edm::ParameterSet& iConfig) :
 
   edm::InputTag tag(src_,list_);   // for the ByToken
   tPixelSimHits = consumes <PSimHitContainer> (tag);
+  trackerTopoToken_ = esConsumes<TrackerTopology, TrackerTopologyRcd>();
+  trackerGeomToken_ = esConsumes<TrackerGeometry, TrackerDigiGeometryRecord>();
 
   mode_ = iConfig.getUntrackedParameter<std::string>( "mode","bpix"); // select bpix or fpix
   PRINT = iConfig.getUntrackedParameter<bool>( "Verbosity",false); // printout
@@ -338,14 +343,20 @@ void PixSimHitsTest::analyze(const edm::Event& iEvent,
   using namespace edm;
   
   // Get event setup (to get global transformation)
-  edm::ESHandle<TrackerGeometry> geom;
-  iSetup.get<TrackerDigiGeometryRecord>().get( geom );
-  const TrackerGeometry& theTracker(*geom);
+  //edm::ESHandle<TrackerGeometry> geom;
+  //iSetup.get<TrackerDigiGeometryRecord>().get( geom );
+  //const TrackerGeometry& theTracker(*geom);
  
   //Retrieve tracker topology from geometry (for det id)
-  edm::ESHandle<TrackerTopology> tTopo;
-  iSetup.get<TrackerTopologyRcd>().get(tTopo);
-  const TrackerTopology* tt = tTopo.product();
+  //edm::ESHandle<TrackerTopology> tTopo;
+  //iSetup.get<TrackerTopologyRcd>().get(tTopo);
+  //const TrackerTopology* tt = tTopo.product();
+
+  edm::ESHandle<TrackerGeometry> geom = iSetup.getHandle(trackerGeomToken_);
+  const TrackerGeometry &theTracker(*geom);
+  edm::ESHandle<TrackerTopology> tTopo = iSetup.getHandle(trackerTopoToken_);
+  const TrackerTopology *tt=tTopo.product();
+
 
   int totalNumOfSimHits = 0;
   int totalNumOfSimHits1 = 0;

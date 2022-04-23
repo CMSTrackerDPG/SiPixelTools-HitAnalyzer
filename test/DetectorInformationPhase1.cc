@@ -62,8 +62,10 @@
 #include "DataFormats/TrackReco/interface/Track.h"
 #include "DataFormats/TrackerRecHit2D/interface/SiPixelRecHitCollection.h"
 #include "DataFormats/VertexReco/interface/Vertex.h"
+#include "DataFormats/Common/interface/Handle.h"
 
 //#include "DQM/SiStripCommon/interface/SiStripFolderOrganizer.h"
+
 
 #include "FWCore/Framework/interface/EventSetup.h"
 #include "FWCore/Framework/interface/Frameworkfwd.h"
@@ -71,6 +73,12 @@
 #include "FWCore/Framework/interface/MakerMacros.h"
 #include "FWCore/Framework/interface/ESHandle.h"
 #include "FWCore/ServiceRegistry/interface/Service.h"
+
+#include "FWCore/Framework/interface/one/EDAnalyzer.h"
+#include "FWCore/Framework/interface/Event.h"
+#include "FWCore/ParameterSet/interface/ParameterSet.h"
+#include "FWCore/Utilities/interface/InputTag.h"
+
 
 #include "Geometry/TrackerGeometryBuilder/interface/TrackerGeometry.h"
 #include "Geometry/TrackerGeometryBuilder/interface/RectangularPixelTopology.h"
@@ -104,8 +112,8 @@ using namespace edm;
 using namespace reco;
 
 // ----------------------------------------------------------------------
-DetectorInformationPhase1::DetectorInformationPhase1(const edm::EventSetup& iSetup) {
-
+DetectorInformationPhase1::DetectorInformationPhase1( const SiPixelFedCablingMap *cabling, const TrackerGeometry* geom) :
+fCablingMap(cabling) {
 
   fVerbose = 0;
   phase1_ = true;
@@ -124,17 +132,22 @@ DetectorInformationPhase1::DetectorInformationPhase1(const edm::EventSetup& iSet
   if (0 == fInit) {
     fInit = 1; 
     // -- Setup cabling map and its map to detIDs
-    iSetup.get<SiPixelFedCablingMapRcd>().get(fCablingMap);
     for (int i = FEDMin; i <= FEDMax; ++i) {
       if(fVerbose==1) cout<<" fed : "<<i<<endl;
-      fPFC[i-FEDMin] = new SiPixelFrameConverter(fCablingMap.product(),(i));
+      fPFC[i-FEDMin] = new SiPixelFrameConverter(fCablingMap,(i));
     }
     
-    
-    edm::ESHandle<TrackerGeometry> pDD;
-    iSetup.get<TrackerDigiGeometryRecord>().get(pDD);
+    //edm::ESHandle<TrackerGeometry> pDD;
+    //iSetup.get<TrackerDigiGeometryRecord>().get(pDD);
+    //trackerGeomToken_ = esConsumes<TrackerGeometry, TrackerDigiGeometryRecord>();
+    //edm::ESHandle<TrackerGeometry> geom = iSetup.getHandle(trackerGeomToken_);
+    //const TrackerGeometry &tkgeom(*geom);
+    //trackerTopoToken_ = esConsumes<TrackerTopology, TrackerTopologyRcd>();
+    //edm::ESHandle<TrackerTopology> tTopoH = iSetup.getHandle(trackerTopoToken_);
+    //const TrackerTopology *tTopo=tTopoH.product();
 
-    for (TrackerGeometry::DetContainer::const_iterator it = pDD->dets().begin(); it != pDD->dets().end(); it++){
+
+    for (TrackerGeometry::DetContainer::const_iterator it = geom->dets().begin(); it != geom->dets().end(); it++){
       if(dynamic_cast<const PixelGeomDetUnit*>((*it))!=0){
 	DetId detId = (*it)->geographicalId();
 	uint32_t newDetId = detId;
@@ -216,19 +229,16 @@ void DetectorInformationPhase1::ROClist(const DetId &pID) {
 
 
 // ----------------------------------------------------------------------
-// might not work for fpix
-void DetectorInformationPhase1::dumpDetIds(const edm::EventSetup& iSetup, 
-					   const TrackerTopology* tt) {
+// might not work for fpix  NEVER CALLED, tt not defined 
+void DetectorInformationPhase1::dumpDetIds(const TrackerTopology* tt, const TrackerGeometry *geom) {
 
-  edm::ESHandle<TrackerGeometry> pDD;
-  iSetup.get<TrackerDigiGeometryRecord>().get( pDD );
 
   cout << "**********************************************************************" << endl;
-  cout << " *** Geometry node for TrackerGeom is  "<<&(*pDD)<<std::endl;
-  cout << " *** I have " << pDD->dets().size() <<" detectors"<<std::endl;
-  cout << " *** I have " << pDD->detTypes().size() <<" types"<<std::endl;
+  cout << " *** Geometry node for TrackerGeom is  "<<&(*geom)<<std::endl;
+  cout << " *** I have " << geom->dets().size() <<" detectors"<<std::endl;
+  cout << " *** I have " << geom->detTypes().size() <<" types"<<std::endl;
   
-  for (TrackerGeometry::DetContainer::const_iterator it = pDD->dets().begin(); it != pDD->dets().end(); it++){
+  for (TrackerGeometry::DetContainer::const_iterator it = geom->dets().begin(); it != geom->dets().end(); it++){
     
     if(dynamic_cast<const PixelGeomDetUnit*>((*it))!=0){
       DetId detId = (*it)->geographicalId();

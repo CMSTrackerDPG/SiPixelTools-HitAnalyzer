@@ -45,6 +45,8 @@ using namespace edm;
 SiPixelPixels::SiPixelPixels(edm::ParameterSet const& conf) : 
   conf_(conf), phase1_(false) {
   usesResource("TFileService");
+ trackerTopoToken_ = esConsumes<TrackerTopology, TrackerTopologyRcd>();
+  trackerGeomToken_ = esConsumes<TrackerGeometry, TrackerDigiGeometryRecord>();
   //phase1_ = conf_.getUntrackedParameter<bool>("phase1",false);		
   //BPixParameters_ = conf_.getUntrackedParameter<Parameters>("BPixParameters");
   //FPixParameters_ = conf_.getUntrackedParameter<Parameters>("FPixParameters");
@@ -68,10 +70,24 @@ void SiPixelPixels::analyze(const edm::Event& e, const edm::EventSetup& es) {
   const bool PRINT =  false;
   //const bool PRINT_TABLE = true;
   //const bool doReversedTest = true;
-
  
-  edm::ESHandle<TrackerGeometry> tkgeom;
-  es.get<TrackerDigiGeometryRecord>().get( tkgeom );
+  //edm::ESHandle<TrackerGeometry> tkgeom;
+  //es.get<TrackerDigiGeometryRecord>().get( tkgeom );
+  //Retrieve tracker topology from geometry
+  //edm::ESHandle<TrackerTopology> tTopo;
+  //es.get<TrackerTopologyRcd>().get(tTopo);
+  //const TrackerTopology* tt = tTopo.product();
+
+  edm::ESHandle<TrackerGeometry> tkgeom = es.getHandle(trackerGeomToken_);
+  const TrackerGeometry *theTracker=tkgeom.product();
+  edm::ESHandle<TrackerTopology> tTopoH = es.getHandle(trackerTopoToken_);
+  const TrackerTopology *tTopo=tTopoH.product();
+  // Mag field (not realy needed)
+  //edm::ESHandle<MagneticField> magfield;
+  //es.get<IdealMagneticFieldRecord>().get(magfield);
+  edm::ESHandle<SiPixelFedCablingMap> cablingMap;
+  es.get<SiPixelFedCablingMapRcd>().get(cablingMap);
+  const SiPixelFedCablingMap *cabling=cablingMap.product();
 
   if(PRINT) cout<<" There are "<<tkgeom->detUnits().size() <<" detectors"<<std::endl;
 
@@ -82,27 +98,16 @@ void SiPixelPixels::analyze(const edm::Event& e, const edm::EventSetup& es) {
   cout  << " is there P1PXB: " << tkgeom->isThere(GeomDetEnumerators::P1PXB);
   cout  << " is there P1PXEC: " << tkgeom->isThere(GeomDetEnumerators::P1PXEC);
   cout  << endl;
-
   // switch on the phase1 
   if( (tkgeom->isThere(GeomDetEnumerators::P1PXB)) && 
       (tkgeom->isThere(GeomDetEnumerators::P1PXEC)) ) phase1_ = true;
   else phase1_ = false;
-
   if(phase1_) cout<<"This is for phase1 geometry "<<endl;
 
-  //Retrieve tracker topology from geometry
-  edm::ESHandle<TrackerTopology> tTopo;
-  //es.get<IdealGeometryRecord>().get(tTopo);
-  es.get<TrackerTopologyRcd>().get(tTopo);
-  const TrackerTopology* tt = tTopo.product();
-
-  // Mag field (not realy needed)
-  //edm::ESHandle<MagneticField> magfield;
-  //es.get<IdealMagneticFieldRecord>().get(magfield);
 
 
-  DetectorInformationPhase1 di(es);
-  //di.dumpDetIds(es,tt); // dump Detunits 
+  DetectorInformationPhase1 di(cabling, theTracker);
+  //di.dumpDetIds(tTopo,tkgeom); // dump Detunits 
 
   cout<<" loop over modules "<<endl;
 
@@ -127,26 +132,26 @@ void SiPixelPixels::analyze(const edm::Event& e, const edm::EventSetup& es) {
     //cout<<" ROC list "<<endl;
     //di.ROClist(detId);
     //int layer=-1, ladder=-1, module=-1;
-    //di.bpixNames(detId,layer,ladder,module,tt);
+    //di.bpixNames(detId,layer,ladder,module,tTopo);
     //cout<<" layer "<<layer<<" "<<ladder<<" "<<module<<endl;
     
     if(rawid==303054856) {
       
       cout<<" Print det info "<<endl;
-      printDet(detId, tt);
+      printDet(detId, tTopo);
  	  
       cout<<" Print pixel conversion  "<<endl;
       offlineRow=49; 
       offlineCol=109;
       roc=-1; col=-1; row=-1;
-      di.onlineRocColRow(detId, offlineRow, offlineCol, roc,col,row);
+      ///di.onlineRocColRow(detId, offlineRow, offlineCol, roc,col,row);
       cout<<" Module "<<rawid<<" for roc "<<roc<<" row/col "
 	  <<offlineRow<<"/"<<offlineCol<<" roc row/col "<<row<<"/"<<col<<endl;
 
     } else if(rawid==303046684) {
       
       cout<<" Print det info "<<endl;
-      printDet(detId, tt);
+      printDet(detId, tTopo);
       
       // print roc list per module 
       //cout<<" ROC list "<<endl;
@@ -157,14 +162,14 @@ void SiPixelPixels::analyze(const edm::Event& e, const edm::EventSetup& es) {
       offlineRow=147; //65; 
       offlineCol=241; // 150;
       roc=-1; col=-1; row=-1;
-      di.onlineRocColRow(detId, offlineRow, offlineCol, roc,col,row);
+      ///di.onlineRocColRow(detId, offlineRow, offlineCol, roc,col,row);
       cout<<" Module "<<rawid<<" for roc "<<roc<<" row/col "
 	  <<offlineRow<<"/"<<offlineCol<<" roc row/col "<<row<<"/"<<col<<endl;
 
     } else if(rawid==303042580) {
       
       cout<<" Print det info "<<endl;
-      printDet(detId, tt);
+      printDet(detId, tTopo);
       
       // print roc list per module 
       //cout<<" ROC list "<<endl;
@@ -175,7 +180,7 @@ void SiPixelPixels::analyze(const edm::Event& e, const edm::EventSetup& es) {
       offlineRow=137; 
       offlineCol=94;
       roc=-1; col=-1; row=-1;
-      di.onlineRocColRow(detId, offlineRow, offlineCol, roc,col,row);
+      ///di.onlineRocColRow(detId, offlineRow, offlineCol, roc,col,row);
       cout<<" Module "<<rawid<<" for roc "<<roc<<" row/col "
 	  <<offlineRow<<"/"<<offlineCol<<" roc row/col "<<row<<"/"<<col<<endl;
 

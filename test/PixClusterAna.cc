@@ -512,6 +512,8 @@ class PixClusterAna : public edm::one::EDAnalyzer<edm::one::WatchRuns, edm::one:
   edm::EDGetTokenT<edm::TriggerResults> TrigResultsToken;
   edm::EDGetTokenT<reco::VertexCollection> VertexCollectionToken;
   edm::EDGetTokenT<std::vector<reco::Track>> TrackToken;
+  edm::ESGetToken<TrackerTopology, TrackerTopologyRcd> trackerTopoToken_;
+  edm::ESGetToken<TrackerGeometry, TrackerDigiGeometryRecord> trackerGeomToken_;
 
 #ifdef HF
 edm::EDGetTokenT<HFRecHitCollection> HFHitsToken_;
@@ -817,6 +819,9 @@ PixClusterAna::PixClusterAna(edm::ParameterSet const& conf)
     TrackToken                 = consumes <std::vector<reco::Track>>(conf.getParameter<edm::InputTag>("Tracks"));
   }
 #endif
+  trackerTopoToken_ = esConsumes<TrackerTopology, TrackerTopologyRcd>();
+  trackerGeomToken_ = esConsumes<TrackerGeometry, TrackerDigiGeometryRecord>();
+
   phase1_ = conf.getUntrackedParameter<bool>("phase1",false);
 
 #ifdef HF
@@ -2319,9 +2324,19 @@ void PixClusterAna::analyze(const edm::Event& e,
   //static int countRuns=0;
 
   // Get event setup 
-  edm::ESHandle<TrackerGeometry> geom;
-  es.get<TrackerDigiGeometryRecord>().get( geom );
-  const TrackerGeometry& theTracker(*geom);
+  //edm::ESHandle<TrackerGeometry> geom;
+  //es.get<TrackerDigiGeometryRecord>().get( geom );
+  //const TrackerGeometry& theTracker(*geom);
+  edm::ESHandle<TrackerGeometry> geom = es.getHandle(trackerGeomToken_);
+  const TrackerGeometry &theTracker(*geom);
+
+  //Retrieve tracker topology from geometry
+  //edm::ESHandle<TrackerTopology> tTopoH;
+  //es.get<TrackerTopologyRcd>().get(tTopoH);
+  //const TrackerTopology *tTopo=tTopoH.product();
+  edm::ESHandle<TrackerTopology> tTopoH = es.getHandle(trackerTopoToken_);
+  const TrackerTopology *tTopo=tTopoH.product();
+
 
   countAllEvents++;
   int run       = e.id().run();
@@ -2700,10 +2715,6 @@ void PixClusterAna::analyze(const edm::Event& e,
   // default: cout<<" too many runs "<<countRuns<<endl;
   // }
 
-  //Retrieve tracker topology from geometry
-  edm::ESHandle<TrackerTopology> tTopoH;
-  es.get<TrackerTopologyRcd>().get(tTopoH);
-  const TrackerTopology *tTopo=tTopoH.product();
 
   //---------------------------------------
   if(numOf>0) countEvents++; // count events with pixel hits 
