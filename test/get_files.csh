@@ -30,4 +30,7 @@
  # ZB
 #dasgoclient -query='file dataset=/ZeroBias/Commissioning2021-v1/RAW run=346396'  
 # 2022
-dasgoclient -query='file dataset=/ExpressCosmics/Commissioning2022-Express-v1/FEVT run=350492'
+#dasgoclient -query='file dataset=/ExpressCosmics/Commissioning2022-Express-v1/FEVT run=352040'
+#dasgoclient -query='file dataset=/ExpressPhysics/Commissioning2022-Express-v1/FEVT run=352165'
+#dasgoclient -query='file dataset=/ExpressCosmics/Run2022A-Express-v1/FEVT run=352417'
+dasgoclient -query='file dataset=/ExpressPhysics/Run2022A-Express-v1/FEVT run=353060'

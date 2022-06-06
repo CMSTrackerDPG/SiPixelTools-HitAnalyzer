@@ -46,8 +46,8 @@ import HLTrigger.HLTfilters.hltHighLevel_cfi as hlt
 process.hltfilter = hlt.hltHighLevel.clone(
 # Min-Bias	
 #    HLTPaths = ['HLT_Physics*'],
-    HLTPaths = ['HLT_Random*'],
-#    HLTPaths = ['HLT_ZeroBias*'],  # includes _part* and others 
+#    HLTPaths = ['HLT_Random*'],
+    HLTPaths = ['HLT_ZeroBias*'],  # includes _part* and others 
 #    HLTPaths = ['HLT_ZeroBias_v*'],
 #    HLTPaths = ['HLT_ZeroBias_part*'],  # empty
 #    HLTPaths = ['HLT_ZeroBias_FirstCollisionInTrain_*'], # empty
@@ -97,17 +97,17 @@ myfilelist.extend([
 ])
 
 process.source = cms.Source("PoolSource",
-                            # fileNames =  myfilelist )
+                             fileNames =  myfilelist )
 
-  fileNames = cms.untracked.vstring(  
+#  fileNames = cms.untracked.vstring(  
 
-"/store/express/Commissioning2021/ExpressPhysics/FEVT/Express-v1/000/346/236/00000/1e926627-4553-4b96-bf6b-51bb2587f01a.root",
-"/store/express/Commissioning2021/ExpressPhysics/FEVT/Express-v1/000/346/236/00000/62476398-24db-4869-8288-17982f19c909.root",
-"/store/express/Commissioning2021/ExpressPhysics/FEVT/Express-v1/000/346/236/00000/0757eddf-0c0a-462b-88fe-c62dbe588e32.root",
-"/store/express/Commissioning2021/ExpressPhysics/FEVT/Express-v1/000/346/236/00000/9f4edfe6-1cec-4407-b50c-5be900384a39.root",
-"/store/express/Commissioning2021/ExpressPhysics/FEVT/Express-v1/000/346/236/00000/84356223-f54b-4716-b0e4-7a6011ca76dc.root",
-"/store/express/Commissioning2021/ExpressPhysics/FEVT/Express-v1/000/346/236/00000/07a0f8c9-7ee3-40a8-ae2b-9c1e7f145f32.root",
-"/store/express/Commissioning2021/ExpressPhysics/FEVT/Express-v1/000/346/236/00000/7a970327-ebc7-4987-88bf-7ca184c08d71.root",
+#"/store/express/Commissioning2021/ExpressPhysics/FEVT/Express-v1/000/346/236/00000/1e926627-4553-4b96-bf6b-51bb2587f01a.root",
+#"/store/express/Commissioning2021/ExpressPhysics/FEVT/Express-v1/000/346/236/00000/62476398-24db-4869-8288-17982f19c909.root",
+#"/store/express/Commissioning2021/ExpressPhysics/FEVT/Express-v1/000/346/236/00000/0757eddf-0c0a-462b-88fe-c62dbe588e32.root",
+#"/store/express/Commissioning2021/ExpressPhysics/FEVT/Express-v1/000/346/236/00000/9f4edfe6-1cec-4407-b50c-5be900384a39.root",
+#"/store/express/Commissioning2021/ExpressPhysics/FEVT/Express-v1/000/346/236/00000/84356223-f54b-4716-b0e4-7a6011ca76dc.root",
+#"/store/express/Commissioning2021/ExpressPhysics/FEVT/Express-v1/000/346/236/00000/07a0f8c9-7ee3-40a8-ae2b-9c1e7f145f32.root",
+#"/store/express/Commissioning2021/ExpressPhysics/FEVT/Express-v1/000/346/236/00000/7a970327-ebc7-4987-88bf-7ca184c08d71.root",
 
 #"/store/express/Commissioning2021/ExpressPhysics/FEVT/Express-v1/000/346/247/00000/953d941c-dd4f-4779-8045-07f5076ac5b2.root",
 
@@ -123,8 +123,8 @@ process.source = cms.Source("PoolSource",
 #"/store/express/Commissioning2021/ExpressPhysics/FEVT/Express-v1/000/346/299/00000/a0f7f300-992e-4e64-84a2-7357517b9d60.root",
 #"/store/express/Commissioning2021/ExpressPhysics/FEVT/Express-v1/000/346/299/00000/043c9bc6-c62f-41a1-bb76-957481dc340d.root",
 
-  )   # end the list "by-hand"
-)
+#  )   # end the list "by-hand"
+#)
 
 #process.source.lumisToProcess = cms.untracked.VLuminosityBlockRange('124230:26-124230:9999','124030:2-124030:9999')
 #process.source.lumisToProcess = cms.untracked.VLuminosityBlockRange('325308:43-325308:9999')
