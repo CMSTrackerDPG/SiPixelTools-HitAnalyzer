@@ -61,8 +61,26 @@ process.source = cms.Source("PoolSource",
 # fileNames =  myfilelist
     fileNames = cms.untracked.vstring(
 
-"/store/express/Run2022A/ExpressCosmics/FEVT/Express-v1/000/352/768/00000/c95e4ffd-e693-4579-ba5e-eade30de5265.root",
-"/store/express/Run2022A/ExpressCosmics/FEVT/Express-v1/000/352/768/00000/8b150e56-8a33-4708-b557-2fc9104901a8.root",
+#"/store/express/Run2022A/ExpressPhysics/FEVT/Express-v1/000/353/087/00000/dd0286ac-9305-4ac1-b849-e835b56b2def.root",
+#"/store/express/Run2022A/ExpressPhysics/FEVT/Express-v1/000/353/087/00000/8da8bd23-b41a-44be-9eb5-374f562f7a0e.root",
+#"/store/express/Run2022A/ExpressPhysics/FEVT/Express-v1/000/353/087/00000/66f189f5-0def-4b14-ab5d-ab5b5c131d16.root",
+#"/store/express/Run2022A/ExpressPhysics/FEVT/Express-v1/000/353/087/00000/c375f7d1-8785-450a-b2d2-968c16ddeeb6.root",
+#"/store/express/Run2022A/ExpressPhysics/FEVT/Express-v1/000/353/087/00000/1b7bfea3-e324-425d-afb2-cb5f45cef07d.root",
+
+"/store/express/Run2022A/ExpressPhysics/FEVT/Express-v1/000/353/060/00000/2499e0b2-8ec8-4c6e-8173-c2ab48510815.root",
+"/store/express/Run2022A/ExpressPhysics/FEVT/Express-v1/000/353/060/00000/ef867575-a95e-4bb7-832a-1eec9904fffc.root",
+"/store/express/Run2022A/ExpressPhysics/FEVT/Express-v1/000/353/060/00000/0e1b06f9-2393-49ee-9afc-ed1ca7b5ce4b.root",
+"/store/express/Run2022A/ExpressPhysics/FEVT/Express-v1/000/353/060/00000/a73ced30-a5cc-4998-9d4d-b83faaac436d.root",
+"/store/express/Run2022A/ExpressPhysics/FEVT/Express-v1/000/353/060/00000/6aa8ee92-5491-403f-96c0-069dc4a40d54.root",
+
+#"/store/express/Run2022A/ExpressPhysics/FEVT/Express-v1/000/352/931/00000/e30ff91c-20fa-4bd6-a9ef-18308fab8a19.root",
+#"/store/express/Run2022A/ExpressPhysics/FEVT/Express-v1/000/352/931/00000/b068d1a7-c6da-4675-8d2b-61eb59e565ec.root",
+#"/store/express/Run2022A/ExpressPhysics/FEVT/Express-v1/000/352/931/00000/8f1ab562-4f7b-48a3-ae00-4b39359db128.root",
+#"/store/express/Run2022A/ExpressPhysics/FEVT/Express-v1/000/352/931/00000/5591bd51-7ed7-4547-a114-203c5c5d6221.root",
+#"/store/express/Run2022A/ExpressPhysics/FEVT/Express-v1/000/352/931/00000/5eb6fa68-cdbc-4396-826c-a2e5c6d6efe5.root",
+
+#"/store/express/Run2022A/ExpressCosmics/FEVT/Express-v1/000/352/768/00000/c95e4ffd-e693-4579-ba5e-eade30de5265.root",
+#"/store/express/Run2022A/ExpressCosmics/FEVT/Express-v1/000/352/768/00000/8b150e56-8a33-4708-b557-2fc9104901a8.root",
 
 #"/store/express/Run2022A/ExpressCosmics/FEVT/Express-v1/000/352/584/00000/d1ad3538-78cb-4926-9755-01d95ffbf36b.root",
 #"/store/express/Run2022A/ExpressCosmics/FEVT/Express-v1/000/352/584/00000/d73acade-bee2-46b5-a461-f53960624eed.root",
@@ -103,120 +121,6 @@ process.source = cms.Source("PoolSource",
 #"/store/express/Commissioning2022/ExpressCosmics/FEVT/Express-v1/000/352/037/00000/eea62842-e1b3-490c-8ef7-764a4ca87a0f.root",
 #"/store/express/Commissioning2022/ExpressCosmics/FEVT/Express-v1/000/352/037/00000/b1f46980-1ff0-47a8-a449-f0ca997b6a3c.root",
 
-#"/store/express/Commissioning2022/ExpressCosmics/FEVT/Express-v1/000/351/964/00000/95c684da-2efa-4409-b784-c1e406255219.root",
-#"/store/express/Commissioning2022/ExpressCosmics/FEVT/Express-v1/000/351/964/00000/db6b6b43-23b7-4578-b47e-ae28e68cf0fa.root",
-#"/store/express/Commissioning2022/ExpressCosmics/FEVT/Express-v1/000/351/964/00000/c5bbac67-0cb1-4c7e-a4c1-72c819e1c0da.root",
-#"/store/express/Commissioning2022/ExpressCosmics/FEVT/Express-v1/000/351/964/00000/c96aed8d-107f-454b-9783-d7c0ae3a771a.root",
-#"/store/express/Commissioning2022/ExpressCosmics/FEVT/Express-v1/000/351/964/00000/b9f51750-6ce5-4ec6-bd79-64879c88cbe0.root",
-     
-#"/store/express/Commissioning2022/ExpressCosmics/FEVT/Express-v1/000/351/977/00000/c991f6ea-2ae9-47bb-8757-f81f7930818c.root",
-#"/store/express/Commissioning2022/ExpressCosmics/FEVT/Express-v1/000/351/977/00000/a47e2f54-f4af-4870-81f5-c02d92c172b0.root",
-#"/store/express/Commissioning2022/ExpressCosmics/FEVT/Express-v1/000/351/977/00000/4e6cfac5-f16f-4a31-a573-a42094140854.root",
-#"/store/express/Commissioning2022/ExpressCosmics/FEVT/Express-v1/000/351/977/00000/6e45fc75-a454-4942-81c3-b467312ac7a8.root",
-#"/store/express/Commissioning2022/ExpressCosmics/FEVT/Express-v1/000/351/977/00000/cba19a1e-c084-472e-b166-fda5f60f2c77.root",
-
-#"/store/express/Commissioning2022/ExpressCosmics/FEVT/Express-v1/000/351/772/00000/3dfba781-047a-4843-8685-6b010484439c.root",
-#"/store/express/Commissioning2022/ExpressCosmics/FEVT/Express-v1/000/351/772/00000/8d9f056b-511b-4055-862e-39832ad2f206.root",
-#"/store/express/Commissioning2022/ExpressCosmics/FEVT/Express-v1/000/351/772/00000/9ffb4364-dcab-4f38-89e7-a6eeb99bfaa4.root",
-#"/store/express/Commissioning2022/ExpressCosmics/FEVT/Express-v1/000/351/772/00000/9a3b6c70-3d8e-4d7b-9cb0-ef36c721f844.root",
-#"/store/express/Commissioning2022/ExpressCosmics/FEVT/Express-v1/000/351/772/00000/62314d9f-9457-4517-9ff7-94e37565ead7.root",
-
-#"/store/express/Commissioning2022/ExpressCosmics/FEVT/Express-v1/000/351/589/00000/2eb6fc16-353c-4d19-80fc-804ea9cee648.root",
-#"/store/express/Commissioning2022/ExpressCosmics/FEVT/Express-v1/000/351/589/00000/c37e7364-bd2a-4bb2-a57f-d7e99d12b231.root",
-#"/store/express/Commissioning2022/ExpressCosmics/FEVT/Express-v1/000/351/589/00000/430db2b4-c886-4bf2-87f2-d3a693e0d694.root",
-#"/store/express/Commissioning2022/ExpressCosmics/FEVT/Express-v1/000/351/589/00000/a5378423-d8a9-491f-af6e-c8bb68e3c6a1.root",
-#"/store/express/Commissioning2022/ExpressCosmics/FEVT/Express-v1/000/351/589/00000/ac6d2615-e293-41d7-902d-f06cb3eb7041.root",
-
-#"/store/express/Commissioning2022/ExpressCosmics/FEVT/Express-v1/000/351/588/00001/cce2c568-de5b-4573-8796-f8390e014ae2.root",
-#"/store/express/Commissioning2022/ExpressCosmics/FEVT/Express-v1/000/351/588/00001/74b44980-a057-4444-9aea-15888b855734.root",
-#"/store/express/Commissioning2022/ExpressCosmics/FEVT/Express-v1/000/351/588/00001/25d205eb-1209-4e7f-a08a-acad2cdb4452.root",
-#"/store/express/Commissioning2022/ExpressCosmics/FEVT/Express-v1/000/351/588/00001/dbce9cac-df7f-440c-8ae5-a4fdcfdd0310.root",
-#"/store/express/Commissioning2022/ExpressCosmics/FEVT/Express-v1/000/351/588/00001/35e56fcc-f7fd-4fe6-904f-00bf16b55732.root",
-
-#"/store/express/Commissioning2022/ExpressCosmics/FEVT/Express-v1/000/351/472/00000/fbf80f7b-7c67-41fd-8dd8-a1a25ea60735.root",
-
-#"/store/express/Commissioning2022/ExpressCosmics/FEVT/Express-v1/000/351/471/00000/37f7296b-66af-4431-87d5-25508d3c902c.root",
-#"/store/express/Commissioning2022/ExpressCosmics/FEVT/Express-v1/000/351/471/00000/3b4e1203-ae9d-48ea-8d2f-fb472a0b6900.root",
-#"/store/express/Commissioning2022/ExpressCosmics/FEVT/Express-v1/000/351/471/00000/3ab1434b-e44c-486d-82b6-ac0a64a5a1f7.root",
-#"/store/express/Commissioning2022/ExpressCosmics/FEVT/Express-v1/000/351/471/00000/ed45cb82-c91c-443a-9f18-277f55dc0a10.root",
-
-#"/store/express/Commissioning2022/ExpressCosmics/FEVT/Express-v1/000/351/470/00000/03b21398-abee-40ed-8a8b-331eb8c978b6.root",
-#"/store/express/Commissioning2022/ExpressCosmics/FEVT/Express-v1/000/351/470/00000/96bb7f7e-19ab-47e3-9aa9-fa995943b8bd.root",
-#"/store/express/Commissioning2022/ExpressCosmics/FEVT/Express-v1/000/351/470/00000/b5fc1eac-efec-4647-b790-6e0e45670356.root",
-#"/store/express/Commissioning2022/ExpressCosmics/FEVT/Express-v1/000/351/470/00000/04f6ed83-8ff8-43bb-b9d5-fff7679ed37f.root",
-#"/store/express/Commissioning2022/ExpressCosmics/FEVT/Express-v1/000/351/470/00000/2b229b19-6a3e-457a-96a5-38278d735017.root",
-
-#"/store/express/Commissioning2022/ExpressCosmics/FEVT/Express-v1/000/351/340/00000/980bb60b-2d01-473d-b6b7-e729844a44b3.root",
-#"/store/express/Commissioning2022/ExpressCosmics/FEVT/Express-v1/000/351/340/00000/d7594847-de6a-4214-a7ab-19e7508bce7e.root",
-#"/store/express/Commissioning2022/ExpressCosmics/FEVT/Express-v1/000/351/340/00000/19bc5985-bd02-4dd4-aefa-d5650af73934.root",
-#"/store/express/Commissioning2022/ExpressCosmics/FEVT/Express-v1/000/351/340/00000/a8bf1624-e62d-489a-8f7f-0b841ef7ba27.root",
-#"/store/express/Commissioning2022/ExpressCosmics/FEVT/Express-v1/000/351/340/00000/6ed7f031-d4c1-493d-9aff-c5d93355348c.root",
-
-#"/store/express/Commissioning2022/ExpressCosmics/FEVT/Express-v1/000/351/287/00000/a373b0a7-847e-4e08-a7da-49ac4e5804e5.root",
-#"/store/express/Commissioning2022/ExpressCosmics/FEVT/Express-v1/000/351/287/00000/2184b4f6-43c3-4539-95c6-53c42dc6399a.root",
-#"/store/express/Commissioning2022/ExpressCosmics/FEVT/Express-v1/000/351/287/00000/c32893cf-3b1a-482e-a9e7-7579d6a0ba9e.root",
-#"/store/express/Commissioning2022/ExpressCosmics/FEVT/Express-v1/000/351/287/00000/ceb6e9b5-509f-4582-b204-060d599fdb24.root",
-#"/store/express/Commissioning2022/ExpressCosmics/FEVT/Express-v1/000/351/287/00000/5e1e1927-58db-4589-9b44-a6dd3eb8f14c.root",
-
-#"/store/express/Commissioning2022/ExpressCosmics/FEVT/Express-v1/000/351/264/00000/5a2c35a2-8efa-4611-aadf-a2d7049978b1.root",
-#"/store/express/Commissioning2022/ExpressCosmics/FEVT/Express-v1/000/351/264/00000/7080d1d9-41bb-4066-a77c-31e63e9bd08e.root",
-#"/store/express/Commissioning2022/ExpressCosmics/FEVT/Express-v1/000/351/264/00000/4aa5901c-04d9-431a-92c3-5841544937b3.root",
-#"/store/express/Commissioning2022/ExpressCosmics/FEVT/Express-v1/000/351/264/00000/6305fb69-51a4-4baf-8c43-17ef66b35390.root",
-#"/store/express/Commissioning2022/ExpressCosmics/FEVT/Express-v1/000/351/264/00000/e8c18796-3f93-49ad-85b9-df7d7c4b8755.root",
-
-#"/store/express/Commissioning2022/ExpressCosmics/FEVT/Express-v1/000/351/217/00000/460c8377-56ba-4773-9f48-a11e85679c0b.root",
-#"/store/express/Commissioning2022/ExpressCosmics/FEVT/Express-v1/000/351/217/00000/ab96f8b4-dbcb-49c0-9b46-308a2787580d.root",
-#"/store/express/Commissioning2022/ExpressCosmics/FEVT/Express-v1/000/351/217/00000/65489017-b55a-44e8-897a-f1bdb225debe.root",
-#"/store/express/Commissioning2022/ExpressCosmics/FEVT/Express-v1/000/351/217/00001/8307ac89-0407-4d87-96dc-90f1331d5434.root",
-#"/store/express/Commissioning2022/ExpressCosmics/FEVT/Express-v1/000/351/217/00000/ec3a5588-bbf5-428e-b3c8-fed9c95bc66d.root",
-
-#"/store/express/Commissioning2022/ExpressCosmics/FEVT/Express-v1/000/351/207/00000/5c23a1b4-2375-49ff-9845-c02c10c5d4f6.root",
-#"/store/express/Commissioning2022/ExpressCosmics/FEVT/Express-v1/000/351/207/00000/54e083a6-5bf5-4b48-8a96-e92ee717bd8d.root",
-#"/store/express/Commissioning2022/ExpressCosmics/FEVT/Express-v1/000/351/207/00000/12253259-2c78-4a0a-a486-da06c634cddf.root",
-#"/store/express/Commissioning2022/ExpressCosmics/FEVT/Express-v1/000/351/207/00000/ba97826f-9164-4f53-b53a-4485f84676b4.root",
-#"/store/express/Commissioning2022/ExpressCosmics/FEVT/Express-v1/000/351/207/00000/d9d06ad1-bf44-4bb9-9857-d1f36786d3e8.root",
-# end run 
-#"/store/express/Commissioning2022/ExpressCosmics/FEVT/Express-v1/000/351/207/00000/f356e6c7-2cfc-4221-ad47-fba10cbb355d.root",
-#"/store/express/Commissioning2022/ExpressCosmics/FEVT/Express-v1/000/351/207/00000/3c9fbdaf-d065-4e0d-857e-94dacd285feb.root",
-#"/store/express/Commissioning2022/ExpressCosmics/FEVT/Express-v1/000/351/207/00000/ff632059-5744-4422-a703-3052cd40259b.root",
-#"/store/express/Commissioning2022/ExpressCosmics/FEVT/Express-v1/000/351/207/00000/3bcad44b-ae4c-40f4-b58a-f8d82341bf35.root",
-#"/store/express/Commissioning2022/ExpressCosmics/FEVT/Express-v1/000/351/207/00000/aaba9512-8998-4865-82da-0d3e00aa5c4b.root",
-
-#"/store/express/Commissioning2022/ExpressCosmics/FEVT/Express-v1/000/351/168/00000/24812da7-e4ee-4fa5-bc0c-c462fb933deb.root",
-#"/store/express/Commissioning2022/ExpressCosmics/FEVT/Express-v1/000/351/168/00000/454210c2-8e49-4af2-8fea-6b6d2ee7a7c5.root",
-#"/store/express/Commissioning2022/ExpressCosmics/FEVT/Express-v1/000/351/168/00000/015fbe60-808d-4460-af2c-10623e824e14.root",
-#"/store/express/Commissioning2022/ExpressCosmics/FEVT/Express-v1/000/351/168/00000/8d5b4b3c-8874-45ad-8b99-dbb614b0388a.root",
-#"/store/express/Commissioning2022/ExpressCosmics/FEVT/Express-v1/000/351/168/00000/bcca1513-e33d-409f-b2ba-a34874f1571b.root",
-
-#"/store/express/Commissioning2022/ExpressCosmics/FEVT/Express-v1/000/351/045/00000/4ef580d8-b961-4e8d-9694-152a581631b5.root",
-#"/store/express/Commissioning2022/ExpressCosmics/FEVT/Express-v1/000/351/045/00000/181fe2a1-170d-4e31-81a3-8eed94d37f5b.root",
-#"/store/express/Commissioning2022/ExpressCosmics/FEVT/Express-v1/000/351/045/00000/0287ed70-c005-4c05-97d3-98afc0fb5f8c.root",
-
-#"/store/express/Commissioning2022/ExpressCosmics/FEVT/Express-v1/000/351/044/00000/fb1ad79e-84c3-48d7-9f64-96198ef6539a.root",
-#"/store/express/Commissioning2022/ExpressCosmics/FEVT/Express-v1/000/351/044/00000/ff39a4f5-bfa0-4197-af28-4f85e7c6bb6c.root",
-#"/store/express/Commissioning2022/ExpressCosmics/FEVT/Express-v1/000/351/044/00000/e807331c-4747-4e15-95d1-3a10d1d8e92c.root",
-#"/store/express/Commissioning2022/ExpressCosmics/FEVT/Express-v1/000/351/044/00000/4b9e98ee-ffca-4d84-8e18-994639206801.root",
-#"/store/express/Commissioning2022/ExpressCosmics/FEVT/Express-v1/000/351/044/00000/59bd0336-0731-472d-ad27-760cc6467256.root",
-
-#"/store/express/Commissioning2022/ExpressCosmics/FEVT/Express-v1/000/351/041/00000/90da4e40-4848-4534-8ba4-29f2d8681ac3.root",
-#"/store/express/Commissioning2022/ExpressCosmics/FEVT/Express-v1/000/351/041/00000/251c3e71-5243-4a1d-aa89-9f3a561d8572.root",
-#"/store/express/Commissioning2022/ExpressCosmics/FEVT/Express-v1/000/351/041/00000/b2a964fe-4832-4cd1-b7b8-5d90bba0960e.root",
-#"/store/express/Commissioning2022/ExpressCosmics/FEVT/Express-v1/000/351/041/00000/e8e2cd2d-3c21-4a46-abe8-0c146a6a6ba0.root",
-#"/store/express/Commissioning2022/ExpressCosmics/FEVT/Express-v1/000/351/041/00000/f693ef01-8283-4046-9ff0-607966420412.root",
-
-#"/store/express/Commissioning2022/ExpressCosmics/FEVT/Express-v1/000/351/034/00000/ff558ffa-52b2-4d28-85cd-ac8e600cbeb9.root",
-#"/store/express/Commissioning2022/ExpressCosmics/FEVT/Express-v1/000/351/034/00000/715653ee-c8e6-4204-8f76-deaa94ea36c3.root",
-#"/store/express/Commissioning2022/ExpressCosmics/FEVT/Express-v1/000/351/034/00000/5baa6bb7-967e-45b6-815f-64a60e6f2de6.root",
-#"/store/express/Commissioning2022/ExpressCosmics/FEVT/Express-v1/000/351/034/00000/a3d403a6-0ef4-4cef-b0a7-e80fa4b80187.root",
-#"/store/express/Commissioning2022/ExpressCosmics/FEVT/Express-v1/000/351/034/00000/3a9175d4-29bd-4768-844c-61448ad533b8.root",
-
-#"/store/express/Commissioning2022/ExpressCosmics/FEVT/Express-v1/000/351/032/00000/83d235b7-98d3-49bb-9e5f-7d97ac3bc1f6.root",
-#"/store/express/Commissioning2022/ExpressCosmics/FEVT/Express-v1/000/351/032/00000/db16ab3b-e5a1-46ac-b160-14920626c34d.root",
-#"/store/express/Commissioning2022/ExpressCosmics/FEVT/Express-v1/000/351/032/00000/f607ce53-218b-4149-836d-d942edb8d390.root",
-#"/store/express/Commissioning2022/ExpressCosmics/FEVT/Express-v1/000/351/032/00000/bf55a747-4a67-482a-ad8a-1bb350696e2d.root",
-#"/store/express/Commissioning2022/ExpressCosmics/FEVT/Express-v1/000/351/032/00000/7c81a03d-c60c-4d72-8074-462f0423a417.root",
-
-
    )
 )
 
@@ -232,7 +136,7 @@ process.source = cms.Source("PoolSource",
 #    )
 # )
 
-#process.source.lumisToProcess = cms.untracked.VLuminosityBlockRange('325159:1-325159:47')
+#process.source.lumisToProcess = cms.untracked.VLuminosityBlockRange('353060:1-353060:20')
 process.source.skipBadFiles = cms.untracked.bool( True )
 
 process.d = cms.EDAnalyzer("SiPixelRawDump", 

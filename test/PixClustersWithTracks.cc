@@ -117,7 +117,7 @@
 #include <TProfile2D.h>
 #include <TVector3.h>
 
-//#define USE_TREE  // use the simple tree storing clusters in a flat structure 
+#define USE_TREE  // use the simple tree storing clusters in a flat structure 
 
 //#define L1
 //#define HLT
@@ -181,7 +181,8 @@ class PixClustersWithTracks : public edm::one::EDAnalyzer<edm::one::SharedResour
   void histogramClus(float cha, int size, int sizex, int sizey, bool same, int corner);
   void histogramPix(float pixchar, int size, int sizex, int sizey, bool same, int corner);
 #endif
-  
+  const int maxClus = 100; 
+
  private:
   edm::ParameterSet conf_;
   edm::InputTag src_;
@@ -271,14 +272,16 @@ class PixClustersWithTracks : public edm::one::EDAnalyzer<edm::one::SharedResour
   TH2F *hpixDetMap1, *hpixDetMap2, *hpixDetMap3, *hpixDetMap4;  // in a  modules
 
 #ifdef USE_TREE
+  bool doTree;
   TTree *tree;
   int runT, eventT, lumiBlockT, bxT;
   //int pV, pVfake, pVnotfake;
   float etaT, phiT, ptT;
-  int layerT,ladderOnT, moduleT;
-  int diskT, bladeT, ringT, sideT, panelT;
-  int chargeT, sizeT, sizeXT, sizeYT;
-  float gZT, gPhiT, gRT;
+  int *layerT,*ladderOnT, *moduleT;
+  int *diskT, *bladeT, *ringT, *sideT, *panelT;
+  float *chargeT, *sizeT, *sizeXT, *sizeYT;
+  float *gZT, *gPhiT, *gRT;
+  int clusPerTrackT;
 #endif
 
 #if defined(CLU_SHAPE) || defined(CLU_SHAPE_L2) 
@@ -455,14 +458,20 @@ PixClustersWithTracks::PixClustersWithTracks(edm::ParameterSet const& conf)
 //  : conf_(conf), src_(conf.getParameter<edm::InputTag>( "src" )) { }
   : conf_(conf), Normalise(true) { 
   usesResource("TFileService");
-  phase1_ = conf.getUntrackedParameter<bool>("phase1",false);
+  phase1_ = conf.getUntrackedParameter<bool>("phase1",true);
   PRINT = conf.getUntrackedParameter<bool>("Verbosity",false);
   Normalise = conf.getUntrackedParameter<bool>("Normalise",true);
   src_ =  conf.getParameter<edm::InputTag>( "src" );
   select1 = conf.getUntrackedParameter<int>("Select1",0);
   select2 = conf.getUntrackedParameter<int>("Select2",0);
 
-  if(PRINT) cout<<" Construct: Normalise = "<<Normalise<<endl;
+  cout<<"PixClustersWithTracks::Construct: Normalise = "<<Normalise<<" verbosity "<<PRINT
+      <<" select "<<select1<<","<<select2<<endl;
+#ifdef USE_TREE
+  doTree = conf.getUntrackedParameter<bool>("doTree",false);
+  cout<<" tree "<<doTree<<endl;
+#endif
+
 
   // +-LDDM L layer DD ladder M module e.g. 1065 for BmI8/1/6/1  
   if(select1==201) { //select specifix module 
@@ -489,6 +498,24 @@ PixClustersWithTracks::PixClustersWithTracks(edm::ParameterSet const& conf)
 
   DEBUG = false; // debug print flag
 
+#ifdef USE_TREE
+  layerT = new int[maxClus];
+  ladderOnT = new int[maxClus];
+  moduleT = new int[maxClus];
+  diskT =  new int[maxClus];
+  bladeT = new int[maxClus];
+  ringT = new int[maxClus]; 
+  sideT = new int[maxClus]; 
+  panelT = new int[maxClus];
+  chargeT = new float[maxClus]; 
+  sizeT = new float[maxClus]; 
+  sizeXT = new float[maxClus]; 
+  sizeYT = new float[maxClus];
+  gZT = new float[maxClus];
+  gPhiT = new float[maxClus];
+  gRT = new float[maxClus];
+#endif
+
 }
 
 // Virtual destructor needed.
@@ -509,29 +536,30 @@ void PixClustersWithTracks::beginJob() {
   edm::Service<TFileService> fs;
 
 #ifdef USE_TREE
-       tree = fs->make<TTree>("MyTree","MyTree");
-        tree->Branch("run",&runT,"run/I");
-        tree->Branch("event",&eventT,"event/I");
-        tree->Branch("lumiBlock",&lumiBlockT,"lumiBlock/I");
-        tree->Branch("bx",&bxT,"bx/I");
-        tree->Branch("eta",&etaT,"eta/F");
-        tree->Branch("phi",&phiT,"phi/F");
-        tree->Branch("pt",&ptT,"pt/F");
-        tree->Branch("module",&moduleT,"module/I");
-        tree->Branch("ladder",&ladderOnT,"ladder/I");
-        tree->Branch("layer",&layerT,"layer/I");
-        tree->Branch("disk",&diskT,"disk/I");
-        tree->Branch("blade",&bladeT,"blade/I");
-        tree->Branch("ring",&ringT,"ring/I");
-        tree->Branch("side",&sideT,"side/I");
-        tree->Branch("panel",&panelT,"panel/I");
-        tree->Branch("charge",&chargeT,"charge/F");
-        tree->Branch("size",&sizeT,"size/I");
-        tree->Branch("sizeX",&sizeXT,"sizeX/I");
-        tree->Branch("sizeY",&sizeYT,"sizeY/I");
-        tree->Branch("globalZ",&gZT,"globalZ/F");
-        tree->Branch("globalPhi",&gPhiT,"globalPhi/F");
-        tree->Branch("globalR",&gRT,"globalR/F");        
+  tree = fs->make<TTree>("MyTree","MyTree");
+  tree->Branch("run",&runT,"run/I");
+  tree->Branch("event",&eventT,"event/I");
+  tree->Branch("lumiBlock",&lumiBlockT,"lumiBlock/I");
+  tree->Branch("bx",&bxT,"bx/I");
+  tree->Branch("eta",&etaT,"eta/F");
+  tree->Branch("phi",&phiT,"phi/F");
+  tree->Branch("pt",&ptT,"pt/F");
+  tree->Branch("clusPerTrack",&clusPerTrackT,"clusPerTrack/I");
+  tree->Branch("module",moduleT,"module[clusPerTrack]/I");
+  tree->Branch("ladder",ladderOnT,"ladder[clusPerTrack]/I");
+  tree->Branch("layer",layerT,"layer[clusPerTrack]/I");
+  tree->Branch("disk",diskT,"disk[clusPerTrack]/I");
+  tree->Branch("blade",bladeT,"blade[clusPerTrack]/I");
+  tree->Branch("ring",ringT,"ring[clusPerTrack]/I");
+  tree->Branch("side",sideT,"side[clusPerTrack]/I");
+  tree->Branch("panel",panelT,"panel[clusPerTrack]/I");
+  tree->Branch("charge",chargeT,"charge[clusPerTrack]/F");
+  tree->Branch("size",sizeT,"size[clusPerTrack]/F");
+  tree->Branch("sizeX",sizeXT,"sizeX[clusPerTrack]/F");
+  tree->Branch("sizeY",sizeYT,"sizeY[clusPerTrack]/F");
+  tree->Branch("globalZ",gZT,"globalZ[clusPerTrack]/F");
+  tree->Branch("globalPhi",gPhiT,"globalPhi[clusPerTrack]/F");
+  tree->Branch("globalR",gRT,"globalR[clusPerTrack]/F");        
 #endif
 
 
@@ -1760,7 +1788,9 @@ void PixClustersWithTracks::analyze(const edm::Event& e,
   if(PRINT) cout<<"Run "<<run<<" Event "<<event<<" LS "<<lumiBlock<<" bx "<<bx<<endl;
 
 #ifdef USE_TREE
-  runT=run; eventT=event; lumiBlockT=lumiBlock; bxT=bx;
+  if(doTree) {
+    runT=run; eventT=event; lumiBlockT=lumiBlock; bxT=bx;
+  }
 #endif 
 
   bool select = false;
@@ -2025,7 +2055,9 @@ void PixClustersWithTracks::analyze(const edm::Event& e,
 		  <<" Hits "<<sizer<<" cuts "<<etaCut<<" "<<ptCut<<endl;
     
 #ifdef USE_TREE
-    etaT=eta; phiT=phi; ptT=pt;
+    if(doTree) {
+      etaT=eta; phiT=phi; ptT=pt;
+    }
 #endif
 
     // applay special select cuts
@@ -2133,6 +2165,8 @@ void PixClustersWithTracks::analyze(const edm::Event& e,
 
     //if(tscp.isValid() ) {cout<<" trajectory ok"<<endl;}
 #endif
+
+    int clusPerTrack=0; // number of pixel clusters per track 
     // Loop over rechits
     for ( trackingRecHit_iterator recHit = t->recHitsBegin();
 	  recHit != t->recHitsEnd(); ++recHit ) {
@@ -2246,10 +2280,6 @@ void PixClustersWithTracks::analyze(const edm::Event& e,
       
 	if(PRINT) cout<<"barrel layer/ladder/module: "<<layer<<"/"<<ladderIndex<<"/"<<zindex<<endl;
 	
-#ifdef USE_TREE
-	layerT=layer; ladderOnT=ladderOn; moduleT=module;
-#endif
-
       } else if(IntSubDetID == PixelSubdetector::PixelEndcap) {  // fpix
 
 	if(PRINT) cout<<" a pixel f rechit "<<endl;
@@ -2271,9 +2301,6 @@ void PixClustersWithTracks::analyze(const edm::Event& e,
 	if(PRINT) cout<<" forward det, disk "<<disk<<", blade "
 		      <<blade<<"/"<<bladeC<<", ring "<<ring<<", side "<<side<<", panel "
 		      <<panel<<endl;
-#ifdef USE_TREE
-	diskT=disk; bladeT=blade; ringT=ring;sideT=side; panelT=panel;
-#endif
 
       } else { // nothings
 	continue; // skip non pixel hits 
@@ -2430,7 +2457,8 @@ void PixClustersWithTracks::analyze(const edm::Event& e,
 	hstatus->Fill(9.);
       
 	numberOfClusters++;
-	pixelHits++;
+	clusPerTrack++; // count pixel clusters per track
+	//pixelHits++;
 	float charge = (clust->charge())/1000.0; // convert electrons to kilo-electrons
 	int size = clust->size();
 	int sizeX = clust->sizeX();
@@ -2444,10 +2472,6 @@ void PixClustersWithTracks::analyze(const edm::Event& e,
 	//select = (abs(eta)>2.)&&(abs(module)==4); 
 	if(PRINT) cout<<" cluster "<<numberOfClusters<<" charge = "<<charge<<" size = "<<size<<endl;
 	
-#ifdef USE_TREE
-	chargeT=charge; sizeT=size; sizeXT=sizeX; sizeYT=sizeY;
-#endif
-
 	LocalPoint lp = topol->localPosition( MeasurementPoint( clust->x(), clust->y() ) );
 	float lx = lp.x();
 	float ly = lp.y();
@@ -2466,11 +2490,18 @@ void PixClustersWithTracks::analyze(const edm::Event& e,
 	if(PRINT) cout<<" CLU GLOBAL "<<gX<<" "<<gY<<" "<<gZ<<" "<<gR<<" "<<gPhi<<endl;
 
 #ifdef USE_TREE
-	gZT=gZ; gPhiT=gPhi; gRT=gR;
-#endif
+        if(doTree) {
 
-#ifdef USE_TREE
-	tree->Fill();
+	  if(clusPerTrack<maxClus) {
+	    //cout<<event<<" "<<trackNumber<<" "<<clusPerTrack<<endl; //dk
+	    layerT[clusPerTrack-1]=layer; ladderOnT[clusPerTrack-1]=ladderOn; moduleT[clusPerTrack-1]=module;
+	    diskT[clusPerTrack-1]=disk; bladeT[clusPerTrack-1]=blade; ringT[clusPerTrack-1]=ring;sideT[clusPerTrack-1]=side; panelT[clusPerTrack-1]=panel;
+	    gZT[clusPerTrack-1]=gZ; gPhiT[clusPerTrack-1]=gPhi; gRT[clusPerTrack-1]=gR;
+	    chargeT[clusPerTrack-1]=charge; 
+	    sizeT[clusPerTrack-1]=size; sizeXT[clusPerTrack-1]=sizeX; sizeYT[clusPerTrack-1]=sizeY;
+	    //cout<<charge<<" "<<chargeT[clusPerTrack-1]<<" "<<size<<" "<<sizeT[clusPerTrack-1]<<endl;//dk
+	  } else {cout<<"increase the three array "<<maxClus<<endl;}
+        }
 #endif // USE_TREE
 
 
@@ -3015,8 +3046,7 @@ void PixClustersWithTracks::analyze(const edm::Event& e,
 	const vector<SiPixelCluster::Pixel>& pixelsVec = clust->pixels();
 	if(PRINT) cout<<" Pixels in this cluster (i/x/y/char)"<<endl;
 	for (unsigned int i = 0;  i < pixelsVec.size(); ++i) { // loop over pixels
-	  //sumPixels++;
-	  //numberOfPixels++;
+	  pixelHits++; // count pixels per track 
 	  float pixx = pixelsVec[i].x; // index as float=iteger, row index
 	  float pixy = pixelsVec[i].y; // same, col index
 	  float adc = (float(pixelsVec[i].adc)/1000.);
@@ -3283,7 +3313,6 @@ void PixClustersWithTracks::analyze(const edm::Event& e,
 
   } // clusters, rechits 
 
-     if(pixelHits>0) countPixTracks++;
 
     if(PRINT) cout<<" Clusters for track "<<trackNumber<<" num of clusters "<<numberOfClusters
 		  <<" num of pixels "<<pixelHits<<endl;
@@ -3292,6 +3321,7 @@ void PixClustersWithTracks::analyze(const edm::Event& e,
     if(numberOfClusters>0) { 
 
       // With pixel hits
+      countPixTracks++;
       hPtP->Fill(pt);
       hEtaP->Fill(eta);
       hPhiP->Fill(phi);
@@ -3347,6 +3377,14 @@ void PixClustersWithTracks::analyze(const edm::Event& e,
 #endif 
 
     } // numOf clustres
+
+#ifdef USE_TREE
+    if(doTree) {
+      clusPerTrackT = clusPerTrack;
+      //cout<<chargeT[clusPerTrack-1]<<endl; //dk
+      tree->Fill();
+    }
+#endif // USE_TREE
 
   } // tracks
 

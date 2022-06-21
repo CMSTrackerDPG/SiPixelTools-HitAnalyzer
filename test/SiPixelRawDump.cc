@@ -56,7 +56,7 @@ namespace {
   bool printErrors  = false;
   bool printData    = false;
   bool printHeaders = false;
-  bool printDebug = false;
+  //bool printDebug = false;
   const bool printBX = false;
   const bool CHECK_PIXELS = true;
   const bool PRINT_BASELINE = false;
@@ -645,7 +645,7 @@ int MyDecode::data(int word, int & fedChannel, int fed, int & stat1, int & stat2
   const unsigned int linkshift = 26;
   int status = 0;
 
-  bool bpix = (fed<1294); // identify bpix channels 
+  //bool bpix = (fed<1294); // identify bpix channels 
 
   roc_ = ((word&rocmsk)>>rocshift); // rocs start from 1
   // Check for embeded special words
@@ -892,7 +892,8 @@ private:
   TH2F *hfed2DErrors[20];
 
   TProfile *herrorType1ls, *herrorType2ls,*herrorType1bx,*herrorType2bx;
-  TProfile *herrorls[20];
+  TProfile *herrorlsP[20];
+  TH1F *herrorls[20];
 
   TH1D *herrorTimels, *herrorPkamls;
   //TH2F *herrorVsLs10, *herrorVsLs11, *herrorVsLs12, *herrorVsLs13, *herrorVsLs15, *herrorVsLs16, 
@@ -1314,19 +1315,13 @@ void SiPixelRawDump::beginJob() {
   string name, title;
   for(int i=1; i<20; ++i) { // loop over error types  
     string num = std::to_string(i);
+    name="herror"+num+"lsP"; title="errors vs ls, type"+num;        
+    herrorlsP[i] = fs->make<TProfile>(name.c_str(),title.c_str(),maxLS,0.,float(maxLS),0.,1000.);
     name="herror"+num+"ls"; title="errors vs ls, type"+num;        
-    herrorls[i] = fs->make<TProfile>(name.c_str(),title.c_str(),300,0.,300.,0.,1000.);
+    herrorls[i] = fs->make<TH1F>(name.c_str(),title.c_str(),maxLS,0.,float(maxLS));
     name="hfed2DErrors"+num; title="errors per fed/chan, type"+num;        
     hfed2DErrors[i] = fs->make<TH2F>(name.c_str(),title.c_str(),n_of_FEDs,-0.5,static_cast<float>(n_of_FEDs) - 0.5, n_of_Channels, -0.5,maxChan);
   }
-  // herrorVsLs10 = fs->make<TH2F>("herrorVsLs10", "TO versus ls",100,0.,100., n_of_Channels, -0.5,maxChan);
-  // herrorVsLs11 = fs->make<TH2F>("herrorVsLs11", "ENE versus ls",100,0.,100., n_of_Channels, -0.5,maxChan);
-  // herrorVsLs12 = fs->make<TH2F>("herrorVsLs12", "NOR versus ls",100,0.,100., n_of_Channels, -0.5,maxChan);
-  // herrorVsLs13 = fs->make<TH2F>("herrorVsLs13", "AR versus ls",100,0.,100., n_of_Channels, -0.5,maxChan);
-  // herrorVsLs15 = fs->make<TH2F>("herrorVsLs15", "Trailer versus ls",100,0.,100., n_of_Channels, -0.5,maxChan);
-  // herrorVsLs16 = fs->make<TH2F>("herrorVsLs16", "PKAM versus ls",100,0.,100., n_of_Channels, -0.5,maxChan);
-  // herrorVsLs17 = fs->make<TH2F>("herrorVsLs17", "Masked versus ls",100,0.,100., n_of_Channels, -0.5,maxChan);
-  // herrorVsLs18 = fs->make<TH2F>("herrorVsLs18", "AM versus ls",100,0.,100., n_of_Channels, -0.5,maxChan);
 
   
   string histoName[4] = {"hpix0Map","hdoubleMap","hdcolLowMap","hpixOrderMap"};
@@ -1864,7 +1859,10 @@ void SiPixelRawDump::analyze(const  edm::Event& ev, const edm::EventSetup& es) {
   herrorType2ls->Fill(float(lumiBlock),float(countErrorsPerEvent2));
 
   for(int i=1; i<20; ++i) {
-    if(countErrors[i]>0) herrorls[i]->Fill(float(lumiBlock),float(countErrors[i]));
+    herrorlsP[i]->Fill(float(lumiBlock),float(countErrors[i])); // profile 
+    if(countErrors[i]>0) {
+      herrorls[i]->Fill(float(lumiBlock),float(countErrors[i])); // 1D
+    }
   }
 
   herrorType1bx->Fill(float(bx),float(countErrorsPerEvent1));

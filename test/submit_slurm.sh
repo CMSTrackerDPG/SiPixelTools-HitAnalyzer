@@ -34,10 +34,9 @@ cd /scratch/$USER/${SLURM_JOB_ID}
 #cmsRun $MYPWD/gen_sim.py
 #cmsRun $MYPWD/digitize.py
 #cmsRun $MYPWD/reco.py
-#cmsRun $MYPWD/runHotPixels.py
+#cmsRun $MYPWD/runRawDumper_350462.py
 #cmsRun $MYPWD/runHotPixels_347874.py
-#cmsRun $MYPWD/PixClusterAndTrack_346512.py
-cmsRun $MYPWD/PixClusterAndTrack_350561.py
+cmsRun $MYPWD/PixClusterAndTrack_353087.py
 # 
 pwd
 ls 
@@ -47,8 +46,9 @@ ls /scratch/$USER/${SLURM_JOB_ID}
 #cp /scratch/$USER/${SLURM_JOB_ID}/noise.root $MYPWD/.
 #cp /scratch/$USER/${SLURM_JOB_ID}/simtorec.root $MYPWD/.
 #cp /scratch/$USER/${SLURM_JOB_ID}/rawtoreco.root $MYPWD/.
-cp /scratch/$USER/${SLURM_JOB_ID}/clus_ana_cosmics.root $MYPWD/.
-#cp /scratch/$USER/${SLURM_JOB_ID}/clus_ana.root $MYPWD/.
+#cp /scratch/$USER/${SLURM_JOB_ID}/raw.root $MYPWD/raw_350462.root
+#cp /scratch/$USER/${SLURM_JOB_ID}/clus_ana_cosmics.root $MYPWD/.
+cp /scratch/$USER/${SLURM_JOB_ID}/clus_ana.root $MYPWD/.
 
 # xrdcp -d 1 -f s.root root://t3se01.psi.ch:1094//store/user/kotlinski/MC/test/s.root  # is OK,
 # xrdcp      -f s.root root://t3dcachedb.psi.ch:1094//pnfs/psi.ch/cms/trivcat/store/user/kotlinski/MC/test/. # OK

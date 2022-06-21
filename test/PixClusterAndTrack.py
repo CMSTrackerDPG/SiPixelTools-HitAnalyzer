@@ -100,28 +100,7 @@ process.source = cms.Source("PoolSource",
                              fileNames =  myfilelist )
 
 #  fileNames = cms.untracked.vstring(  
-
-#"/store/express/Commissioning2021/ExpressPhysics/FEVT/Express-v1/000/346/236/00000/1e926627-4553-4b96-bf6b-51bb2587f01a.root",
-#"/store/express/Commissioning2021/ExpressPhysics/FEVT/Express-v1/000/346/236/00000/62476398-24db-4869-8288-17982f19c909.root",
-#"/store/express/Commissioning2021/ExpressPhysics/FEVT/Express-v1/000/346/236/00000/0757eddf-0c0a-462b-88fe-c62dbe588e32.root",
-#"/store/express/Commissioning2021/ExpressPhysics/FEVT/Express-v1/000/346/236/00000/9f4edfe6-1cec-4407-b50c-5be900384a39.root",
-#"/store/express/Commissioning2021/ExpressPhysics/FEVT/Express-v1/000/346/236/00000/84356223-f54b-4716-b0e4-7a6011ca76dc.root",
-#"/store/express/Commissioning2021/ExpressPhysics/FEVT/Express-v1/000/346/236/00000/07a0f8c9-7ee3-40a8-ae2b-9c1e7f145f32.root",
-#"/store/express/Commissioning2021/ExpressPhysics/FEVT/Express-v1/000/346/236/00000/7a970327-ebc7-4987-88bf-7ca184c08d71.root",
-
-#"/store/express/Commissioning2021/ExpressPhysics/FEVT/Express-v1/000/346/247/00000/953d941c-dd4f-4779-8045-07f5076ac5b2.root",
-
-#"/store/express/Commissioning2021/ExpressPhysics/FEVT/Express-v1/000/346/299/00000/88c9f30b-6c89-46aa-8e3d-35b7fb4f6d3e.root",
-#"/store/express/Commissioning2021/ExpressPhysics/FEVT/Express-v1/000/346/299/00000/b88324ec-c65f-4319-8d85-eb33cc944238.root",
-#"/store/express/Commissioning2021/ExpressPhysics/FEVT/Express-v1/000/346/299/00000/5bfb9364-0c76-4f84-b18f-6ad0049d63a6.root",
-#"/store/express/Commissioning2021/ExpressPhysics/FEVT/Express-v1/000/346/299/00000/7ac16447-2bd8-4a26-8e2b-67a4b510d7d1.root",
-#"/store/express/Commissioning2021/ExpressPhysics/FEVT/Express-v1/000/346/299/00000/c07210fd-8912-49e7-936a-2378d0289cc2.root",
-#"/store/express/Commissioning2021/ExpressPhysics/FEVT/Express-v1/000/346/299/00000/5fdaa74b-049a-4920-a8aa-7bb94559a1f2.root",
-#"/store/express/Commissioning2021/ExpressPhysics/FEVT/Express-v1/000/346/299/00000/cf2a8456-b3cb-4dfd-9b5e-507488e7307c.root",
-#"/store/express/Commissioning2021/ExpressPhysics/FEVT/Express-v1/000/346/299/00000/fa57f067-9441-4b83-9344-d896caa24409.root",
-#"/store/express/Commissioning2021/ExpressPhysics/FEVT/Express-v1/000/346/299/00000/cc63f67d-16a2-42fd-be0a-f1d46d8c16c5.root",
-#"/store/express/Commissioning2021/ExpressPhysics/FEVT/Express-v1/000/346/299/00000/a0f7f300-992e-4e64-84a2-7357517b9d60.root",
-#"/store/express/Commissioning2021/ExpressPhysics/FEVT/Express-v1/000/346/299/00000/043c9bc6-c62f-41a1-bb76-957481dc340d.root",
+#"/store/express/Run2022A/ExpressPhysics/FEVT/Express-v1/000/353/060/00000/2499e0b2-8ec8-4c6e-8173-c2ab48510815.root",
 
 #  )   # end the list "by-hand"
 #)
@@ -192,6 +171,7 @@ process.c = cms.EDAnalyzer("PixClustersWithTracks",
 # additional selections
     Select1 = cms.untracked.int32(0),  # select the cut type, o no cut
     Select2 = cms.untracked.int32(0),  # select the cut value   
+    doTree = cms.untracked.bool(False), # write the tree, lorge files!
 )
 process.c1 = cms.EDAnalyzer("PixClustersWithTracks",
     Verbosity = cms.untracked.bool(False),
