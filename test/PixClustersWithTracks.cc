@@ -258,8 +258,9 @@ class PixClustersWithTracks : public edm::one::EDAnalyzer<edm::one::SharedResour
 
   TH1D *hEta11,*hEta12, *hPhi11, *hPhi12;
 
-  TH2F *hfpixXY1,*hfpixXY2,*hfpixXY3, 
-    *hzphi1,*hzphi2,*hzphi3,*hzphi4, *hbpixXY;
+  TH2F *hfpixp11,*hfpixp21,*hfpixp31,*hfpixp12,*hfpixp22,*hfpixp32; 
+  TH2F *hfpixm11,*hfpixm21,*hfpixm31,*hfpixm12,*hfpixm22,*hfpixm32; 
+  TH2F *hzphi1,*hzphi2,*hzphi3,*hzphi4, *hbpixXY;
   TH2F *htest,*htest1,*htest2,*htest3, *htest4;
 
 #ifdef USE_PROBABILITY
@@ -499,6 +500,7 @@ PixClustersWithTracks::PixClustersWithTracks(edm::ParameterSet const& conf)
   DEBUG = false; // debug print flag
 
 #ifdef USE_TREE
+  if(doTree) {
   layerT = new int[maxClus];
   ladderOnT = new int[maxClus];
   moduleT = new int[maxClus];
@@ -514,6 +516,7 @@ PixClustersWithTracks::PixClustersWithTracks(edm::ParameterSet const& conf)
   gZT = new float[maxClus];
   gPhiT = new float[maxClus];
   gRT = new float[maxClus];
+  }
 #endif
 
 }
@@ -536,30 +539,32 @@ void PixClustersWithTracks::beginJob() {
   edm::Service<TFileService> fs;
 
 #ifdef USE_TREE
-  tree = fs->make<TTree>("MyTree","MyTree");
-  tree->Branch("run",&runT,"run/I");
-  tree->Branch("event",&eventT,"event/I");
-  tree->Branch("lumiBlock",&lumiBlockT,"lumiBlock/I");
-  tree->Branch("bx",&bxT,"bx/I");
-  tree->Branch("eta",&etaT,"eta/F");
-  tree->Branch("phi",&phiT,"phi/F");
-  tree->Branch("pt",&ptT,"pt/F");
-  tree->Branch("clusPerTrack",&clusPerTrackT,"clusPerTrack/I");
-  tree->Branch("module",moduleT,"module[clusPerTrack]/I");
-  tree->Branch("ladder",ladderOnT,"ladder[clusPerTrack]/I");
-  tree->Branch("layer",layerT,"layer[clusPerTrack]/I");
-  tree->Branch("disk",diskT,"disk[clusPerTrack]/I");
-  tree->Branch("blade",bladeT,"blade[clusPerTrack]/I");
-  tree->Branch("ring",ringT,"ring[clusPerTrack]/I");
-  tree->Branch("side",sideT,"side[clusPerTrack]/I");
-  tree->Branch("panel",panelT,"panel[clusPerTrack]/I");
-  tree->Branch("charge",chargeT,"charge[clusPerTrack]/F");
-  tree->Branch("size",sizeT,"size[clusPerTrack]/F");
-  tree->Branch("sizeX",sizeXT,"sizeX[clusPerTrack]/F");
-  tree->Branch("sizeY",sizeYT,"sizeY[clusPerTrack]/F");
-  tree->Branch("globalZ",gZT,"globalZ[clusPerTrack]/F");
-  tree->Branch("globalPhi",gPhiT,"globalPhi[clusPerTrack]/F");
-  tree->Branch("globalR",gRT,"globalR[clusPerTrack]/F");        
+  if(doTree) {
+    tree = fs->make<TTree>("MyTree","MyTree");
+    tree->Branch("run",&runT,"run/I");
+    tree->Branch("event",&eventT,"event/I");
+    tree->Branch("lumiBlock",&lumiBlockT,"lumiBlock/I");
+    tree->Branch("bx",&bxT,"bx/I");
+    tree->Branch("eta",&etaT,"eta/F");
+    tree->Branch("phi",&phiT,"phi/F");
+    tree->Branch("pt",&ptT,"pt/F");
+    tree->Branch("clusPerTrack",&clusPerTrackT,"clusPerTrack/I");
+    tree->Branch("module",moduleT,"module[clusPerTrack]/I");
+    tree->Branch("ladder",ladderOnT,"ladder[clusPerTrack]/I");
+    tree->Branch("layer",layerT,"layer[clusPerTrack]/I");
+    tree->Branch("disk",diskT,"disk[clusPerTrack]/I");
+    tree->Branch("blade",bladeT,"blade[clusPerTrack]/I");
+    tree->Branch("ring",ringT,"ring[clusPerTrack]/I");
+    tree->Branch("side",sideT,"side[clusPerTrack]/I");
+    tree->Branch("panel",panelT,"panel[clusPerTrack]/I");
+    tree->Branch("charge",chargeT,"charge[clusPerTrack]/F");
+    tree->Branch("size",sizeT,"size[clusPerTrack]/F");
+    tree->Branch("sizeX",sizeXT,"sizeX[clusPerTrack]/F");
+    tree->Branch("sizeY",sizeYT,"sizeY[clusPerTrack]/F");
+    tree->Branch("globalZ",gZT,"globalZ[clusPerTrack]/F");
+    tree->Branch("globalPhi",gPhiT,"globalPhi[clusPerTrack]/F");
+    tree->Branch("globalR",gRT,"globalR[clusPerTrack]/F");        
+  }
 #endif
 
 
@@ -732,16 +737,16 @@ void PixClustersWithTracks::beginJob() {
 				9,-4.5,4.5,65,-32.5,32.5,0.,1000.);
   hchargeDets4->SetOption("colz");
 
-  hpixchargeDets1 = fs->make<TProfile2D>("hpixchargeDets1"," cluster charge L1",
+  hpixchargeDets1 = fs->make<TProfile2D>("hpixchargeDets1","pix charge L1",
 				      9,-4.5,4.5,13,-6.5,6.5,0.,1000.);
   hpixchargeDets1->SetOption("colz");
-  hpixchargeDets2 = fs->make<TProfile2D>("hpixchargeDets2"," cluster charge L2",
+  hpixchargeDets2 = fs->make<TProfile2D>("hpixchargeDets2","pix charge L2",
 				9,-4.5,4.5,29,-14.5,14.5,0.,1000.);
   hpixchargeDets2->SetOption("colz");
-  hpixchargeDets3 = fs->make<TProfile2D>("hpixchargeDets3"," cluster charge L3",
+  hpixchargeDets3 = fs->make<TProfile2D>("hpixchargeDets3","pix charge L3",
 				9,-4.5,4.5,45,-22.5,22.5,0.,1000.);
   hpixchargeDets3->SetOption("colz");
-  hpixchargeDets4 = fs->make<TProfile2D>("hpixchargeDets4"," cluster charge L4",
+  hpixchargeDets4 = fs->make<TProfile2D>("hpixchargeDets4","pix charge L4",
 				9,-4.5,4.5,65,-32.5,32.5,0.,1000.);
   hpixchargeDets4->SetOption("colz");
 
@@ -1189,9 +1194,20 @@ void PixClustersWithTracks::beginJob() {
    hstatus = fs->make<TH1D>("hstatus","status", 100, -0.5, 99.5);
 
    //hbpixXY = fs->make<TH2F>("hbpixXY","bpix XY",180,-18.,18.,180,-18.,18.);
-   hfpixXY1 = fs->make<TH2F>("hfpixXY1","fpix XY d1",160,-16.,16.,160,-16.,16.);
-   hfpixXY2 = fs->make<TH2F>("hfpixXY2","fpix XY d2",160,-16.,16.,160,-16.,16.);
-   hfpixXY3 = fs->make<TH2F>("hfpixXY3","fpix XY d3",160,-16.,16.,160,-16.,16.);
+   hfpixp11 = fs->make<TH2F>("hfpixp11","fpix +z d1 p1",160,-16.,16.,160,-16.,16.);
+   hfpixp21 = fs->make<TH2F>("hfpixp21","fpix +z d2 p1",160,-16.,16.,160,-16.,16.);
+   hfpixp31 = fs->make<TH2F>("hfpixp31","fpix +z d3 p1",160,-16.,16.,160,-16.,16.);
+   hfpixp12 = fs->make<TH2F>("hfpixp12","fpix +z d1 p2",160,-16.,16.,160,-16.,16.);
+   hfpixp22 = fs->make<TH2F>("hfpixp22","fpix +z d2 p2",160,-16.,16.,160,-16.,16.);
+   hfpixp32 = fs->make<TH2F>("hfpixp32","fpix +z d3 p2",160,-16.,16.,160,-16.,16.);
+   hfpixm11 = fs->make<TH2F>("hfpixm11","fpix -z d1 p1",160,-16.,16.,160,-16.,16.);
+   hfpixm21 = fs->make<TH2F>("hfpixm21","fpix -z d2 p1",160,-16.,16.,160,-16.,16.);
+   hfpixm31 = fs->make<TH2F>("hfpixm31","fpix -z d3 p1",160,-16.,16.,160,-16.,16.);
+   hfpixm12 = fs->make<TH2F>("hfpixm12","fpix -z d1 p2",160,-16.,16.,160,-16.,16.);
+   hfpixm22 = fs->make<TH2F>("hfpixm22","fpix -z d2 p2",160,-16.,16.,160,-16.,16.);
+   hfpixm32 = fs->make<TH2F>("hfpixm32","fpix -z d3 p2",160,-16.,16.,160,-16.,16.);
+
+
    hzphi1 = fs->make<TH2F>("hzphi1","bpix z phi 1",208,-26.,26.,140,-3.5,3.5);
    hzphi2 = fs->make<TH2F>("hzphi2","bpix z phi 2",208,-26.,26.,140,-3.5,3.5);
    hzphi3 = fs->make<TH2F>("hzphi3","bpix z phi 3",208,-26.,26.,140,-3.5,3.5);
@@ -1491,10 +1507,10 @@ void PixClustersWithTracks::beginJob() {
   hfpixMapD2Pz = fs->make<TH2F>("hfpixMapD2Pz","Fpix clus D2 +z",
 				29,-14.5,14.5,5,-2.5,2.5);
   hfpixMapD2Pz->SetOption("colz");
-  hfpixMapD3Mz = fs->make<TH2F>("hfpixMapD3Mz","Fpix clus D2 -z",
+  hfpixMapD3Mz = fs->make<TH2F>("hfpixMapD3Mz","Fpix clus D3 -z",
 				29,-14.5,14.5,5,-2.5,2.5);
   hfpixMapD3Mz->SetOption("colz");
-  hfpixMapD3Pz = fs->make<TH2F>("hfpixMapD3Pz","Fpix clus D2 +z",
+  hfpixMapD3Pz = fs->make<TH2F>("hfpixMapD3Pz","Fpix clus D3 +z",
 				29,-14.5,14.5,5,-2.5,2.5);
   hfpixMapD3Pz->SetOption("colz");
 #endif
@@ -2982,10 +2998,13 @@ void PixClustersWithTracks::analyze(const edm::Event& e,
 	  hsizex5->Fill(float(sizeX));
 	  hsizey5->Fill(float(sizeY));
 	  
-	  hfpixXY1->Fill(gX,gY);
+	  //hfpixXY1->Fill(gX,gY);
 	  
-	  if(side==1)      {numOfClustersPerDisk3++;hfpixMapD1Mz->Fill(blade,ring); hstatus->Fill(23.);}  //-z
-	  else if(side==2) {numOfClustersPerDisk4++;hfpixMapD1Pz->Fill(blade,ring); hstatus->Fill(24.);}  //+z
+	  if(side==1)      {
+	    numOfClustersPerDisk3++;hfpixMapD1Mz->Fill(blade,ring); hstatus->Fill(23.);if(panel==1) hfpixm11->Fill(gX,gY); else hfpixm12->Fill(gX,gY);}  //-z
+	  else if(side==2) {
+	    numOfClustersPerDisk4++;hfpixMapD1Pz->Fill(blade,ring); hstatus->Fill(24.);if(panel==1) hfpixp11->Fill(gX,gY); else hfpixp12->Fill(gX,gY);}  //+z
+
 #ifdef USE_PROBABILITY	  
 	  hProbabilityXYFpix->Fill(hit->clusterProbability(0));
 	  hProbabilityQFpix->Fill(hit->clusterProbability(2));
@@ -3004,10 +3023,10 @@ void PixClustersWithTracks::analyze(const edm::Event& e,
 	  hsizex6->Fill(float(sizeX));
 	  hsizey6->Fill(float(sizeY));
 	  
-	  hfpixXY2->Fill(gX,gY);
+	  //hfpixXY2->Fill(gX,gY);
 	  
-	  if(side==1)      {numOfClustersPerDisk2++;hfpixMapD2Mz->Fill(blade,ring); hstatus->Fill(26.);} //-z
-	  else if(side==2) {numOfClustersPerDisk5++;hfpixMapD2Pz->Fill(blade,ring); hstatus->Fill(27.);} //+z
+	  if(side==1)      {numOfClustersPerDisk2++;hfpixMapD2Mz->Fill(blade,ring); hstatus->Fill(26.);if(panel==1) hfpixm21->Fill(gX,gY); else hfpixm22->Fill(gX,gY);} //-z
+	  else if(side==2) {numOfClustersPerDisk5++;hfpixMapD2Pz->Fill(blade,ring); hstatus->Fill(27.);if(panel==1) hfpixp21->Fill(gX,gY); else hfpixp22->Fill(gX,gY);} //+z
 #ifdef USE_PROBABILITY	  
 	  hProbabilityXYFpix->Fill(hit->clusterProbability(0));
 	  hProbabilityQFpix->Fill(hit->clusterProbability(2));
@@ -3025,10 +3044,10 @@ void PixClustersWithTracks::analyze(const edm::Event& e,
 	  hsizex7->Fill(float(sizeX));
 	  hsizey7->Fill(float(sizeY));
 	  
-	  hfpixXY3->Fill(gX,gY);
+	  //hfpixXY3->Fill(gX,gY);
 	  
-	  if(side==1)      {numOfClustersPerDisk1++;hfpixMapD3Mz->Fill(blade,ring); hstatus->Fill(29.);} //-z
-	  else if(side==2) {numOfClustersPerDisk6++;hfpixMapD3Pz->Fill(blade,ring); hstatus->Fill(30.);} //+z
+	  if(side==1)      {numOfClustersPerDisk1++;hfpixMapD3Mz->Fill(blade,ring); hstatus->Fill(29.);if(panel==1) hfpixm31->Fill(gX,gY); else hfpixm32->Fill(gX,gY);} //-z
+	  else if(side==2) {numOfClustersPerDisk6++;hfpixMapD3Pz->Fill(blade,ring); hstatus->Fill(30.);if(panel==1) hfpixp31->Fill(gX,gY); else hfpixp32->Fill(gX,gY);} //+z
 #ifdef USE_PROBABILITY	  
 	  hProbabilityXYFpix->Fill(hit->clusterProbability(0));
 	  hProbabilityQFpix->Fill(hit->clusterProbability(2));

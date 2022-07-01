@@ -125,6 +125,7 @@ process.d = cms.EDAnalyzer("PixClusterAna",
     # additional selections, e.g. select bx=1 -> (2,1)
     Select1 = cms.untracked.int32(0),  # select the cut type, 0 no cut
     Select2 = cms.untracked.int32(0),  # select the cut value   
+    doTree = cms.untracked.bool(False), # write the tree, lorge files!
 )
 
 process.d1 = cms.EDAnalyzer("PixClusterAna",
