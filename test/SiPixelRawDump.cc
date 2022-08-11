@@ -746,18 +746,18 @@ int MyDecode::data(int word, int & fedChannel, int fed, int & stat1, int & stat2
 	      dcol0=-1;
 	    } else {
 	      if(dcol_<dcol0) {
-	     	cout<<"dcol number lower "<<dcol_<<" "<<dcol0
-		    <<" for fed/chan/roc "<<fed<<" "<<channel_
-	     	    <<" "<<(roc_-1)
-		    <<" mod "<<modName<<" layer "<<layer<<endl;
+	     	 if(printErrors) cout<<"dcol number lower "<<dcol_<<" "<<dcol0
+				     <<" for fed/chan/roc "<<fed<<" "<<channel_
+				     <<" "<<(roc_-1)
+				     <<" mod "<<modName<<" layer "<<layer<<endl;
 		status = -7;
 	      } else if(dcol_==dcol0 && col_==col0 && layer!=1) { // same col, skip L1
 		// check pixel (row) order
 		if( (((col_%2)==0)&&(row_<row0) ) ||  // for even cols rows should go up  
 		    (((col_%2)==1)&&(row_>row0) ) ) {  // for odd cols rows should go down  
-		  cout<<"row number lower "<<row_<<" "<<row0<<" col "<<col_<<" "<<col0
-		      <<" for fed/chan/roc "<<fed<<"/"<<channel_
-		      <<"/"<<roc_<<" layer "<<layer<<" "<<modName<<endl;
+		   if(printErrors) cout<<"row number lower "<<row_<<" "<<row0<<" col "<<col_<<" "<<col0
+				       <<" for fed/chan/roc "<<fed<<"/"<<channel_
+				       <<"/"<<roc_<<" layer "<<layer<<" "<<modName<<endl;
 		  status = -3;
 		} // check pixel
 	      } // ccheck dcol

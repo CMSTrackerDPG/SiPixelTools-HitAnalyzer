@@ -483,7 +483,7 @@ class PixClusterAna : public edm::one::EDAnalyzer<edm::one::WatchRuns, edm::one:
 #ifdef TEST_DCOLS
   void histogramDcols(int layer, int ladder, int ring);
 #endif
-  const int maxClus=10000;
+  const int maxClus=15000;
 
  private:
   edm::ParameterSet conf_;
@@ -500,6 +500,9 @@ class PixClusterAna : public edm::one::EDAnalyzer<edm::one::WatchRuns, edm::one:
   int selectLayer, selectLadder, selectModule;
   bool useTracks;
   bool doTree;
+  int skipEventsPerLS;
+  int lumiBlock0;
+  int countEventsPerLS;
 #ifdef SINGLE_MODULES
   bool eventFlag[40];
 #endif
@@ -772,6 +775,7 @@ edm::EDGetTokenT<HFRecHitCollection> HFHitsToken_;
   float *gZT, *gPhiT, *gRT;
   int perEvent;
   bool fillPixelTree;
+  bool treeBpixOnly;
 #endif
 
 #ifdef BX
@@ -795,8 +799,11 @@ PixClusterAna::PixClusterAna(edm::ParameterSet const& conf)
   Normalise = conf.getUntrackedParameter<bool>("Normalise",true);
   select1 = conf.getUntrackedParameter<int>("Select1",0);
   select2 = conf.getUntrackedParameter<int>("Select2",0);
+  skipEventsPerLS = conf.getUntrackedParameter<int>("skipEventsPerLS",0);
   //src_ =  conf.getParameter<edm::InputTag>( "src" );
-  cout<<" Construct, Normalise = "<<Normalise<<" Select "<<select1<<"/"<<select2<<endl;
+
+  cout<<" Construct, Normalise = "<<Normalise<<" Select "<<select1<<"/"<<select2
+      <<" skip vents in LS "<<skipEventsPerLS<<endl;
   // +-LDDM L layer DD ladder M module e.g. 1065 for BmI8/1/6/1  
   if(select1==201) { //select specifix module 
     int sign  = select2/abs(select2); // negative sign for outer O ladders
@@ -834,14 +841,18 @@ PixClusterAna::PixClusterAna(edm::ParameterSet const& conf)
   doTree = conf.getUntrackedParameter<bool>("doTree",false);
   cout<<" tree "<<doTree<<endl;
   if(doTree) {
+    fillPixelTree = false; // pixel hits - true, clusters = false
+    treeBpixOnly = true; // fill only bpix 
     layerT = new int[maxClus];
     ladderOnT = new int[maxClus];
     moduleT = new int[maxClus];
-    diskT =  new int[maxClus];
-    bladeT = new int[maxClus];
-    ringT = new int[maxClus]; 
-    sideT = new int[maxClus]; 
-    panelT = new int[maxClus];
+    if(!treeBpixOnly) {
+      diskT =  new int[maxClus];
+      bladeT = new int[maxClus];
+      ringT = new int[maxClus]; 
+      sideT = new int[maxClus]; 
+      panelT = new int[maxClus];
+    }
     chargeT = new float[maxClus]; 
     sizeT = new float[maxClus]; 
     sizeXT = new float[maxClus]; 
@@ -925,6 +936,8 @@ void PixClusterAna::histogramDcols(int layer, int ladder, int module) {
 // ------------ method called at the begining   ------------
 void PixClusterAna::beginRun(const edm::Run& iEvent, const edm::EventSetup& iSetup) {
   cout << "beginRun -  PixelClusterTest " <<endl;
+  countEventsPerLS=0;
+  lumiBlock0=-1;
 }
 
 // ------------ method called at the begining   ------------
@@ -1234,10 +1247,10 @@ void PixClusterAna::beginJob() {
   hevent = fs->make<TH1D>("hevent","event",100,0,10000000.);
   //horbit = fs->make<TH1D>("horbit","orbit",100, 0,100000000.);
 
-  const float hlumiH=10000.;
-  hlumi1  = fs->make<TH1D>("hlumi1","LS", 1000,0,hlumiH);
-  hlumi0  = fs->make<TH1D>("hlumi0","LS", 1000,0,hlumiH);
-  hlumi   = fs->make<TH1D>("hlumi", "LS", 1000,0,hlumiH);
+  const float hlumiH=2000.;
+  hlumi1  = fs->make<TH1D>("hlumi1","LS", 2000,0,hlumiH);
+  hlumi0  = fs->make<TH1D>("hlumi0","LS", 2000,0,hlumiH);
+  hlumi   = fs->make<TH1D>("hlumi", "LS", 2000,0,hlumiH);
 
   hbx0   = fs->make<TH1D>("hbx0",  "bx",   4000,0,4000.);  
   hbx    = fs->make<TH1D>("hbx",   "bx",   4000,0,4000.);  
@@ -2026,31 +2039,32 @@ void PixClusterAna::beginJob() {
 
 #ifdef USE_TREE
   if(doTree) {
-  fillPixelTree = true; // pixel hits - true, clusters = false
-  tree = fs->make<TTree>("MyTree","MyTree");
-  tree->Branch("run",&runT,"run/I");
-  tree->Branch("event",&eventT,"event/I");
-  tree->Branch("lumiBlock",&lumiBlockT,"lumiBlock/I");
-  tree->Branch("bx",&bxT,"bx/I");
-  tree->Branch("perEvent",&perEvent,"perEvent/I");
-  tree->Branch("module",moduleT,"module[perEvent]/I");
-  tree->Branch("ladder",ladderOnT,"ladder[perEvent]/I");
-  tree->Branch("layer",layerT,"layer[perEvent]/I");
-  tree->Branch("disk",diskT,"disk[perEvent]/I");
-  tree->Branch("blade",bladeT,"blade[perEvent]/I");
-  tree->Branch("ring",ringT,"ring[perEvent]/I");
-  tree->Branch("side",sideT,"side[perEvent]/I");
-  tree->Branch("panel",panelT,"panel[perEvent]/I");
-  tree->Branch("charge",chargeT,"charge[perEvent]/F");
-  tree->Branch("size",sizeT,"size[perEvent]/F");
-  tree->Branch("sizeX",sizeXT,"sizeX[perEvent]/F");
-  tree->Branch("sizeY",sizeYT,"sizeY[perEvent]/F");
-  tree->Branch("col",colT,"col[perEvent]/F");
-  tree->Branch("row",rowT,"row[perEvent]/F");
-  tree->Branch("globalZ",gZT,"globalZ[perEvent]/F");
-  tree->Branch("globalPhi",gPhiT,"globalPhi[perEvent]/F");
-  tree->Branch("globalR",gRT,"globalR[perEvent]/F");        
-  //perEvent=0;
+    tree = fs->make<TTree>("MyTree","MyTree");
+    tree->Branch("run",&runT,"run/I");
+    tree->Branch("event",&eventT,"event/I");
+    tree->Branch("lumiBlock",&lumiBlockT,"lumiBlock/I");
+    tree->Branch("bx",&bxT,"bx/I");
+    tree->Branch("perEvent",&perEvent,"perEvent/I");
+    tree->Branch("module",moduleT,"module[perEvent]/I");
+    tree->Branch("ladder",ladderOnT,"ladder[perEvent]/I");
+    tree->Branch("layer",layerT,"layer[perEvent]/I");
+    if(!treeBpixOnly) {
+      tree->Branch("disk",diskT,"disk[perEvent]/I");
+      tree->Branch("blade",bladeT,"blade[perEvent]/I");
+      tree->Branch("ring",ringT,"ring[perEvent]/I");
+      tree->Branch("side",sideT,"side[perEvent]/I");
+      tree->Branch("panel",panelT,"panel[perEvent]/I");
+    }
+    tree->Branch("charge",chargeT,"charge[perEvent]/F");
+    tree->Branch("size",sizeT,"size[perEvent]/F");
+    tree->Branch("sizeX",sizeXT,"sizeX[perEvent]/F");
+    tree->Branch("sizeY",sizeYT,"sizeY[perEvent]/F");
+    tree->Branch("col",colT,"col[perEvent]/F");
+    tree->Branch("row",rowT,"row[perEvent]/F");
+    tree->Branch("globalZ",gZT,"globalZ[perEvent]/F");
+    tree->Branch("globalPhi",gPhiT,"globalPhi[perEvent]/F");
+    tree->Branch("globalR",gRT,"globalR[perEvent]/F");        
+    //perEvent=0;
   }
 #endif
 
@@ -2392,13 +2406,24 @@ void PixClusterAna::analyze(const edm::Event& e,
   hbx0->Fill(float(bx));
   hlumi0->Fill(float(lumiBlock));
 
+  //if(lumiBlock<127) return;
+  //if(event!=3787937) return;
+  if(skipEventsPerLS!=0) {  // option to skip event > max per  LS
+    if(lumiBlock == lumiBlock0) {
+      countEventsPerLS++;
+      if(countEventsPerLS > skipEventsPerLS) {
+	//cout<<"skip"<<countEventsPerLS<<" "<<lumiBlock<<endl;
+	return;
+      } // skip
+    } else { // new LS
+      lumiBlock0=lumiBlock;
+      countEventsPerLS=1;
+    }
+  }
+
 #ifdef USE_TREE
   if(doTree) {runT=run; eventT=event; lumiBlockT=lumiBlock; bxT=bx; perEvent=0;}
 #endif 
-
-  //if(lumiBlock<127) return;
-  //if(event!=3787937) return;
-
   //float instlumi=0;
   //int beamint1=0, beamint2=0;
 
@@ -3075,11 +3100,12 @@ void PixClusterAna::analyze(const edm::Event& e,
       float rPos = gR;
 
 #ifdef USE_TREE
-      if(doTree && !fillPixelTree) {
+      if(doTree&&!fillPixelTree&&(!treeBpixOnly||(treeBpixOnly&&(layer>0)))) {
 	if(perEvent>maxClus) {
 	  cout<<"Too many clus per event for the tree "<<maxClus<<endl;
 	} else {
-	diskT[perEvent]=disk; bladeT[perEvent]=blade; ringT[perEvent]=ring;sideT[perEvent]=side; panelT[perEvent]=panel;
+	  if(!treeBpixOnly) {diskT[perEvent]=disk; bladeT[perEvent]=blade; ringT[perEvent]=ring;sideT[perEvent]=side; panelT[perEvent]=panel;}
+
 	layerT[perEvent]=layer; ladderOnT[perEvent]=ladder; moduleT[perEvent]=module;
 	gZT[perEvent]=gZ; gPhiT[perEvent]=gPhi; gRT[perEvent]=gR;
 	chargeT[perEvent]=ch; sizeT[perEvent]=float(size); sizeXT[perEvent]=float(sizeX); sizeYT[perEvent]=float(sizeY);
@@ -3087,7 +3113,6 @@ void PixClusterAna::analyze(const edm::Event& e,
 	//cout<<"layer "<<perEvent<<" "<<layerT[perEvent]<<" "<<layer<<" "<<disk<<endl;
 	perEvent++;
 	}
-	//tree->Fill();
       }
 #endif // USE_TREE
 
@@ -3119,7 +3144,7 @@ void PixClusterAna::analyze(const edm::Event& e,
 	float adc = (float(intADC)/1000.);
 
 #ifdef USE_TREE
-	if(doTree && fillPixelTree) {
+	if(doTree&&fillPixelTree&&(!treeBpixOnly||(treeBpixOnly&&(layer>0)))) {
 	  // get global z position of the cluster
 	  LocalPoint lp = topol->localPosition(MeasurementPoint(pixx,pixy));
 	  //float lx = lp.x(); // local cluster position in cm
@@ -3135,17 +3160,16 @@ void PixClusterAna::analyze(const edm::Event& e,
 	  //float rPos = gR;
 
 	  if(perEvent>maxClus) {
-	    cout<<"Too many clus per event for the tree "<<maxClus<<endl;
+	    cout<<"Too many pix per event for the tree "<<maxClus<<endl;
 	  } else {
 
 	  colT[perEvent]=pixy; rowT[perEvent]=pixx; chargeT[perEvent]=adc;
 	  sizeT[perEvent]=size; sizeXT[perEvent]=sizeX;  sizeYT[perEvent]=sizeY;
 	  gZT[perEvent]=gZ; gPhiT[perEvent]=gPhi; gRT[perEvent]=gR;  
-	  diskT[perEvent]=disk; bladeT[perEvent]=blade; ringT[perEvent]=ring;sideT[perEvent]=side; panelT[perEvent]=panel;
+	  if(!treeBpixOnly) {diskT[perEvent]=disk; bladeT[perEvent]=blade; ringT[perEvent]=ring;sideT[perEvent]=side; panelT[perEvent]=panel;}
 	  layerT[perEvent]=layer; ladderOnT[perEvent]=ladder; moduleT[perEvent]=module;
 	  perEvent++;
 	  }
-	  //tree->Fill();
 	}
 #endif // USE_TREE
 	
@@ -4253,7 +4277,6 @@ void PixClusterAna::analyze(const edm::Event& e,
 
 #ifdef USE_TREE
 if(doTree) {
-  //clusPerTrackT = clusPerTrack;
   //cout<<perEvent<<endl; //dk
   //for(int i=0;i<perEvent;++i) {cout<<layerT[i]<<" ";}
   //cout<<endl;
@@ -4297,7 +4320,7 @@ if(doTree) {
     hclusFPix->Fill(float(clusf));  // clusters in fpix
 
     //if( PRINT || countEvents==selectEvent ) {  // 
-    if(clusb>1000 || pixb>7500) {  // 
+    if(clusb>30000 || pixb>100000) {  // 
       cout<<"Big event ======================================="<<endl;
       cout<<"run "<<run<<" event "<<event<<" bx "<<bx<<" lumi "<<lumiBlock<<" orbit "<<orbit<<" count "<<countEvents<<" tracks "<<numOfTracks
 	  <<" pvs "<<numPVsGood<<endl;   

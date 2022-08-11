@@ -173,7 +173,7 @@ class PixClustersWithTracks : public edm::one::EDAnalyzer<edm::one::SharedResour
   PixClustersWithTracks(const edm::ParameterSet& conf);  
   ~PixClustersWithTracks();
   void analyze(const edm::Event&, const edm::EventSetup&) override;
-  //void beginRun(const edm::EventSetup&);
+  void beginRun(const edm::EventSetup&);
   void beginJob() override;
   void endJob() override;
 
@@ -196,6 +196,9 @@ class PixClustersWithTracks : public edm::one::EDAnalyzer<edm::one::SharedResour
   float countTracks1, countTracks2, countTracks3, countTracks4, countTracks5;
   int select1, select2;
   int selectLayer, selectLadder, selectModule;
+  int skipEventsPerLS;
+  int lumiBlock0;
+  int countEventsPerLS;
 
   // Needed for the ByToken method
   //edm::EDGetTokenT<edmNew::DetSetVector<SiPixelCluster> > myClus;
@@ -347,10 +350,10 @@ class PixClustersWithTracks : public edm::one::EDAnalyzer<edm::one::SharedResour
   TProfile *hclumulty1, *hclumulty2,*hclumulty3,*hclumulty4;
   TProfile *hcluchar1,  *hcluchar2, *hcluchar3, *hcluchar4;
 
-  TProfile *hclumultld1,  *hclumultld2,  *hclumultld3;
-  TProfile *hclumultxld1, *hclumultxld2, *hclumultxld3;
-  TProfile *hclumultyld1, *hclumultyld2, *hclumultyld3;
-  TProfile *hclucharld1,  *hclucharld2,  *hclucharld3;
+  // TProfile *hclumultld1,  *hclumultld2,  *hclumultld3;
+  // TProfile *hclumultxld1, *hclumultxld2, *hclumultxld3;
+  // TProfile *hclumultyld1, *hclumultyld2, *hclumultyld3;
+  // TProfile *hclucharld1,  *hclucharld2,  *hclucharld3;
 
   TProfile *htracksls,  *hpvsls, *htrackslsn,  *hpvslsn;
   TProfile *hmult1,  *hmult2,  *hmult3;
@@ -465,7 +468,7 @@ PixClustersWithTracks::PixClustersWithTracks(edm::ParameterSet const& conf)
   src_ =  conf.getParameter<edm::InputTag>( "src" );
   select1 = conf.getUntrackedParameter<int>("Select1",0);
   select2 = conf.getUntrackedParameter<int>("Select2",0);
-
+  skipEventsPerLS = conf.getUntrackedParameter<int>("skipEventsPerLS",0);
   cout<<"PixClustersWithTracks::Construct: Normalise = "<<Normalise<<" verbosity "<<PRINT
       <<" select "<<select1<<","<<select2<<endl;
 #ifdef USE_TREE
@@ -525,9 +528,11 @@ PixClustersWithTracks::PixClustersWithTracks(edm::ParameterSet const& conf)
 PixClustersWithTracks::~PixClustersWithTracks() { }  
 
 // ------------ method called at the begining   ------------
-//void PixClustersWithTracks::beginRun(const edm::EventSetup& iSetup) {
-//  cout << "BeginRun, Verbosity =  " <<PRINT<<" Phase1 "<<phase1_<<endl;
-//}
+void PixClustersWithTracks::beginRun(const edm::EventSetup& iSetup) {
+  cout << "BeginRun, Verbosity =  " <<PRINT<<" Phase1 "<<phase1_<<endl;
+  countEventsPerLS=0;
+  lumiBlock0=-1;
+}
 
 // ------------ method called at the begining   ------------
 void PixClustersWithTracks::beginJob() {
@@ -537,6 +542,8 @@ void PixClustersWithTracks::beginJob() {
   count1=0.; count2=0.; count3=0.; count4=0.; 
   countTracks1=0; countTracks2=0; countTracks3=0; countTracks4=0, countTracks5=0; 
   edm::Service<TFileService> fs;
+  countEventsPerLS=0;
+  lumiBlock0=-1;
 
 #ifdef USE_TREE
   if(doTree) {
@@ -792,8 +799,8 @@ void PixClustersWithTracks::beginJob() {
   htracksGoodInPix = fs->make<TH1D>( "htracksGoodInPix", "count good tracks in pix",4000,-0.5,3999.5);
   htracksGood = fs->make<TH1D>( "htracksGood", "count good tracks",4000,-0.5,3999.5);
   htracks = fs->make<TH1D>( "htracks", "count tracks",4000,-0.5,3999.5);
-  hclusBpix = fs->make<TH1D>( "hclusBpix", "count clus in bpix",200,-0.5,3999.5);
-  hpixBpix = fs->make<TH1D>( "hpixBpix", "count pixels",200,-0.5,19999.5);
+  hclusBpix = fs->make<TH1D>( "hclusBpix", "count clus in bpix",100,-0.5,9999.5);
+  hpixBpix = fs->make<TH1D>( "hpixBpix", "count pixels",100,-0.5,29999.5);
 
   hpvxy = fs->make<TH2F>( "hpvxy", "pv xy",100,-1.,1.,100,-1.,1.);
   hpvz = fs->make<TH1D>( "hpvz", "pv z",1000,-50.,50.);
@@ -979,21 +986,21 @@ void PixClustersWithTracks::beginJob() {
    hcluchar4 = fs->make<TProfile>("hcluchar4","cluster char layer 3",60,-3.,3.,0.0,1000.);
 
   // profiles versus ladder
-   hclumultld1 = fs->make<TProfile>("hclumultld1","cluster size layer 1",23,-11.5,11.5,0.0,100.);
-   hclumultld2 = fs->make<TProfile>("hclumultld2","cluster size layer 2",35,-17.5,17.5,0.0,100.);
-   hclumultld3 = fs->make<TProfile>("hclumultld3","cluster size layer 3",47,-23.5,23.5,0.0,100.);
+   // hclumultld1 = fs->make<TProfile>("hclumultld1","cluster size layer 1",23,-11.5,11.5,0.0,100.);
+   // hclumultld2 = fs->make<TProfile>("hclumultld2","cluster size layer 2",35,-17.5,17.5,0.0,100.);
+   // hclumultld3 = fs->make<TProfile>("hclumultld3","cluster size layer 3",47,-23.5,23.5,0.0,100.);
 
-   hclumultxld1 = fs->make<TProfile>("hclumultxld1","cluster x-size layer 1",23,-11.5,11.5,0.0,100.);
-   hclumultxld2 = fs->make<TProfile>("hclumultxld2","cluster x-size layer 2",35,-17.5,17.5,0.0,100.);
-   hclumultxld3 = fs->make<TProfile>("hclumultxld3","cluster x-size layer 3",47,-23.5,23.5,0.0,100.);
+   // hclumultxld1 = fs->make<TProfile>("hclumultxld1","cluster x-size layer 1",23,-11.5,11.5,0.0,100.);
+   // hclumultxld2 = fs->make<TProfile>("hclumultxld2","cluster x-size layer 2",35,-17.5,17.5,0.0,100.);
+   // hclumultxld3 = fs->make<TProfile>("hclumultxld3","cluster x-size layer 3",47,-23.5,23.5,0.0,100.);
 
-   hclumultyld1 = fs->make<TProfile>("hclumultyld1","cluster y-size layer 1",23,-11.5,11.5,0.0,100.);
-   hclumultyld2 = fs->make<TProfile>("hclumultyld2","cluster y-size layer 2",35,-17.5,17.5,0.0,100.);
-   hclumultyld3 = fs->make<TProfile>("hclumultyld3","cluster y-size layer 3",47,-23.5,23.5,0.0,100.);
+   // hclumultyld1 = fs->make<TProfile>("hclumultyld1","cluster y-size layer 1",23,-11.5,11.5,0.0,100.);
+   // hclumultyld2 = fs->make<TProfile>("hclumultyld2","cluster y-size layer 2",35,-17.5,17.5,0.0,100.);
+   // hclumultyld3 = fs->make<TProfile>("hclumultyld3","cluster y-size layer 3",47,-23.5,23.5,0.0,100.);
 
-   hclucharld1 = fs->make<TProfile>("hclucharld1","cluster char layer 1",23,-11.5,11.5,0.0,1000.);
-   hclucharld2 = fs->make<TProfile>("hclucharld2","cluster char layer 2",35,-17.5,17.5,0.0,1000.);
-   hclucharld3 = fs->make<TProfile>("hclucharld3","cluster char layer 3",47,-23.5,23.5,0.0,1000.);
+   // hclucharld1 = fs->make<TProfile>("hclucharld1","cluster char layer 1",23,-11.5,11.5,0.0,1000.);
+   // hclucharld2 = fs->make<TProfile>("hclucharld2","cluster char layer 2",35,-17.5,17.5,0.0,1000.);
+   // hclucharld3 = fs->make<TProfile>("hclucharld3","cluster char layer 3",47,-23.5,23.5,0.0,1000.);
 
 
    htracksls = fs->make<TProfile>("htracksls","tracks with pix hits  vs ls",1000,0.,3000.,0.0,10000.);
@@ -1215,7 +1222,7 @@ void PixClustersWithTracks::beginJob() {
 
    htest  = fs->make<TH2F>("htest", "bpix eta-hit size-y",60,-3.,3.,20,0.5,20.5);
    htest1 = fs->make<TH2F>("htest1","sizey vs clu charge",50,0.,800.,15,0.5,15.5);
-   htest2 = fs->make<TH2F>("htest2","sizey vs pix charge",50,0.,100.,15,0.5,15.5);
+   htest2 = fs->make<TH2F>("htest2","sizey vs pix charge",50,0.,25.,15,0.5,15.5);
    htest3 = fs->make<TH2F>("htest3","sizey vs clu charge",50,0.,800.,10,0.5,10.5);
    htest4 = fs->make<TH2F>("htest4","sizey vs pix charge",50,0.,100.,10,0.5,10.5);
 
@@ -1813,6 +1820,19 @@ void PixClustersWithTracks::analyze(const edm::Event& e,
 
   hbx0->Fill(float(bx));
   hls0->Fill(float(lumiBlock));
+
+  if(skipEventsPerLS!=0) {  // option to skip event > max per  LS
+    if(lumiBlock == lumiBlock0) {
+      countEventsPerLS++;
+      if(countEventsPerLS > skipEventsPerLS) {
+	//cout<<"skip"<<countEventsPerLS<<" "<<lumiBlock<<endl;
+	return;
+      } // skip
+    } else { // new LS
+      lumiBlock0=lumiBlock;
+      countEventsPerLS=1;
+    }
+  }
 
 #ifdef LUMI
   edm::LuminosityBlock const& iLumi = e.getLuminosityBlock();
@@ -2638,10 +2658,10 @@ void PixClustersWithTracks::analyze(const edm::Event& e,
 	    hclumulty1->Fill(eta,float(sizeY));
 	    hcluchar1->Fill(eta,float(charge));	
 	    //cout<<ladder<<" "<<ladderOn<<endl;
-	    hclumultld1->Fill(float(ladderOn),size);
-	    hclumultxld1->Fill(float(ladderOn),sizeX);
-	    hclumultyld1->Fill(float(ladderOn),sizeY);
-	    hclucharld1->Fill(float(ladderOn),charge);
+	    //hclumultld1->Fill(float(ladderOn),size);
+	    //hclumultxld1->Fill(float(ladderOn),sizeX);
+	    //hclumultyld1->Fill(float(ladderOn),sizeY);
+	    //hclucharld1->Fill(float(ladderOn),charge);
 #endif
 
 #ifdef PHI_PROFILES
@@ -2809,10 +2829,10 @@ void PixClustersWithTracks::analyze(const edm::Event& e,
 	    hclumultx2->Fill(eta,float(sizeX));
 	    hclumulty2->Fill(eta,float(sizeY));
 	    hcluchar2->Fill(eta,float(charge));
-	    hclumultld2->Fill(float(ladderOn),size);
-	    hclumultxld2->Fill(float(ladderOn),sizeX);
-	    hclumultyld2->Fill(float(ladderOn),sizeY);
-	    hclucharld2->Fill(float(ladderOn),charge);
+	    //hclumultld2->Fill(float(ladderOn),size);
+	    //hclumultxld2->Fill(float(ladderOn),sizeX);
+	    //hclumultyld2->Fill(float(ladderOn),sizeY);
+	    //hclucharld2->Fill(float(ladderOn),charge);
 #endif
 	  }
 #ifdef LS_STUDIES
@@ -2890,10 +2910,10 @@ void PixClustersWithTracks::analyze(const edm::Event& e,
 	    hclumultx3->Fill(eta,float(sizeX));
 	    hclumulty3->Fill(eta,float(sizeY));
 	    hcluchar3->Fill(eta,float(charge));
-	    hclumultld3->Fill(float(ladderOn),size);
-	    hclumultxld3->Fill(float(ladderOn),sizeX);
-	    hclumultyld3->Fill(float(ladderOn),sizeY);
-	    hclucharld3->Fill(float(ladderOn),charge);
+	    //hclumultld3->Fill(float(ladderOn),size);
+	    //hclumultxld3->Fill(float(ladderOn),sizeX);
+	    //hclumultyld3->Fill(float(ladderOn),sizeY);
+	    //hclucharld3->Fill(float(ladderOn),charge);
 #endif
 #ifdef PHI_PROFILES
 	    //hclumultxPhi3->Fill(phi,float(sizeX));
@@ -2920,7 +2940,7 @@ void PixClustersWithTracks::analyze(const edm::Event& e,
 #endif
 	  
 	  hsizeyz3->Fill(eta,float(sizeY));
-	  htest3->Fill(charge,float(sizeY));
+	  //htest3->Fill(charge,float(sizeY));
 #ifdef USE_PROBABILITY	  
 	  hProbabilityXYBpix->Fill(hit->clusterProbability(0));
 	  hProbabilityQBpix->Fill(hit->clusterProbability(2));
@@ -2976,7 +2996,7 @@ void PixClustersWithTracks::analyze(const edm::Event& e,
 	  }
 	  
 	  hsizeyz4->Fill(eta,float(sizeY));
-	  htest3->Fill(charge,float(sizeY));
+	  //htest3->Fill(charge,float(sizeY));
 #ifdef USE_PROBABILITY	  
 	  hProbabilityXYBpix->Fill(hit->clusterProbability(0));
 	  hProbabilityQBpix->Fill(hit->clusterProbability(2));

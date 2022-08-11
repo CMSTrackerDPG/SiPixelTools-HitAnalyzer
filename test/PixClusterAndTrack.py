@@ -5,7 +5,8 @@ import FWCore.ParameterSet.Config as cms
 from Configuration.StandardSequences.Eras import eras
 process = cms.Process("cluTest",eras.Run3)
                    
-process.load("Configuration.Geometry.GeometryRecoDB_cff")
+#process.load("Configuration.Geometry.GeometryRecoDB_cff")
+process.load("Configuration.StandardSequences.GeometryDB_cff")
 process.load("Configuration.StandardSequences.MagneticField_38T_cff")
 # process.load("Configuration.StandardSequences.Services_cff")
 
@@ -101,12 +102,11 @@ process.source = cms.Source("PoolSource",
 
 #  fileNames = cms.untracked.vstring(  
 #"/store/express/Run2022A/ExpressPhysics/FEVT/Express-v1/000/353/060/00000/2499e0b2-8ec8-4c6e-8173-c2ab48510815.root",
-
 #  )   # end the list "by-hand"
 #)
 
 #process.source.lumisToProcess = cms.untracked.VLuminosityBlockRange('124230:26-124230:9999','124030:2-124030:9999')
-#process.source.lumisToProcess = cms.untracked.VLuminosityBlockRange('325308:43-325308:9999')
+#process.source.lumisToProcess = cms.untracked.VLuminosityBlockRange('355133:60-355133:9999')
 
 process.source.skipBadFiles = cms.untracked.bool( True )
 
@@ -126,6 +126,7 @@ process.d = cms.EDAnalyzer("PixClusterAna",
     Select1 = cms.untracked.int32(0),  # select the cut type, 0 no cut
     Select2 = cms.untracked.int32(0),  # select the cut value   
     doTree = cms.untracked.bool(False), # write the tree, lorge files!
+    skipEventsPerLS = cms.untracked.int32(1000), #skip >events per LS
 )
 
 process.d1 = cms.EDAnalyzer("PixClusterAna",
@@ -173,6 +174,7 @@ process.c = cms.EDAnalyzer("PixClustersWithTracks",
     Select1 = cms.untracked.int32(0),  # select the cut type, o no cut
     Select2 = cms.untracked.int32(0),  # select the cut value   
     doTree = cms.untracked.bool(False), # write the tree, lorge files!
+   skipEventsPerLS = cms.untracked.int32(1000), #skip >events per LS
 )
 process.c1 = cms.EDAnalyzer("PixClustersWithTracks",
     Verbosity = cms.untracked.bool(False),
