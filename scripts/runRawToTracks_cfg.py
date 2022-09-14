@@ -68,7 +68,7 @@ process.hltfilter = hlt.hltHighLevel.clone(
     throw = False
     )
 
-process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(100000))
+process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(10000))
 
 
 myfilelist = cms.untracked.vstring()
@@ -80,8 +80,20 @@ process.source = cms.Source("PoolSource",
 #)
 # fileNames =  cms.untracked.vstring('file:rawdata.root')
 fileNames =  cms.untracked.vstring(
+"/store/express/Run2022D/ExpressPhysics/FEVT/Express-v2/000/357/895/00000/97b7ad75-00c1-4698-a328-9d542e85c778.root",
+"/store/express/Run2022D/ExpressPhysics/FEVT/Express-v2/000/357/895/00000/76e08254-8229-41fd-85a5-da8f01e08d57.root",
+"/store/express/Run2022D/ExpressPhysics/FEVT/Express-v2/000/357/895/00000/256dd5b5-4344-4341-bba3-f661b6befcbe.root",
+"/store/express/Run2022D/ExpressPhysics/FEVT/Express-v2/000/357/895/00000/69bb049e-d9e4-4f37-8f36-3e6adbd8f2c8.root",
+"/store/express/Run2022D/ExpressPhysics/FEVT/Express-v2/000/357/895/00000/b79fffe8-f4e1-4c47-b17d-2dd49634fb15.root",
+"/store/express/Run2022D/ExpressPhysics/FEVT/Express-v2/000/357/895/00000/107aac66-4701-4710-9129-70dc4babdbc9.root",
+"/store/express/Run2022D/ExpressPhysics/FEVT/Express-v2/000/357/895/00000/80ba39e0-706d-4b09-a0ee-61f136b3aa3b.root",
+"/store/express/Run2022D/ExpressPhysics/FEVT/Express-v2/000/357/895/00000/7b07c29d-73d0-4265-8b2a-7669f7435283.root",
+"/store/express/Run2022D/ExpressPhysics/FEVT/Express-v2/000/357/895/00000/ec8fc821-b63b-4464-93a6-d191c33d6bd9.root",
+"/store/express/Run2022D/ExpressPhysics/FEVT/Express-v2/000/357/895/00000/324b6331-5694-48f7-beb5-3c00034d04d1.root",
+
+
 #"file:/work/kotlinski/DATA/RAW/325170/06590754-A60F-E24C-AFDE-4B01585C2B01.root", # copy from AAA
-"file:/work/kotlinski/DATA/RAW/325308/FDDD4BEE-4B1B-7E42-BD0E-E7FDF26FB466.root", # copy from eos
+#"file:/work/kotlinski/DATA/RAW/325308/FDDD4BEE-4B1B-7E42-BD0E-E7FDF26FB466.root", # copy from eos
  )
 #   skipEvents = cms.untracked.uint32(5000)
 )
@@ -97,7 +109,7 @@ process.siStripDigis.ProductLabel = 'rawDataCollector'
 #process.siPixelClustersPreSplitting.SeedThreshold = 1000
 #process.siPixelClustersPreSplitting.ChannelThreshold = 2 #must be bigger than 1
 #process.siPixelClustersPreSplitting.ClusterThreshold = 1000    # integer?
-#process.siPixelClustersPreSplitting.ClusterThreshold_L1 = 1000 # integer?
+process.siPixelClustersPreSplitting.cpu.ClusterThreshold_L1 = 4000 # integer?
 #process.siPixelClustersPreSplitting.payloadType = cms.string('Full')
 
 
@@ -122,7 +134,7 @@ process.MessageLogger = cms.Service("MessageLogger",
 # pixel local reco (RecHits) needs the GenError object,
 # not yet in GT, add here:
 # DB stuff 
-useLocalDB = False
+useLocalDB = True
 if useLocalDB :
     process.DBReaderFrontier = cms.ESSource("PoolDBESSource",
      DBParameters = cms.PSet(
@@ -133,7 +145,9 @@ if useLocalDB :
        cms.PSet(
         record = cms.string('SiPixelGainCalibrationOfflineRcd'),
 #        record = cms.string('SiPixelGainCalibrationRcd'),
-        tag = cms.string('SiPixelGainCalibration_2021_v2_offline')
+        tag = cms.string('SiPixelGainCalibration_2022_v0')  # same as v1 below
+#        tag = cms.string('SiPixelGainCalibration_2022_v1_offline') # same as v0 in DB
+#        tag = cms.string('SiPixelGainCalibration_2021_v2_offline')
 #        tag = cms.string('SiPixelGainCalibration_2018_v1_offline') #in DB
 #        tag = cms.string('SiPixelGainCalibration_2017_v2_bugfix') #in DB
 #        tag = cms.string('SiPixelGainCalibration_2017_v2_bugfix_offline')
@@ -152,9 +166,6 @@ if useLocalDB :
 #     connect = cms.string('sqlite_file:/afs/cern.ch/user/d/dkotlins/WORK/DB/Gains/SiPixelGainCalibration_2017_v6_full.db')
 #     connect = cms.string('sqlite_file:/afs/cern.ch/user/d/dkotlins/WORK/DB/Gains/SiPixelGainCalibration_2017_v5_full.db')
 #     connect = cms.string('sqlite_file:/afs/cern.ch/user/d/dkotlins/WORK/DB/Gains/SiPixelGainCalibration_2017_v4_full.db')
-#     connect = cms.string('sqlite_file:/afs/cern.ch/user/d/dkotlins/WORK/DB/Gains/SiPixelGainCalibration_2017_v4_1337_offline.db')
-
-#     connect = cms.string('sqlite_file:/afs/cern.ch/user/d/dkotlins/WORK/DB/Gains/SiPixelGainCalibration_2017_v6_offline_oldvcalHL.db')
 #     connect = cms.string('sqlite_file:/afs/cern.ch/user/d/dkotlins/WORK/DB/Gains/SiPixelGainCalibration_2017_v6_offline.db')
 #     connect = cms.string('sqlite_file:/afs/cern.ch/user/d/dkotlins/WORK/DB/Gains/SiPixelGainCalibration_2017_v5_offline.db')
 #     connect = cms.string('sqlite_file:/afs/cern.ch/user/d/dkotlins/WORK/DB/Gains/SiPixelGainCalibration_2017_v4_offline.db')
@@ -162,8 +173,9 @@ if useLocalDB :
 #     connect = cms.string('sqlite_file:/afs/cern.ch/user/d/dkotlins/WORK/DB/Gains/SiPixelGainCalibration_2017_v2_offline.db')
 #     connect = cms.string('sqlite_file:/afs/cern.ch/user/d/dkotlins/WORK/DB/Gains/SiPixelGainCalibration_2018_v1_offline.db')
 #     connect = cms.string('sqlite_file:/afs/cern.ch/user/d/dkotlins/WORK/DB/Gains/SiPixelGainCalibration_phase1_ideal_v2.db')
-     connect = cms.string('sqlite_file:/afs/cern.ch/user/d/dkotlins/WORK/DB/Gains/2021/SiPixelGainCalibration_2021_v2_offline.db')
-#     connect = cms.string('frontier://FrontierProd/CMS_CONDITIONS')
+#     connect = cms.string('sqlite_file:/afs/cern.ch/user/d/dkotlins/WORK/DB/Gains/2021/SiPixelGainCalibration_2021_v2_offline.db')
+#     connect = cms.string('sqlite_file:/work/kotlinski/DB/Gains/SiPixelGainCalibration_2022_v1_offline.db')
+     connect = cms.string('frontier://FrontierProd/CMS_CONDITIONS')
 #     connect = cms.string('frontier://FrontierPrep/CMS_CONDITIONS')
     ) # end process
     process.myprefer = cms.ESPrefer("PoolDBESSource","DBReaderFrontier")

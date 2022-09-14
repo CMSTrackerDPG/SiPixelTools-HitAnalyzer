@@ -109,7 +109,7 @@
 //#include "CalibTracker/SiPixelESProducers/interface/SiPixelGainCalibrationForHLTService.h"
 #endif
 
-#define TEST_MODULE // test pixel hits within one module, overlaps and invalid
+//#define TEST_MODULE // test pixel hits within one module, overlaps and invalid
 
 using namespace std;
 
@@ -1178,9 +1178,6 @@ void PixDigisTest::analyze(const edm::Event& iEvent,
 	
 	// channel index needed to look for the simlink to simtracks
 	int channel = PixelChannelIdentifier::pixelToChannel(row,col);
-	if(PRINT || select) cout <<numberOfDigis<< " Col: " << col << " Row: " << row 
-		       << " ADC: " << adc <<" channel = "<<channel<<endl;
-
         int roc = rocId(col,row);  // 0-15, column, row
         int link = int(roc/8); // link 0 & 1
         int rocInCol = roc%8; // 0-7
@@ -1188,10 +1185,10 @@ void PixDigisTest::analyze(const edm::Event& iEvent,
         if(module>0) rocZ = float(module) + (0.125/2.) - (float(rocInCol) * 0.125); //z
         else         rocZ = float(module) + 1.0 + (0.125/2.) - (float(rocInCol) * 0.125); //z
         float rocPhi = float(ladder) - 0.5 + (0.5/2.)   + (float(link) * 0.5); 
-	
+	float electrons=0.;
 #ifdef USE_GAINS
 	// Apply the calibration 
-	float electrons = calibrate(detid, adc, col, row) / 1000.; //convert elec to kelec
+	electrons = calibrate(detid, adc, col, row) / 1000.; //convert elec to kelec
 	float vcal=0.;
 	//const float conversionFactor_L1=50., conversionFactor=47., offset=-60., offset_L1=-670.; 
 	const float conversionFactor_L1=45.7, conversionFactor=47., offset=-60., offset_L1=-308.; 
@@ -1201,6 +1198,10 @@ void PixDigisTest::analyze(const edm::Event& iEvent,
 	  //electrons = int( vcal * theConversionFactor + theOffset); 
           //}
 #endif
+	if(PRINT || select) cout <<numberOfDigis<< " Col: " << col << " Row: " << row 
+				 << " ADC: " << adc <<" elec "<<electrons<<" channel = "<<channel<<endl;
+
+
 	// Accumuate dcols, do only for bpix
 	if(layer>0) {
 	  // fill the module 

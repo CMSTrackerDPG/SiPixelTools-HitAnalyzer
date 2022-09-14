@@ -1269,8 +1269,8 @@ void PixClusterAna::beginJob() {
   htest1 = fs->make<TH2F>("htest1","L1: size vs clu charge",50,0.,400.,15,0.5,15.5);
   htest2 = fs->make<TH2F>("htest2","L1: size vs pix charge",50,0.,100.,15,0.5,15.5);
 #endif 
-  htest3 = fs->make<TH2F>("htest3","clus vs. tracks",50,0.,10000.,50,0.,200.);
-  htest4 = fs->make<TH2F>("htest4","dets vs. tracks",50,0.,1000.,50,0.,200.);
+  htest3 = fs->make<TH2F>("htest3","clus vs. tracks",50,0.,25000.,50,0.,2500.);
+  htest4 = fs->make<TH2F>("htest4","dets vs. tracks",50,0.,2000., 50,0.,2500.);
   //htest4 = fs->make<TH2F>("htest4","size vs pix charge",50,0.,100.,10,0.5,10.5);
 
 

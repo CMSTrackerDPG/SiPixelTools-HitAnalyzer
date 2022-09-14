@@ -34,4 +34,6 @@
 #dasgoclient -query='file dataset=/ExpressPhysics/Commissioning2022-Express-v1/FEVT run=352165'
 #dasgoclient -query='file dataset=/ExpressCosmics/Run2022A-Express-v1/FEVT run=352417'
 #dasgoclient -query='file dataset=/ExpressPhysics/Run2022B-Express-v1/FEVT run=355100'
-dasgoclient -query='file dataset=/ExpressPhysics/Run2022C-Express-v1/FEVT run=357101'
+#dasgoclient -query='file dataset=/ExpressPhysics/Run2022C-Express-v1/FEVT run=357101'
+#dasgoclient -query='file dataset=/ExpressPhysics/Run2022D-Express-v2/FEVT run=357895'
+dasgoclient -query='file dataset=/ExpressCosmics/Run2022D-Express-v2/FEVT run=358154'

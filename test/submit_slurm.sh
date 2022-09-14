@@ -36,7 +36,8 @@ cd /scratch/$USER/${SLURM_JOB_ID}
 #cmsRun $MYPWD/reco.py
 #cmsRun $MYPWD/runRawDumper_350462.py
 #cmsRun $MYPWD/runHotPixels_347874.py
-cmsRun $MYPWD/PixClusterAndTrack_357101.py
+cmsRun $MYPWD/PixClusterAndTrack_357438.py
+#cmsRun $MYPWD/PixClusterAndTrack_357895.py
 # 
 pwd
 ls 

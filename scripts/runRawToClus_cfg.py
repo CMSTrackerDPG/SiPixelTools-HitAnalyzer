@@ -74,7 +74,7 @@ process.hltfilter = hlt.hltHighLevel.clone(
     throw = False
     )
 
-process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(1000000))
+process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(-1))
 
 myfilelist = cms.untracked.vstring()
 myfilelist.extend([
@@ -261,12 +261,12 @@ process.TFileService = cms.Service("TFileService",
 #process.p = cms.Path(process.siPixelDigis*process.pixeltrackerlocalreco)
 #process.p = cms.Path(process.siPixelDigis*process.pixeltrackerlocalreco*process.d)
 #process.p = cms.Path(process.hltfilter*process.siPixelDigis*process.pixeltrackerlocalreco*process.d)
-#process.p = cms.Path(process.hltfilter*process.siPixelDigis*process.pixeltrackerlocalreco*process.a*process.d)
+process.p = cms.Path(process.hltfilter*process.siPixelDigis*process.pixeltrackerlocalreco*process.a*process.d)
 
 # for random cosmics 
 #process.p = cms.Path(process.hltfilter*process.siPixelDigis*process.pixeltrackerlocalreco*process.a*process.d_cosm)
 # for cosmics
-process.p = cms.Path(process.siPixelDigis*process.pixeltrackerlocalreco*process.a*process.d_cosm)
+#process.p = cms.Path(process.siPixelDigis*process.pixeltrackerlocalreco*process.a*process.d_cosm)
 
 # for HI
 #process.p = cms.Path(process.siPixelDigis*process.pixeltrackerlocalreco*process.a*process.d)

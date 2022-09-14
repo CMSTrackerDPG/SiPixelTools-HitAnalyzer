@@ -32,7 +32,10 @@ cd /scratch/$USER/${SLURM_JOB_ID}
 #cmsRun $MYPWD/gen_sim.py
 #cmsRun $MYPWD/digitize.py
 #cmsRun $MYPWD/reco.py
-cmsRun $MYPWD/runRawToClus_356563.py
+#cmsRun $MYPWD/runRawToClus_355207.py
+#cmsRun $MYPWD/runRawToClus_356563.py
+#cmsRun $MYPWD/runRawToClus_357438.py
+cmsRun $MYPWD/runRawToClus_357895.py
 # 
 pwd
 ls 
