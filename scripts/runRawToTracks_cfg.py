@@ -68,7 +68,7 @@ process.hltfilter = hlt.hltHighLevel.clone(
     throw = False
     )
 
-process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(10000))
+process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(1000))
 
 
 myfilelist = cms.untracked.vstring()
@@ -80,16 +80,28 @@ process.source = cms.Source("PoolSource",
 #)
 # fileNames =  cms.untracked.vstring('file:rawdata.root')
 fileNames =  cms.untracked.vstring(
-"/store/express/Run2022D/ExpressPhysics/FEVT/Express-v2/000/357/895/00000/97b7ad75-00c1-4698-a328-9d542e85c778.root",
-"/store/express/Run2022D/ExpressPhysics/FEVT/Express-v2/000/357/895/00000/76e08254-8229-41fd-85a5-da8f01e08d57.root",
-"/store/express/Run2022D/ExpressPhysics/FEVT/Express-v2/000/357/895/00000/256dd5b5-4344-4341-bba3-f661b6befcbe.root",
-"/store/express/Run2022D/ExpressPhysics/FEVT/Express-v2/000/357/895/00000/69bb049e-d9e4-4f37-8f36-3e6adbd8f2c8.root",
-"/store/express/Run2022D/ExpressPhysics/FEVT/Express-v2/000/357/895/00000/b79fffe8-f4e1-4c47-b17d-2dd49634fb15.root",
-"/store/express/Run2022D/ExpressPhysics/FEVT/Express-v2/000/357/895/00000/107aac66-4701-4710-9129-70dc4babdbc9.root",
-"/store/express/Run2022D/ExpressPhysics/FEVT/Express-v2/000/357/895/00000/80ba39e0-706d-4b09-a0ee-61f136b3aa3b.root",
-"/store/express/Run2022D/ExpressPhysics/FEVT/Express-v2/000/357/895/00000/7b07c29d-73d0-4265-8b2a-7669f7435283.root",
-"/store/express/Run2022D/ExpressPhysics/FEVT/Express-v2/000/357/895/00000/ec8fc821-b63b-4464-93a6-d191c33d6bd9.root",
-"/store/express/Run2022D/ExpressPhysics/FEVT/Express-v2/000/357/895/00000/324b6331-5694-48f7-beb5-3c00034d04d1.root",
+
+#"/store/express/Run2022D/ExpressPhysics/FEVT/Express-v2/000/357/895/00000/97b7ad75-00c1-4698-a328-9d542e85c778.root",
+#"/store/express/Run2022D/ExpressPhysics/FEVT/Express-v2/000/357/895/00000/76e08254-8229-41fd-85a5-da8f01e08d57.root",
+#"/store/express/Run2022D/ExpressPhysics/FEVT/Express-v2/000/357/895/00000/256dd5b5-4344-4341-bba3-f661b6befcbe.root",
+#"/store/express/Run2022D/ExpressPhysics/FEVT/Express-v2/000/357/895/00000/69bb049e-d9e4-4f37-8f36-3e6adbd8f2c8.root",
+#"/store/express/Run2022D/ExpressPhysics/FEVT/Express-v2/000/357/895/00000/b79fffe8-f4e1-4c47-b17d-2dd49634fb15.root",
+#"/store/express/Run2022D/ExpressPhysics/FEVT/Express-v2/000/357/895/00000/107aac66-4701-4710-9129-70dc4babdbc9.root",
+#"/store/express/Run2022D/ExpressPhysics/FEVT/Express-v2/000/357/895/00000/80ba39e0-706d-4b09-a0ee-61f136b3aa3b.root",
+#"/store/express/Run2022D/ExpressPhysics/FEVT/Express-v2/000/357/895/00000/7b07c29d-73d0-4265-8b2a-7669f7435283.root",
+#"/store/express/Run2022D/ExpressPhysics/FEVT/Express-v2/000/357/895/00000/ec8fc821-b63b-4464-93a6-d191c33d6bd9.root",
+#"/store/express/Run2022D/ExpressPhysics/FEVT/Express-v2/000/357/895/00000/324b6331-5694-48f7-beb5-3c00034d04d1.root",
+
+"/store/express/Run2022C/ExpressPhysics/FEVT/Express-v1/000/357/438/00000/1e36be6c-055a-406c-827b-b1c8aae38f09.root",
+"/store/express/Run2022C/ExpressPhysics/FEVT/Express-v1/000/357/438/00000/aa8b043e-ad2a-4068-b7ed-8489234e0df1.root",
+"/store/express/Run2022C/ExpressPhysics/FEVT/Express-v1/000/357/438/00000/949e5701-bf6a-481b-b915-0069077e40ad.root",
+"/store/express/Run2022C/ExpressPhysics/FEVT/Express-v1/000/357/438/00000/33cce346-089d-4c4c-85f1-e39c269fd37b.root",
+"/store/express/Run2022C/ExpressPhysics/FEVT/Express-v1/000/357/438/00000/2796078a-9b4f-47ae-b308-e0b2db494980.root",
+"/store/express/Run2022C/ExpressPhysics/FEVT/Express-v1/000/357/438/00000/60210347-8411-4024-b0c3-d16441962593.root",
+"/store/express/Run2022C/ExpressPhysics/FEVT/Express-v1/000/357/438/00000/938fea42-25e8-41e4-92c7-b3511f6885fc.root",
+"/store/express/Run2022C/ExpressPhysics/FEVT/Express-v1/000/357/438/00000/e1664dfc-cad6-45a0-a195-37fbc5ac6034.root",
+"/store/express/Run2022C/ExpressPhysics/FEVT/Express-v1/000/357/438/00000/bf722e8c-dae3-44de-bf0c-becfcdba62b1.root",
+"/store/express/Run2022C/ExpressPhysics/FEVT/Express-v1/000/357/438/00000/3afec42e-a031-49b4-89f4-57d07496fa0d.root",
 
 
 #"file:/work/kotlinski/DATA/RAW/325170/06590754-A60F-E24C-AFDE-4B01585C2B01.root", # copy from AAA
@@ -101,16 +113,18 @@ fileNames =  cms.untracked.vstring(
 #process.source.lumisToProcess = cms.untracked.VLuminosityBlockRange('303824:54-303824:999')
 #process.source.lumisToProcess = cms.untracked.VLuminosityBlockRange('278193:77-278193:9999')
 #process.source.lumisToProcess = cms.untracked.VLuminosityBlockRange('302131:34-302131:943')
+#process.source.lumisToProcess = cms.untracked.VLuminosityBlockRange('357438:135-357438:230')
+process.source.lumisToProcess = cms.untracked.VLuminosityBlockRange('357438:35-357438:230')
 
 # for Raw2digi for data
 process.siPixelDigis.cpu.InputLabel = 'rawDataCollector'
 process.siStripDigis.ProductLabel = 'rawDataCollector'
 
-#process.siPixelClustersPreSplitting.SeedThreshold = 1000
-#process.siPixelClustersPreSplitting.ChannelThreshold = 2 #must be bigger than 1
-#process.siPixelClustersPreSplitting.ClusterThreshold = 1000    # integer?
-process.siPixelClustersPreSplitting.cpu.ClusterThreshold_L1 = 4000 # integer?
-#process.siPixelClustersPreSplitting.payloadType = cms.string('Full')
+process.siPixelClustersPreSplitting.cpu.SeedThreshold = 1000
+#process.siPixelClustersPreSplitting.cpu.ChannelThreshold = 2 #must be bigger than 1
+#process.siPixelClustersPreSplitting.cpu.ClusterThreshold = 1000    # integer?
+process.siPixelClustersPreSplitting.cpu.ClusterThreshold_L1 = 1000 # integer?
+#process.siPixelClustersPreSplitting.cpu.payloadType = cms.string('Full')
 
 
 # for digi to clu
@@ -134,7 +148,7 @@ process.MessageLogger = cms.Service("MessageLogger",
 # pixel local reco (RecHits) needs the GenError object,
 # not yet in GT, add here:
 # DB stuff 
-useLocalDB = True
+useLocalDB = False
 if useLocalDB :
     process.DBReaderFrontier = cms.ESSource("PoolDBESSource",
      DBParameters = cms.PSet(
@@ -228,7 +242,9 @@ process.d = cms.EDAnalyzer("PixClusterAna",
     src = cms.InputTag("siPixelClustersPreSplitting"),
     Tracks = cms.InputTag("generalTracks::MyRawToTracks"),
     Select1 = cms.untracked.int32(0),  # cut  
-    Select2 = cms.untracked.int32(0),  # value     
+    Select2 = cms.untracked.int32(0),  # value   
+                           doTree = cms.untracked.bool(False), # write the tree, lorge files!
+                           skipEventsPerLS = cms.untracked.int32(0), #skip >events per LS  
 )
 
 process.d_cosm = cms.EDAnalyzer("PixClusterAna",
@@ -253,6 +269,10 @@ process.c = cms.EDAnalyzer("PixClustersWithTracks",
 #     PrimaryVertexLabel = cms.untracked.InputTag("offlinePrimaryVertices"),
 #     trajectoryInput = cms.string("TrackRefitterP5")
 #     trajectoryInput = cms.string('cosmictrackfinderP5')
+    Select1 = cms.untracked.int32(0),  # select the cut type, o no cut
+    Select2 = cms.untracked.int32(0),  # select the cut value   
+                           doTree = cms.untracked.bool(False), # write the tree, lorge files!
+   skipEventsPerLS = cms.untracked.int32(0), #skip >events per LS
 )
 
 process.c_cosm = cms.EDAnalyzer("PixClustersWithTracks",

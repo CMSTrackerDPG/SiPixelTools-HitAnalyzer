@@ -212,8 +212,8 @@ process.siPixelDigis.cpu.UsePhase1 = True
 #process.siPixelClustersPreSplitting.VCaltoElectronOffset_L1 = 0
 #process.siPixelClustersPreSplitting.SeedThreshold = 10 #  def=1000
 #process.siPixelClustersPreSplitting.ChannelThreshold = 10 # must be bigger than 1, def=10
-#process.siPixelClustersPreSplitting.ClusterThreshold = 10 # def =4000    # integer?
-#process.siPixelClustersPreSplitting.ClusterThreshold_L1 = 10 # def=2000 # integer?
+#process.siPixelClustersPreSplitting.cpu.ClusterThreshold = 10 # def =4000    # integer?
+#process.siPixelClustersPreSplitting.cpu.ClusterThreshold_L1 = 10 # def=2000 # integer?
 
 # To select full granularity gain calibration 
 # process.siPixelClustersPreSplitting.payloadType = cms.string('Full')

@@ -839,10 +839,10 @@ PixClusterAna::PixClusterAna(edm::ParameterSet const& conf)
 
 #ifdef USE_TREE
   doTree = conf.getUntrackedParameter<bool>("doTree",false);
-  cout<<" tree "<<doTree<<endl;
   if(doTree) {
-    fillPixelTree = false; // pixel hits - true, clusters = false
+    fillPixelTree = true; // pixel hits - true, clusters = false
     treeBpixOnly = true; // fill only bpix 
+    cout<<" tree = "<<doTree<<"  pixels = "<<fillPixelTree<<" bpixonly "<<treeBpixOnly<<endl; 
     layerT = new int[maxClus];
     ladderOnT = new int[maxClus];
     moduleT = new int[maxClus];

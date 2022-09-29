@@ -285,7 +285,10 @@ class PixClustersWithTracks : public edm::one::EDAnalyzer<edm::one::SharedResour
   int *diskT, *bladeT, *ringT, *sideT, *panelT;
   float *chargeT, *sizeT, *sizeXT, *sizeYT;
   float *gZT, *gPhiT, *gRT;
+  float *colT, *rowT;
   int clusPerTrackT;
+  bool fillPixelTree;
+  bool treeBpixOnly;
 #endif
 
 #if defined(CLU_SHAPE) || defined(CLU_SHAPE_L2) 
@@ -504,21 +507,32 @@ PixClustersWithTracks::PixClustersWithTracks(edm::ParameterSet const& conf)
 
 #ifdef USE_TREE
   if(doTree) {
-  layerT = new int[maxClus];
-  ladderOnT = new int[maxClus];
-  moduleT = new int[maxClus];
-  diskT =  new int[maxClus];
-  bladeT = new int[maxClus];
-  ringT = new int[maxClus]; 
-  sideT = new int[maxClus]; 
-  panelT = new int[maxClus];
-  chargeT = new float[maxClus]; 
-  sizeT = new float[maxClus]; 
-  sizeXT = new float[maxClus]; 
-  sizeYT = new float[maxClus];
-  gZT = new float[maxClus];
-  gPhiT = new float[maxClus];
-  gRT = new float[maxClus];
+    fillPixelTree = false; // pixel hits - true, clusters = false
+    treeBpixOnly = true; // fill only bpix 
+    cout<<" tree = "<<doTree<<"  pixels = "<<fillPixelTree<<" bpixonly "<<treeBpixOnly<<endl; 
+
+    layerT = new int[maxClus];
+    ladderOnT = new int[maxClus];
+    moduleT = new int[maxClus];
+    if(!treeBpixOnly) {
+      diskT =  new int[maxClus];
+      bladeT = new int[maxClus];
+      ringT = new int[maxClus]; 
+      sideT = new int[maxClus]; 
+      panelT = new int[maxClus];
+    }
+    chargeT = new float[maxClus];     
+    sizeT = new float[maxClus]; 
+    sizeXT = new float[maxClus]; 
+    sizeYT = new float[maxClus];
+    if(fillPixelTree) {
+      colT = new float[maxClus];
+      rowT = new float[maxClus];
+    } else {
+      gZT = new float[maxClus];
+      gPhiT = new float[maxClus];
+      gRT = new float[maxClus];
+    }
   }
 #endif
 
@@ -558,12 +572,14 @@ void PixClustersWithTracks::beginJob() {
     tree->Branch("clusPerTrack",&clusPerTrackT,"clusPerTrack/I");
     tree->Branch("module",moduleT,"module[clusPerTrack]/I");
     tree->Branch("ladder",ladderOnT,"ladder[clusPerTrack]/I");
-    tree->Branch("layer",layerT,"layer[clusPerTrack]/I");
-    tree->Branch("disk",diskT,"disk[clusPerTrack]/I");
-    tree->Branch("blade",bladeT,"blade[clusPerTrack]/I");
-    tree->Branch("ring",ringT,"ring[clusPerTrack]/I");
-    tree->Branch("side",sideT,"side[clusPerTrack]/I");
-    tree->Branch("panel",panelT,"panel[clusPerTrack]/I");
+    if(!treeBpixOnly) {
+      tree->Branch("layer",layerT,"layer[clusPerTrack]/I");
+      tree->Branch("disk",diskT,"disk[clusPerTrack]/I");
+      tree->Branch("blade",bladeT,"blade[clusPerTrack]/I");
+      tree->Branch("ring",ringT,"ring[clusPerTrack]/I");
+      tree->Branch("side",sideT,"side[clusPerTrack]/I");
+      tree->Branch("panel",panelT,"panel[clusPerTrack]/I");
+    }
     tree->Branch("charge",chargeT,"charge[clusPerTrack]/F");
     tree->Branch("size",sizeT,"size[clusPerTrack]/F");
     tree->Branch("sizeX",sizeXT,"sizeX[clusPerTrack]/F");
@@ -571,6 +587,10 @@ void PixClustersWithTracks::beginJob() {
     tree->Branch("globalZ",gZT,"globalZ[clusPerTrack]/F");
     tree->Branch("globalPhi",gPhiT,"globalPhi[clusPerTrack]/F");
     tree->Branch("globalR",gRT,"globalR[clusPerTrack]/F");        
+
+    //tree->Branch("col",colT,"col[clusPerTrack]/F");
+    //tree->Branch("row",rowT,"row[clusPerTrack]/F");
+
   }
 #endif
 
@@ -2526,12 +2546,16 @@ void PixClustersWithTracks::analyze(const edm::Event& e,
 	if(PRINT) cout<<" CLU GLOBAL "<<gX<<" "<<gY<<" "<<gZ<<" "<<gR<<" "<<gPhi<<endl;
 
 #ifdef USE_TREE
-        if(doTree) {
+	if(doTree&&!fillPixelTree&&(!treeBpixOnly||(treeBpixOnly&&(layer>0)))) {
 
 	  if(clusPerTrack<maxClus) {
+
 	    //cout<<event<<" "<<trackNumber<<" "<<clusPerTrack<<endl; //dk
 	    layerT[clusPerTrack-1]=layer; ladderOnT[clusPerTrack-1]=ladderOn; moduleT[clusPerTrack-1]=module;
-	    diskT[clusPerTrack-1]=disk; bladeT[clusPerTrack-1]=blade; ringT[clusPerTrack-1]=ring;sideT[clusPerTrack-1]=side; panelT[clusPerTrack-1]=panel;
+
+	    if(!treeBpixOnly) {
+	      diskT[clusPerTrack-1]=disk; bladeT[clusPerTrack-1]=blade; ringT[clusPerTrack-1]=ring;sideT[clusPerTrack-1]=side; panelT[clusPerTrack-1]=panel;
+	    }
 	    gZT[clusPerTrack-1]=gZ; gPhiT[clusPerTrack-1]=gPhi; gRT[clusPerTrack-1]=gR;
 	    chargeT[clusPerTrack-1]=charge; 
 	    sizeT[clusPerTrack-1]=size; sizeXT[clusPerTrack-1]=sizeX; sizeYT[clusPerTrack-1]=sizeY;
