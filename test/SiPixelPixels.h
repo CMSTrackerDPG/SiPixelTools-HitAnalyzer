@@ -8,6 +8,10 @@
 #include "FWCore/Framework/interface/EventSetup.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 
+#include "CondFormats/DataRecord/interface/SiPixelFedCablingMapRcd.h"
+#include "CondFormats/SiPixelObjects/interface/SiPixelFedCablingMap.h"
+#include "CondFormats/SiPixelObjects/interface/SiPixelFedCablingTree.h"
+
 //#include "FWCore/MessageLogger/interface/MessageLogger.h"
 
 //#include "DataFormats/Common/interface/Handle.h"
@@ -43,7 +47,7 @@ class SiPixelPixels : public edm::one::EDAnalyzer<edm::one::SharedResources>
   //Parameters FPixParameters_;
   edm::ESGetToken<TrackerTopology, TrackerTopologyRcd> trackerTopoToken_;
   edm::ESGetToken<TrackerGeometry, TrackerDigiGeometryRecord> trackerGeomToken_;
-
+  edm::ESGetToken<SiPixelFedCablingMap, SiPixelFedCablingMapRcd> cablingMapToken_;
 };
 
 

@@ -12,6 +12,8 @@
 
 //#include "DataFormats/Common/interface/Handle.h"
 #include "Geometry/TrackerGeometryBuilder/interface/TrackerGeometry.h"
+#include "MagneticField/Engine/interface/MagneticField.h"
+#include "MagneticField/Records/interface/IdealMagneticFieldRecord.h"
 
 #include "DataFormats/DetId/interface/DetId.h"
 #include "DataFormats/TrackerCommon/interface/TrackerTopology.h"
@@ -36,6 +38,7 @@ class SiPixelDets : public edm::one::EDAnalyzer<edm::one::SharedResources>
   bool phase1_;
   edm::ESGetToken<TrackerTopology, TrackerTopologyRcd> trackerTopoToken_;
   edm::ESGetToken<TrackerGeometry, TrackerDigiGeometryRecord> trackerGeomToken_;
+  edm::ESGetToken<MagneticField, IdealMagneticFieldRecord> magfieldToken_;
 
   //typedef std::vector< edm::ParameterSet > Parameters;
   //Parameters BPixParameters_;

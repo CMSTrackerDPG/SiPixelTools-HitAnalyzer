@@ -45,8 +45,10 @@ using namespace edm;
 SiPixelPixels::SiPixelPixels(edm::ParameterSet const& conf) : 
   conf_(conf), phase1_(false) {
   usesResource("TFileService");
- trackerTopoToken_ = esConsumes<TrackerTopology, TrackerTopologyRcd>();
+  trackerTopoToken_ = esConsumes<TrackerTopology, TrackerTopologyRcd>();
   trackerGeomToken_ = esConsumes<TrackerGeometry, TrackerDigiGeometryRecord>();
+  cablingMapToken_ = esConsumes<SiPixelFedCablingMap, SiPixelFedCablingMapRcd>();
+    //          edm::ESInputTag("", config_.getParameter<std::string>("CablingMapLabel")))},
   //phase1_ = conf_.getUntrackedParameter<bool>("phase1",false);		
   //BPixParameters_ = conf_.getUntrackedParameter<Parameters>("BPixParameters");
   //FPixParameters_ = conf_.getUntrackedParameter<Parameters>("FPixParameters");
@@ -85,9 +87,14 @@ void SiPixelPixels::analyze(const edm::Event& e, const edm::EventSetup& es) {
   // Mag field (not realy needed)
   //edm::ESHandle<MagneticField> magfield;
   //es.get<IdealMagneticFieldRecord>().get(magfield);
-  edm::ESHandle<SiPixelFedCablingMap> cablingMap;
-  es.get<SiPixelFedCablingMapRcd>().get(cablingMap);
-  const SiPixelFedCablingMap *cabling=cablingMap.product();
+  //edm::ESHandle<SiPixelFedCablingMap> cablingMap;
+  //es.get<SiPixelFedCablingMapRcd>().get(cablingMap);
+  //const SiPixelFedCablingMap *cabling=cablingMap.product();
+
+ edm::ESHandle<SiPixelFedCablingMap> cablingMap = es.getHandle(cablingMapToken_);
+ const SiPixelFedCablingMap *cabling=cablingMap.product();
+ //edm::ESHandle<SiPixelFedCablingMap> cabling = es.getHandle(cablingMapToken_);
+
 
   if(PRINT) cout<<" There are "<<tkgeom->detUnits().size() <<" detectors"<<std::endl;
 

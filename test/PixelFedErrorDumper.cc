@@ -417,6 +417,7 @@ private:
   //edm::EDGetTokenT<edmNew::DetSetVector<SiPixelCluster>>tPixelCluster;
 
   edm::EDGetTokenT<edmNew::DetSetVector<PixelFEDChannel>> tPixelDigiErrors;
+  edm::ESGetToken<TrackerTopology, TrackerTopologyRcd> trackerTopoToken_;
 
   bool PRINT;
   //int countEvents, countAllEvents;
@@ -448,6 +449,7 @@ PixelFedErrorDumper::PixelFedErrorDumper( const edm::ParameterSet& cfg) : theCon
 
   // For the ByToken method
   fedErrorContainer = consumes<edm::DetSetVector<SiPixelRawDataError> >(src);
+  trackerTopoToken_ = esConsumes<TrackerTopology, TrackerTopologyRcd>();
 
   //static std::string instance = "UserErrorModules"; //theConfig.getUntrackedParameter<std::string>("InputInstance",""); 
   //#static std::string instance = ""; //theConfig.getUntrackedParameter<std::string>("InputInstance",""); 
@@ -698,8 +700,11 @@ void PixelFedErrorDumper::analyze(const  edm::Event& ev, const edm::EventSetup& 
   //const bool PRINT = false;
 
   //Retrieve tracker topology from geometry
-  edm::ESHandle<TrackerTopology> tTopoH;
-  es.get<TrackerTopologyRcd>().get(tTopoH);
+  //edm::ESHandle<TrackerTopology> tTopoH;
+  //es.get<TrackerTopologyRcd>().get(tTopoH);
+  ///const TrackerTopology *tTopo=tTopoH.product();
+
+  edm::ESHandle<TrackerTopology> tTopoH = es.getHandle(trackerTopoToken_);
   //const TrackerTopology *tTopo=tTopoH.product();
 
   // Access event information

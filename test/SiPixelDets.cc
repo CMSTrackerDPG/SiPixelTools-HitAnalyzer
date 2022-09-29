@@ -15,6 +15,7 @@
 
 #include "DataFormats/TrackerCommon/interface/TrackerTopology.h"
 #include "Geometry/Records/interface/TrackerTopologyRcd.h"
+
 #include "MagneticField/Engine/interface/MagneticField.h"
 #include "MagneticField/Records/interface/IdealMagneticFieldRecord.h"
 
@@ -42,6 +43,8 @@ SiPixelDets::SiPixelDets(edm::ParameterSet const& conf) :
   usesResource("TFileService");
   trackerTopoToken_ = esConsumes<TrackerTopology, TrackerTopologyRcd>();
   trackerGeomToken_ = esConsumes<TrackerGeometry, TrackerDigiGeometryRecord>();
+  magfieldToken_    = esConsumes<MagneticField,   IdealMagneticFieldRecord>();
+
   //phase1_ = conf_.getUntrackedParameter<bool>("phase1",false);		
   //BPixParameters_ = conf_.getUntrackedParameter<Parameters>("BPixParameters");
   //FPixParameters_ = conf_.getUntrackedParameter<Parameters>("FPixParameters");
@@ -82,6 +85,11 @@ void SiPixelDets::analyze(const edm::Event& e, const edm::EventSetup& es) {
   const TrackerTopology *tTopo=tTopoH.product();
   //const TrackerTopology *tt=tTopoH.product();
 
+  // Mag field 
+  //edm::ESHandle<MagneticField> magfield;
+  //es.get<IdealMagneticFieldRecord>().get(magfield);
+  
+  edm::ESHandle<MagneticField> magfield = es.getHandle(magfieldToken_);
 
   if(PRINT) cout<<" There are "<<tkgeom->detUnits().size() <<" detectors"<<std::endl;
 
@@ -101,9 +109,6 @@ void SiPixelDets::analyze(const edm::Event& e, const edm::EventSetup& es) {
   if(phase1_) cout<<"This is for phase1 geometry "<<endl;
 
 
-  // Mag field 
-  edm::ESHandle<MagneticField> magfield;
-  es.get<IdealMagneticFieldRecord>().get(magfield);
 
   //for(TrackerGeometry::DetUnitContainer::const_iterator it = tkgeom->detUnits().begin(); 
   for(TrackerGeometry::DetContainer::const_iterator it = tkgeom->detUnits().begin(); 
