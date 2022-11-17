@@ -833,41 +833,41 @@ void PixClustersWithTracks::beginJob() {
   hPt = fs->make<TH1D>( "hPt", "track pt",120,0.,120.);
   hD0 = fs->make<TH1D>( "hD0", "track d0",500,0.,20.);
   hDz = fs->make<TH1D>( "hDz", "track dZ",200,-100.,100.);
-  hPtP = fs->make<TH1D>( "hPtP", "track pt with pix",120,0.,120.);
-  hD0P = fs->make<TH1D>( "hD0P", "track d0 with pix",500,0.,20.);
-  hDzP = fs->make<TH1D>( "hDzP", "track dz with pix",200,-100.,100.);
+  hPtP = fs->make<TH1D>( "hPtP", "track pt with pix4",120,0.,120.);
+  hD0P = fs->make<TH1D>( "hD0P", "track d0 with pix4",500,0.,20.);
+  hDzP = fs->make<TH1D>( "hDzP", "track dz with pix4",200,-100.,100.);
   hzdiff = fs->make<TH1D>( "hzdiff", "PVz-Trackz",200,-10.,10.);
 
-  hEta = fs->make<TH1D>( "hEta", "track eta",120,-3.0,3.0);
-  hPhi = fs->make<TH1D>( "hPhi", "track phi",350,-3.5,3.5);
-  hEtaP = fs->make<TH1D>( "hEtaP", "track eta with pix",120,-3.0,3.0);
-  hPhiP = fs->make<TH1D>( "hPhiP", "track phi with pix",350,-3.5,3.5);
+  hEta = fs->make<TH1D>( "hEta", "track eta",600,-3.0,3.0);
+  hPhi = fs->make<TH1D>( "hPhi", "track phi",700,-3.5,3.5);
+  hEtaP = fs->make<TH1D>( "hEtaP", "track eta with 4pix",600,-3.0,3.0);
+  hPhiP = fs->make<TH1D>( "hPhiP", "track phi with 4pix",700,-3.5,3.5);
 
-  hPhi1 = fs->make<TH1D>( "hPhi1", "track phi L1 pix",350,-3.5,3.5);
-  hPhi2 = fs->make<TH1D>( "hPhi2", "track phi L2 pix",350,-3.5,3.5);
-  hPhi3 = fs->make<TH1D>( "hPhi3", "track phi L3 pix",350,-3.5,3.5);
-  hPhi4 = fs->make<TH1D>( "hPhi4", "track phi L4 pix",350,-3.5,3.5);
-  hPhi0 = fs->make<TH1D>( "hPhi0", "track phi no bpix",350,-3.5,3.5);
+  hPhi1 = fs->make<TH1D>( "hPhi1", "track phi L1 pix",700,-3.5,3.5);
+  hPhi2 = fs->make<TH1D>( "hPhi2", "track phi L2 pix",700,-3.5,3.5);
+  hPhi3 = fs->make<TH1D>( "hPhi3", "track phi L3 pix",700,-3.5,3.5);
+  hPhi4 = fs->make<TH1D>( "hPhi4", "track phi L4 pix",700,-3.5,3.5);
+  hPhi0 = fs->make<TH1D>( "hPhi0", "track phi no bpix",700,-3.5,3.5);
 
-  hEta1 = fs->make<TH1D>( "hEta1", "track eta L1 pix",120,-3.0,3.0);
-  hEta2 = fs->make<TH1D>( "hEta2", "track eta L2 pix",120,-3.0,3.0);
-  hEta3 = fs->make<TH1D>( "hEta3", "track eta L3 pix",120,-3.0,3.0);
-  hEta4 = fs->make<TH1D>( "hEta4", "track eta L4 pix",120,-3.0,3.0);
-  hEta5 = fs->make<TH1D>( "hEta5", "track eta D1 pix",120,-3.0,3.0);
-  hEta6 = fs->make<TH1D>( "hEta6", "track eta D2 pix",120,-3.0,3.0);
-  hEta7 = fs->make<TH1D>( "hEta7", "track eta D3 pix",120,-3.0,3.0);
-  hEta0 = fs->make<TH1D>( "hEta0", "track eta no bpix",120,-3.0,3.0);
+  hEta1 = fs->make<TH1D>( "hEta1", "track eta L1 pix",600,-3.0,3.0);
+  hEta2 = fs->make<TH1D>( "hEta2", "track eta L2 pix",600,-3.0,3.0);
+  hEta3 = fs->make<TH1D>( "hEta3", "track eta L3 pix",600,-3.0,3.0);
+  hEta4 = fs->make<TH1D>( "hEta4", "track eta L4 pix",600,-3.0,3.0);
+  hEta5 = fs->make<TH1D>( "hEta5", "track eta D1 pix",600,-3.0,3.0);
+  hEta6 = fs->make<TH1D>( "hEta6", "track eta D2 pix",600,-3.0,3.0);
+  hEta7 = fs->make<TH1D>( "hEta7", "track eta D3 pix",600,-3.0,3.0);
+  hEta0 = fs->make<TH1D>( "hEta0", "track eta no bpix",600,-3.0,3.0);
 
-  hEta10 = fs->make<TH1D>( "hEta10", "track eta no L1 hit",120,-3.0,3.0);
-  hEta20 = fs->make<TH1D>( "hEta20", "track eta no L2 hit",120,-3.0,3.0);
-  hEta30 = fs->make<TH1D>( "hEta30", "track eta no L3 hit",120,-3.0,3.0);
-  hEta40 = fs->make<TH1D>( "hEta40", "track eta no L4hit",120,-3.0,3.0);
+  hEta10 = fs->make<TH1D>( "hEta10", "track eta no L1 hit",600,-3.0,3.0);
+  hEta20 = fs->make<TH1D>( "hEta20", "track eta no L2 hit",600,-3.0,3.0);
+  hEta30 = fs->make<TH1D>( "hEta30", "track eta no L3 hit",600,-3.0,3.0);
+  hEta40 = fs->make<TH1D>( "hEta40", "track eta no L4 hit",600,-3.0,3.0);
 
   // special l1 tests
-  hEta11 = fs->make<TH1D>( "hEta11", "track eta1",120,-3.0,3.0);
-  hEta12 = fs->make<TH1D>( "hEta12", "track eta1",120,-3.0,3.0);
-  hPhi11 = fs->make<TH1D>( "hPhi11", "track phi1",350,-3.5,3.5);
-  hPhi12 = fs->make<TH1D>( "hPhi12", "track phi1",350,-3.5,3.5);
+  hEta11 = fs->make<TH1D>( "hEta11", "track eta l1 inner",600,-3.0,3.0);
+  hEta12 = fs->make<TH1D>( "hEta12", "track eta l1 outer",600,-3.0,3.0);
+  hPhi11 = fs->make<TH1D>( "hPhi11", "track phi l1 inner",700,-3.5,3.5);
+  hPhi12 = fs->make<TH1D>( "hPhi12", "track phi l1 outer",700,-3.5,3.5);
 
 #ifdef USE_PROBABILITY
 
@@ -954,7 +954,7 @@ void PixClustersWithTracks::beginJob() {
   hsizey14 = fs->make<TH1D>( "hsizey14", "lay14 clu size in y",30,-0.5,29.5);
 
   hPt11 = fs->make<TH1D>( "hPt11", "pt11",120,0.,120.);
-  hEta11 = fs->make<TH1D>( "hEta11", "eta11",60,-3.0,3.0);
+  //hEta11 = fs->make<TH1D>( "hEta11", "eta11",60,-3.0,3.0);
   hcharge11 = fs->make<TH1D>( "hcharge11", "Clu charge l11", 400, 0.,800.); 
   hsizex11 = fs->make<TH1D>( "hsizex11", "lay11 clu size in x",20,-0.5,19.5);
   hsizey11 = fs->make<TH1D>( "hsizey11", "lay11 clu size in y",30,-0.5,29.5);
@@ -2088,7 +2088,7 @@ void PixClustersWithTracks::analyze(const edm::Event& e,
       t!=recTracks->end(); ++t){
     
     trackNumber++;
-    numOfClusPerTrk1=0;  // this is confusing, it is used as clus per track        
+    numOfClusPerTrk1=0;  // this is confusing, it is used as clus per track 
     numOfClusPerTrk2=0;        
     numOfClusPerTrk3=0;        
     numOfClusPerTrk4=0;        
@@ -2139,6 +2139,11 @@ void PixClustersWithTracks::analyze(const edm::Event& e,
 	if(pt<ptCut) continue;   // cut on min pt
       }
     }
+
+    // select only high purity tracks
+    if( !(t->quality(Track::highPurity)) ) continue;
+    //if( !(track->quality(Track::tight)) ) continue;
+    //if( !(track->quality(Track::loose)) ) continue;
 
     hEta->Fill(eta);
     hPhi->Fill(phi);
@@ -2206,6 +2211,8 @@ void PixClustersWithTracks::analyze(const edm::Event& e,
     }
 
     if(TrackCuts && !goodTrack) continue;
+
+
     countNiceTracks++;      
     hPt->Fill(pt);
         
@@ -2745,7 +2752,7 @@ void PixClustersWithTracks::analyze(const edm::Event& e,
 	    hsizey14->Fill(float(sizeY));
 	    hcharge14->Fill(charge);
 	  } else if(abs(module)==1) {
-	    hEta11->Fill(eta);
+	    //hEta11->Fill(eta);
 	    hPt11->Fill(pt);
 	    hsizex11->Fill(float(sizeX));
 	    hsizey11->Fill(float(sizeY));
@@ -3385,11 +3392,6 @@ void PixClustersWithTracks::analyze(const edm::Event& e,
 
       // With pixel hits
       countPixTracks++;
-      hPtP->Fill(pt);
-      hEtaP->Fill(eta);
-      hPhiP->Fill(phi);
-      hDzP->Fill(dz);
-      hD0P->Fill(d0);
 
       hclusPerTrk1->Fill(float(numOfClusPerTrk1));
       if(PRINT) cout<<"Lay1: number of clusters per track = "<<numOfClusPerTrk1<<endl;
@@ -3426,6 +3428,14 @@ void PixClustersWithTracks::analyze(const edm::Event& e,
       float clusPerTrkF = numOfClusPerTrk5 + numOfClusPerTrk6+ numOfClusPerTrk7;
       float clusPerTrk =  clusPerTrkB + clusPerTrkF;
       
+      if(clusPerTrk>=4.) { // all layers have a hit
+	hPtP->Fill(pt);
+	hEtaP->Fill(eta);
+	hPhiP->Fill(phi);
+	hDzP->Fill(dz);
+	hD0P->Fill(d0);
+      }
+
       hclusPerTrkB->Fill(clusPerTrkB);
       hclusPerTrkF->Fill(clusPerTrkF);
       hclusPerTrk->Fill(clusPerTrk);

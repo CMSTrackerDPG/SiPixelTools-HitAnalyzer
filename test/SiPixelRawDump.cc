@@ -370,11 +370,14 @@ public:
   int get_row(void) {return row_;}
   int get_channel(void) {return channel_;}
   void setPrint(int selectedFED, int selectedChannel);
+  vector<int>* getStatuses(void) {return &errorStatuses;}
+
 private:
   int channel_, adc_, roc_, dcol_, pix_, col_, row_;
   int selectedFED_, selectedChannel_;
   // to store the previous pixel 
   int fed0, chan0, roc0, dcol0, pix0, col0, row0, count0;
+  vector<int> errorStatuses;
 
   MyConvert converter;
 };
@@ -439,35 +442,30 @@ int MyDecode::trailer(unsigned long long word64, int fed, bool print) {
 }
 //
 // Decode error FIFO
-// Works for both, the error FIFO and the SLink error words. d.k. 25/04/07
+// Works for the SLink error words. d.k. 11/22
 int MyDecode::error(int word, int & fedChannel, int fed, int & stat1, int & stat2, bool print) {
   int status = -1;
   print = print || printErrors;
 
-  const unsigned int  errorMask      = 0x03e00000;
+  // main masks to extract different fields 
+  const unsigned int  channelMask   = 0xfc000000; // channel num mask
+  const unsigned int  errorMask     = 0x03e00000;
+  const unsigned int  eventNumMask  = 0x001fe000; // event number mask for ENE
+  const unsigned int  headerMask    = 0x00001000; // no header bit
+  const unsigned int  decodeMask    = 0x00000f00; // decode errors 
+  const unsigned int  tbmEventMask  = 0x000000ff;   // tbm event num mask
+  const unsigned int  tbmStatusMask = 0x000000ff;   // TBM trailer info
+  const unsigned int  tbmStackMask  = 0x0000003f; //Stack info in TO
 
   const unsigned int  maskedMask     = 0x03200000; // roc=25
   const unsigned int  gapMask        = 0x03400000; // roc=26
   const unsigned int  dummyMask      = 0x03600000; // roc=27
-  const unsigned int  fifoError      = 0x03800000; // roc-28
   const unsigned int  timeOut        = 0x03a00000; // roc=29
-  const unsigned int  timeOut2       = 0x03b00000; //     
   const unsigned int  trailError     = 0x03c00000; // roc=30
   const unsigned int  eventNumError  = 0x03e00000; // rpc=31 
 
-  //const unsigned int  timeOutChannelMask = 0x1f;  // channel mask for timeouts
-  //const unsigned int  eventNumMask = 0x1fe000; // event number mask
-  const unsigned int  channelMask = 0xfc000000; // channel num mask
-
-  const unsigned int  tbmEventMask  = 0xff;    // tbm event num mask
-  const unsigned int  tbmStatusMask = 0xff;   // TBM trailer info
-  const unsigned int  ErrBitsMask = 0x1F00;   // ErrBits  info
-  const unsigned int  ChnFifMask = 0x1f;   //channel mask for fifo error
-  const unsigned int  Fif2NFMask = 0x40;   //mask for fifo2 NF
-  const unsigned int  TrigNFMask = 0x80;   //mask for trigger fifo NF
-
-  //const unsigned int  BlkNumMask = 0x700;   // 
-  //const unsigned int  FsmErrMask = 0x600;   //pointer to FSM errors
+  const unsigned int  bit20Mask      = 0x00100000; // event counter
+  const unsigned int  l1countMask    = 0x000fffff; // event counter
 
   // Error flags 
   const unsigned int  RocErrMask   = 0x800;   // bit 11, NOR 
@@ -476,20 +474,20 @@ int MyDecode::error(int word, int & fedChannel, int fed, int & stat1, int & stat
   const unsigned int  overflowMask = 0x100;  // bit 8, Overflow 
   const unsigned int  noTrailerMask= 0x300;  // bit 8&9 trailer missing  
 
-
   //TBM08 status masks
-  const unsigned int  NTPMask = 0x80; // No Token Pass
-  const unsigned int  TBMResetMask = 0x40;
-  const unsigned int  ROCResetMask = 0x20;
-  const unsigned int  SyncErrMask = 0x10;
-  const unsigned int  SyncTrigMask = 0x8;
-  const unsigned int  EvtNumRstMask = 0x4;
-  const unsigned int  CalMask = 0x2;
   const unsigned int  StackFullMask = 0x1;
+  const unsigned int  CalMask       = 0x2;
+  const unsigned int  EvtNumRstMask = 0x4;
+  const unsigned int  SyncTrigMask  = 0x8;
+  const unsigned int  SyncErrMask   = 0x10; // also hardreset
+  const unsigned int  ROCResetMask  = 0x20;
+  const unsigned int  TBMResetMask  = 0x40;
+  const unsigned int  NTPMask       = 0x80; // No Token Pass
   
-  //const int offsets[8] = {0,4,9,13,18,22,27,31};
-  unsigned int channel = 0;
 
+  unsigned int channel =  (word & channelMask) >>26;
+  fedChannel = channel;
+ 
   //cout<<"error word "<<hex<<word<<dec<<endl;
   
   if( (word&errorMask) == dummyMask ) { // DUMMY WORD
@@ -501,128 +499,113 @@ int MyDecode::error(int word, int & fedChannel, int fed, int & stat1, int & stat
     return 0;
     
   } else if( (word&errorMask) == maskedMask ) { // Masked  WORD
-    channel =  (word & channelMask) >>26;
-    fedChannel = channel;
     
-    unsigned int bit20 =      (word & 0x100000)>>20; // works only for slink format    
-    if(bit20==1) {  // Auto masking
-      if(print) cout<<" Masked: channel "<<channel<<" by automasking";   
+    unsigned int bit20 =      (word & bit20Mask); // works only for slink format    
+    if(bit20!=0) {  // Auto masking
       status=-18;
+      errorStatuses.push_back(18);
+      if(print) {
+	int l1count = word&l1countMask;
+	cout<<"Masked: channel "<<channel<<" by automasking, in event "<<l1count;   
+      }
     } else { // permanent mask (masked and unused channels)
       //if(print) cout<<" Masked: channel "<<channel<<" by permanent mask";
-      status=-17;
-      return status; // skip printing it 
+      status=-17;  // not filled in data
+      return 0; // skip printing it 
     }
     
+  } else if( (word&errorMask)==timeOut ) { // TIMEOUT
 
-  } else if( ((word&errorMask)==timeOut) || ((word&errorMask)==timeOut2) ) { // TIMEOUT
-
-    unsigned int bit20 =      (word & 0x100000)>>20; // works only for slink format
-    channel = (word&channelMask)>>26; //channel ## for timeout               
     if(selectedChannel_>-1 && channel!=unsigned(selectedChannel_)) return 0;
- 
-    unsigned int l1acnt=(word& 0x1FE000) >> 13; //FED event counter only in error FIFO          
-    unsigned int diag = (word & 0x3f); // TBM stack or chan?
-      
+
+    unsigned int bit20 = (word & bit20Mask); // works only for slink format
+    if(bit20!=0) { // count timeout on first word
+      unsigned int diag = (word & tbmStackMask); // TBM stack 
+      if(print) {
+	cout << "Timeout Error - channel: " << channel ; 
+	cout <<" TBM Stack Count " << diag; 
+      }
+      return 0;
+    } else {
+      unsigned int index=(word & tbmStackMask); // TBM chan
+      if(print) { cout << ", 2nd word:index = " << index; }
+      status=-10;
+      errorStatuses.push_back(10);
+    }
+   
     //cout<<fed<<" "<<channel<<" "<<bit20<<" "<<l1acnt<<" "<<diag<<endl;
 
-    if(print) {
-      if(bit20==1) { 
-	cout << "Timeout Error - channel: " << channel ; 
-	cout << " FED Evt#(fifo) " <<l1acnt ;  // only for error fifo 
-	cout <<" TBM Stack Count " << diag; }
-      else { cout << "2nd TO word, channel = " << diag <<endl; }
-    }
-    
-    if(bit20==1) {status=-10;}  // count timeout on first word
-    else {status=0;}
-
-    fedChannel = channel;
-
   } else if( (word&errorMask) == eventNumError ) { // EVENT NUMBER ERROR
-    channel =  (word & channelMask) >>26;
     if(selectedChannel_>-1 && channel!=unsigned(selectedChannel_)) return 0;
+
+    status = -11;
+    errorStatuses.push_back(11);
     unsigned int tbm_event   =  (word & tbmEventMask);
+    unsigned int fed_event   =  (word & eventNumMask)>>13;
+    unsigned int tbm_header  =  (word & headerMask);
     
-    if(print) cout<<" Event Number Error- channel: "<<channel<<" tbm event nr. "
-		  <<tbm_event<<" ";
-     status = -11;
-     fedChannel = channel;
+    if(print) {
+      cout<<"Event Number Error- channel: "<<channel<<" tbm event nr. "
+	  <<tbm_event<<" fed event num "<<fed_event;
+      if(tbm_header!=0) cout<<" NO header!";
+    }
     
   } else if( ((word&errorMask) == trailError)) {  // TRAILER 
-    channel =  (word & channelMask) >>26;
+
     if(selectedChannel_>-1 && channel!=unsigned(selectedChannel_)) return 0;
+
     unsigned int tbm_status   =  (word & tbmStatusMask);
-    unsigned int bits8_11     =  (word & ErrBitsMask)>>8;
+    unsigned int decode_status=  (word & decodeMask);
     
+    if(print) cout<<"Trailer Error- "<<"channel: "<<channel<<", TBM status:0x"
+		  <<hex<<tbm_status<<" ErrBits:0x"<<decode_status<<dec<<","; // <<endl;
 
-    if(print) cout<<"Trailer Error- "<<"channel: "<<channel<<" TBM status:0x"
-		  <<hex<<tbm_status<<" ErrBits:0x"<<bits8_11<<dec<<" "; // <<endl;
-
-    if(tbm_status!=0) {
-     status = -15;
-     if(tbm_status)
-     // implement the resync/reset 17
-
-       if(print) {
-	 if(tbm_status & NTPMask)      {cout << " NTP, ";       status=-9;}
-	 if(tbm_status & TBMResetMask) {cout << " TBM Reset, "; status=-19;}
-	 if(tbm_status & ROCResetMask) {cout << " ROC Reset, "; status=-8;}
-	 if(tbm_status & SyncErrMask) cout << " SyncErr, ";
-	 if(tbm_status & SyncTrigMask) cout << " SyncTrig, ";
-	 if(tbm_status & EvtNumRstMask) cout << " TBMEvt#Clear, ";
-	 if(tbm_status & CalMask) cout << " CalTrig, ";
-	 if(tbm_status & StackFullMask) cout << " Stack Full, ";
-       }
+    if(tbm_status!=0) { // trailer errors
+      status = -15;  // catch others (Cal?)
+     if(tbm_status & NTPMask)      {status=-9;errorStatuses.push_back(9);if(print) cout << " NTP, ";}
+     if(tbm_status & TBMResetMask) {status=-19;errorStatuses.push_back(19); if(print) cout << " TBM Reset, "; }
+     if(tbm_status & ROCResetMask) {status=-8;errorStatuses.push_back(8); if(print) cout << " ROC Reset, "; }
+     if(tbm_status & SyncErrMask) {status=-24;errorStatuses.push_back(24); if(print) cout << " SyncErr, ";}
+     if(tbm_status & SyncTrigMask) {status=-24;errorStatuses.push_back(21); if(print) cout << " SyncTrig, ";}
+     if(tbm_status & EvtNumRstMask) {status=-23;errorStatuses.push_back(23); if(print) cout << " TBMEvt#Clear, ";}
+     if(tbm_status & CalMask) if(print) {errorStatuses.push_back(15);cout << " CalTrig, ";}
+     if(tbm_status & StackFullMask) {status=-22;errorStatuses.push_back(22); if(print) cout << " Stack Full, ";}
+    }
      
-    }
-    
-    if(word & RocErrMask) {
-      if(print) cout<<"NOR Error, "; // <<endl;
-      status = -12;
-    }
-    
-    if( (word&noTrailerMask) ) { // bit 8 OR 9 on
-      if( (word&noTrailerMask)==noTrailerMask ) { // both bits noTrailer
-	if(print) cout<<"noTrailer Error, "; // <<endl;
-	status = -20;
-      } else if(word & overflowMask) { // bit 8 
-	if(print) cout<<"OV Error, "; // <<endl;
-	status = -14;
-      } else if(word &PKAMMask) { // bit 9
-	if(print) cout<<"PKAM, ";
-	status = -16;
+    if(decode_status!=0) { // decode errors
+
+      if(word & RocErrMask) {
+	if(print) cout<<" NOR Error, "; // <<endl;
+	status = -12;
+	errorStatuses.push_back(12);
       }
-    }
+      
+      if(word &AutoMask) {
+	if(print) cout<<" Autoreset, ";
+	status = -13;
+	errorStatuses.push_back(13);
+      }
+      
+      if( (word&noTrailerMask)==noTrailerMask ) { // both bits noTrailer
+	if(print) cout<<" noTrailer Error, "; // <<endl;
+	status = -20;
+	errorStatuses.push_back(20);
+      } else if(word & overflowMask) { // bit 8 OV
+	if(print) cout<<" OV Error, "; // <<endl;
+	status = -14;
+	errorStatuses.push_back(14);
+      } else if(word &PKAMMask) { // bit 9 PKAM
+	if(print) cout<<" PKAM, ";
+	status = -16;
+	errorStatuses.push_back(16);
+      }
+      
+    } // decode errors
 
-    if(word &AutoMask) {
-      if(print) cout<<"Autoreset, ";
-      status = -13;
-    }
+  } // trailer&decode errors
 
-
-    fedChannel = channel;
-
-  } else if((word&errorMask)==fifoError) {  // FIFO
-    if(print) { 
-      if(word & Fif2NFMask) cout<<"A fifo 2 is Nearly full- ";
-      if(word & TrigNFMask) cout<<"The trigger fifo is nearly Full - ";
-      if(word & ChnFifMask) cout<<"fifo-1 is nearly full for channel"<<(word & ChnFifMask);
-      //cout<<endl;
-      status = -21;
-    }
-
-  } else {
-    if( (word == 0) && phase1 ) { 
-      // for phase1 simulations there are sometimes 0 words (fillers?)  
-      status = 0; // report OK 
-    } else {
-      cout<<" Unknown error?"<<" : ";
-      cout<<" for FED "<<fed<<" Word "<<hex<<word<<dec<<endl;
-    }
-  }
-
-  if(print && status <0) cout<<", FED "<<fed<<" status "<<status<<endl;
+  if(print && status <0) cout<<" FED "<<fed<<" status "<<status
+			     <<" "<<errorStatuses.size()<<endl;
   return status;
 }
 ///////////////////////////////////////////////////////////////////////////
@@ -644,6 +627,8 @@ int MyDecode::data(int word, int & fedChannel, int fed, int & stat1, int & stat2
   const unsigned int rocshift = 21;
   const unsigned int linkshift = 26;
   int status = 0;
+
+  errorStatuses.clear();  // clear the error status vector for each word
 
   //bool bpix = (fed<1294); // identify bpix channels 
 
@@ -706,9 +691,11 @@ int MyDecode::data(int word, int & fedChannel, int fed, int & stat1, int & stat2
 	  // Check invalid ROC numbers
 	  if(roc_>8 ) {  //inv ROC, per channel max 8 rocs
 	    if(printErrors) 
-	      cout<<" Fed "<<fed<<" wrong roc number chan/roc(order)/dcol/pix/adc = "<<channel_<<"/"
-		  <<roc_-1<<"/"<<dcol_<<"/"<<pix_<<"/"<<adc_<<endl;
-	    status = -4;	    
+		cout<<"Wrong roc number - Fed "<<fed
+		    <<" chan/roc(order)/dcol/pix/adc = "<<channel_<<"/"
+		    <<roc_-1<<"/"<<dcol_<<"/"<<pix_<<"/"<<adc_<<endl;
+	    status = -4;	
+	    errorStatuses.push_back(4);
 	  }
 
 	  
@@ -716,8 +703,8 @@ int MyDecode::data(int word, int & fedChannel, int fed, int & stat1, int & stat2
 	  if(layer!=1 && pix_==0) {  // PIX=0
 	    // Detect pixel 0 events
 	    if(printErrors) 
-	      cout<<" Fed "<<fed
-		  <<" pix=0 chan/roc(order)/dcol/pix/adc = "<<channel_<<"/"<<roc_-1<<"/"
+	      cout<<"Pix=0 - Fed "<<fed
+		  <<" chan/roc(order)/dcol/pix/adc = "<<channel_<<"/"<<roc_-1<<"/"
 		  <<dcol_<<"/"<<pix_<<"/"<<adc_
 		  <<" ("<<col_<<","<<row_<<")"
 		  <<" mod "<<modName<<" layer "<<layer<<endl;
@@ -725,18 +712,20 @@ int MyDecode::data(int word, int & fedChannel, int fed, int & stat1, int & stat2
 	    stat1 = roc_-1;
 	    stat2 = count0;
 	    status = -5;
+	    errorStatuses.push_back(5);
 	    
 	  } else if( fed==fed0 && channel_==chan0 && roc_==roc0 && dcol_==dcol0 && pix_==pix0 ) {
 	    // detect multiple pixels in sequence  
 	    
 	    count0++;
 	    if(printErrors) 
-	      cout<<" Fed "<<fed
-		  <<" double pixel  chan/roc(order)/dcol/pix/adc = "<<channel_<<"/"<<roc_-1<<"/"<<dcol_<<"/"
+	      cout<<"Double pixel - Fed "<<fed<<" chan/roc(order)/dcol/pix/adc = "
+		  <<channel_<<"/"<<roc_-1<<"/"<<dcol_<<"/"
 		  <<pix_<<"/"<<adc_<<" ("<<col_<<","<<row_<<") "
 		  <<" mod "<<modName<<" layer "<<layer<<endl;
 	    stat1 = roc_-1;
 	    stat2 = count0;
+	    errorStatuses.push_back(6);
 	    status = -6;
 	  }
 
@@ -746,19 +735,23 @@ int MyDecode::data(int word, int & fedChannel, int fed, int & stat1, int & stat2
 	      dcol0=-1;
 	    } else {
 	      if(dcol_<dcol0) {
-	     	 if(printErrors) cout<<"dcol number lower "<<dcol_<<" "<<dcol0
+	     	 if(printErrors) cout<<"Dcol number lower "<<dcol_<<" "<<dcol0
 				     <<" for fed/chan/roc "<<fed<<" "<<channel_
 				     <<" "<<(roc_-1)
 				     <<" mod "<<modName<<" layer "<<layer<<endl;
 		status = -7;
+		errorStatuses.push_back(7);
+
 	      } else if(dcol_==dcol0 && col_==col0 && layer!=1) { // same col, skip L1
 		// check pixel (row) order
 		if( (((col_%2)==0)&&(row_<row0) ) ||  // for even cols rows should go up  
 		    (((col_%2)==1)&&(row_>row0) ) ) {  // for odd cols rows should go down  
-		   if(printErrors) cout<<"row number lower "<<row_<<" "<<row0<<" col "<<col_<<" "<<col0
+		   if(printErrors) cout<<"Row number lower "<<row_<<" "<<row0<<" col "<<col_<<" "<<col0
 				       <<" for fed/chan/roc "<<fed<<"/"<<channel_
 				       <<"/"<<roc_<<" layer "<<layer<<" "<<modName<<endl;
 		  status = -3;
+		  errorStatuses.push_back(3);
+
 		} // check pixel
 	      } // ccheck dcol
 	    } // check fed/chan
@@ -836,8 +829,8 @@ private:
   int decodeErrorsRow[n_of_FEDs][n_of_Channels];  // row order  problem
   int decodeErrorsDcol[n_of_FEDs][n_of_Channels];  // dcol order  problem
   int layerIndex[n_of_FEDs][n_of_Channels];  // layer number
-  int errorType[20];
-  int countErrors[20];
+  int errorType[30];
+  int countErrors[30];
   int fedId0;
   int max1,max2,max3,max4,max0;
   // to distribute information 
@@ -889,11 +882,11 @@ private:
 
   TH1D *htimeoutFed, *hpkamFed, *hnorFed, *heneFed, *hautomaskedFed, *htimeoutChan;
 
-  TH2F *hfed2DErrors[20];
+  TH2F *hfed2DErrors[30];
 
   TProfile *herrorType1ls, *herrorType2ls,*herrorType1bx,*herrorType2bx;
-  TProfile *herrorlsP[20];
-  TH1F *herrorls[20];
+  TProfile *herrorlsP[30];
+  TH1F *herrorls[30];
 
   TH1D *herrorTimels, *herrorPkamls;
   //TH2F *herrorVsLs10, *herrorVsLs11, *herrorVsLs12, *herrorVsLs13, *herrorVsLs15, *herrorVsLs16, 
@@ -918,27 +911,43 @@ SiPixelRawDump::SiPixelRawDump( const edm::ParameterSet& cfg) : theConfig(cfg) {
 } 
 //----------------------------------------------------------------------------------------
 void SiPixelRawDump::endJob() {
-  string errorName[20] = {" "," ","wrong channel","wrong pix","wrong roc","pix=0",
-			  " double-pix","wrong dcol","rocReset"," ","timeout","ENE","NOR","autoreset","overflow",
-			  "trailer","pkam","masked","automasked","reset/resync"};
+  // 2 - wrong channel
+  // 3 - wrong pix or dcol 
+  // 4 - wrong roc
+  // 5 - pix=0
+  // 6 - double pixel
+  // 7 - wrong dcol order
+  // 8 - ROC reset
+  // 9 - NTP
+  // 10 - TO 
+  // 11 - ene
+  // 12 - nor
+  // 13 - autoreset 
+  // 14 - overflow 
+  // 15 - cal
+  // 16 - pkam  
+  // 17 - masked
+  // 18 - automasked
+  // 19 - tbm reset 
+  // 20 - noTrailer
+  // 21 - SyncTrig
+  // 22 - StackFull
+  // 23 - clearEVT
+  // 24 - SyncErr 
 
-  cout<<"2 - wrong channel"<<endl
-      <<"3 - wrong pix"<<endl 
-      <<"4 - wrong roc"<<endl
-      <<"5 - pix=0"<<endl
-      <<"6 - double pixel"<<endl 
-      <<"7 - wrong dcol"<<endl 
-      <<"8 - rocReset"<<endl 
-      <<"10 - timeout"<<endl
-      <<"11 - ene"<<endl
-      <<"12 - nor"<<endl
-      <<"13 - autoreset"<<endl
-      <<"14 - overflow"<<endl
-      <<"15 - trailer"<<endl
-      <<"16 - pkam"<<endl
-      <<"17 - masked"<<endl
-      <<"18 - automasked"<<endl
-      <<"19 - reset"<<endl;
+  static string errorName[30] = {
+    " "," ","wrong channel","wrong pix","wrong roc","pix=0",
+    " double-pix","wrong dcol","rocReset","NTP","TO",
+    "ENE","NOR","autoreset","overflow",
+    "Cal","pkam","masked","automasked","tbmReset",
+    "noTrailer","SyncTrig","StackFull","clearEVT","SyncErr"
+  };
+
+  cout<<" Error codes"<<endl;
+  cout<<"Index Name"<<endl;
+  for(int i=0;i<25;++i) {
+    cout<<i<<" "<<errorName[i]<<endl;
+  }
 
   double tmp = sumPixels;
   if(countEvents>0) {
@@ -990,7 +999,7 @@ void SiPixelRawDump::endJob() {
   }
 
   cout<<" Total errors for all feds "<<endl<<" Type Name Num-Of-Errors"<<endl;
-  for(int i=0;i<20;++i) {
+  for(int i=0;i<30;++i) {
     if( errorType[i]>0 ) cout<<"   "<<i<<" - "<<errorName[i]<<" - "<<errorType[i]<<endl;
   }
 
@@ -1092,12 +1101,12 @@ void SiPixelRawDump::beginJob() {
   }
   
 
-  for(int i=0;i<20;++i) errorType[i]=0;
+  for(int i=0;i<30;++i) errorType[i]=0;
 
   edm::Service<TFileService> fs;
 
   const float pixMax = 5999.5;   // pp value 
-  const float totMax = 99999.5;  // pp value 
+  const float totMax = 149999.5;  // pp value 
   //const float maxLink = 500.;    // pp value
 
   //const float pixMax = 19999.5;  // hi value 
@@ -1253,7 +1262,7 @@ void SiPixelRawDump::beginJob() {
 			   21, -0.5, 20.5); // ALL
 
   herrorType1     = fs->make<TH1D>( "herrorType1", "fed errors per type", 
-				    20, -0.5, 19.5);
+				    30, -0.5, 29.5);
   herrorType1Fed  = fs->make<TH1D>( "herrorType1Fed", "fed errors per FED", 
 				    n_of_FEDs, -0.5, static_cast<float>(n_of_FEDs) - 0.5);
   //herrorType1Chan = fs->make<TH1D>( "herrorType1Chan", "errors-1(fed) per chan", 
@@ -1269,7 +1278,7 @@ void SiPixelRawDump::beginJob() {
 
   // errors 2
   herrorType2     = fs->make<TH1D>( "herrorType2", "readout decode errors per type", 
-				    20, -0.5, 19.5);
+				    30, -0.5, 29.5);
   herrorType2Fed  = fs->make<TH1D>( "herrorType2Fed", "readout decode errors per FED", 
 				    n_of_FEDs, -0.5, static_cast<float>(n_of_FEDs) - 0.5);
   //herrorType2Chan = fs->make<TH1D>( "herrorType2Chan", "readout errors type-2 (decode) per chan", 
@@ -1313,13 +1322,21 @@ void SiPixelRawDump::beginJob() {
   //herrorOverls0 = fs->make<TH1D>("herrorOverls0","overflows vs ls disk",maxLS,0,float(maxLS));
 
   string name, title;
-  for(int i=1; i<20; ++i) { // loop over error types  
+  static string errorName[30] = {  // FIXME - defined twice
+    " "," ","wrong channel","wrong pix","wrong roc","pix=0",
+    " double-pix","wrong dcol","rocReset","NTP","timeout",
+    "ENE","NOR","autoreset","overflow",
+    "Cal","pkam","masked","automasked","tbmReset",
+    "noTrailer","SyncTrig","StackFull","clearEVT","SyncErr"
+  };
+
+  for(int i=1; i<30; ++i) { // loop over error types  
     string num = std::to_string(i);
-    name="herror"+num+"lsP"; title="errors vs ls, type"+num;        
+    name="herror"+num+"lsP"; title="errors vs ls, type "+errorName[i];        
     herrorlsP[i] = fs->make<TProfile>(name.c_str(),title.c_str(),maxLS,0.,float(maxLS),0.,1000.);
-    name="herror"+num+"ls"; title="errors vs ls, type"+num;        
+    name="herror"+num+"ls"; title="errors vs ls, type "+errorName[i];        
     herrorls[i] = fs->make<TH1F>(name.c_str(),title.c_str(),maxLS,0.,float(maxLS));
-    name="hfed2DErrors"+num; title="errors per fed/chan, type"+num;        
+    name="hfed2DErrors"+num; title="errors per fed/chan, type "+errorName[i];        
     hfed2DErrors[i] = fs->make<TH2F>(name.c_str(),title.c_str(),n_of_FEDs,-0.5,static_cast<float>(n_of_FEDs) - 0.5, n_of_Channels, -0.5,maxChan);
   }
 
@@ -1408,18 +1425,23 @@ void SiPixelRawDump::analyzeErrors(int fedId, int fedChannel, int status, int st
   // 7 - wrong dcol order
   // 8 - ROC reset
   // 9 - NTP
-  // 10 - timeout ()
-  // 11 - ene ()
-  // 12 - nor ()
-  // 13 - autoreset ()
-  // 14 - overflow ()
-  // 15 - trailer ()
-  // 16 - pkam  (30)
+  // 10 - timeout 
+  // 11 - ene
+  // 12 - nor
+  // 13 - autoreset 
+  // 14 - overflow 
+  // 15 - trailer (not covered by others)
+  // 16 - pkam  
   // 17 - masked
   // 18 - automasked
   // 19 - tbm reset 
+  // 20 - noTrailer
+  // 21 - FIFO 
+  // 22 - StackFull
+  // 23 - clearEVT
+  // 24 - SyncErr/Trig 
   
-  if(status<20) {
+  if(status<30) {
     errorType[status]++;
     countErrors[status]++;
     hfed2DErrors[status]->Fill(float(fedId-fedId0),float(fedChannel));
@@ -1428,17 +1450,17 @@ void SiPixelRawDump::analyzeErrors(int fedId, int fedChannel, int status, int st
 	  
   if(status>=8) {  // hard errors
     // Type - 1 Errors
-    //if(status!=17) {
     herrorType1->Fill(float(status));
     countErrorsInFed1++;
     herrorType1Fed->Fill(float(fedId-fedId0));
     //herrorType1Chan->Fill(float(fedChannel));
     hfedErrorType1ls->Fill(float(lumiBlock),float(fedId-fedId0)); // hard errors
     hfed2DErrorsType1->Fill(float(fedId-fedId0),float(fedChannel));
-    fedErrors[fedId-fedId0][(fedChannel-1)]++; // skip masked 
+    fedErrors[fedId-fedId0][(fedChannel-1)]++; 
     hbx6->Fill(float(bx));
-    //}
   
+    if(status<30) herrorls[status]->Fill(float(lumiBlock)); // 1D
+
     switch(status) {
 
     case(8) : { // roc reset  
@@ -1517,6 +1539,8 @@ void SiPixelRawDump::analyzeErrors(int fedId, int fedChannel, int status, int st
     int ladder = MyConvert::ladderFromName(modName);
     int module = MyConvert::moduleFromName(modName);
     //cout<<fedId<<" "<<fedChannel<<" "<<layer<<" "<<ladder<<" "<<module<<endl;
+
+    if(status<30) herrorls[status]->Fill(float(lumiBlock)); // 1D
 
     switch(status) {
       
@@ -1657,7 +1681,7 @@ void SiPixelRawDump::analyze(const  edm::Event& ev, const edm::EventSetup& es) {
   int stat1=-1, stat2=-1;
   int fedchannelsize[n_of_Channels];
   bool wrongBX=false;
-  for(int i=0;i<20;++i) countErrors[i] = 0;
+  for(int i=0;i<30;++i) countErrors[i] = 0;
   countPixelsFPix=0; countPixelsBPix=0; countPixelsBPix1=0; countPixelsBPix2=0; countPixelsBPix3=0;countPixelsBPix4=0;
 
 
@@ -1754,9 +1778,15 @@ void SiPixelRawDump::analyze(const  edm::Event& ev, const edm::EventSetup& es) {
 	  status=abs(status);
 	  if(status!=17 || !SKIP_PERMANENT_MASK) {
 	    countErrorsInFed++;
-	    if(printErrors) cout<<"    Bad stats for FED "<<fedId<<" FED Event# "<<eventId<<"/(mod256)"<<(eventId%256)
-				<<" count "<<countAllEvents<<" chan "<<fedChannel<<" status "<<status<<endl;
-	    analyzeErrors(fedId, fedChannel, status, stat1, stat2);
+	    if(printErrors) cout<<"    Bad status for FED "<<fedId<<" FED Event# "<<eventId<<"/(mod256)"<<(eventId%256)
+				<<" ev.count "<<countAllEvents<<" chan "<<fedChannel<<" status "<<status<<endl;
+	    vector<int>* statuses = decode.getStatuses();
+	    //cout<<"Statuses "<<statuses->size()<<endl;
+	    for(vector<int>::iterator i=statuses->begin();i!=statuses->end();++i) {
+	      //cout<<*i<<endl;
+	      int stat = *i; 
+	      analyzeErrors(fedId, fedChannel, stat, stat1, stat2);
+	    }
 	  }
 
 	} // error/data
@@ -1858,11 +1888,8 @@ void SiPixelRawDump::analyze(const  edm::Event& ev, const edm::EventSetup& es) {
   herrorType1ls->Fill(float(lumiBlock),float(countErrorsPerEvent1));
   herrorType2ls->Fill(float(lumiBlock),float(countErrorsPerEvent2));
 
-  for(int i=1; i<20; ++i) {
+  for(int i=1; i<30; ++i) {
     herrorlsP[i]->Fill(float(lumiBlock),float(countErrors[i])); // profile 
-    if(countErrors[i]>0) {
-      herrorls[i]->Fill(float(lumiBlock),float(countErrors[i])); // 1D
-    }
   }
 
   herrorType1bx->Fill(float(bx),float(countErrorsPerEvent1));
@@ -1890,25 +1917,6 @@ void SiPixelRawDump::analyze(const  edm::Event& ev, const edm::EventSetup& es) {
 
  
 } // end analyze
-
-// 2 - wrong channel
-// 4 - wrong roc
-// 3 - wrong pix or dcol 
-// 5 - pix=0
-// 6 - double pix
-// 7 - wrong dcol order 
-
-  // 10 - timeout ()
-  // 11 - ene ()
-  // 12 - nor ()
-  // 13 - autoreset ()
-  // 14 - overflow ()
-  // 15 - trailer ()
-  // 16 - pkam  (30)
-  // 17 - masked
-  // 18 - automasked
-  // 19 - NTP
-
 
 #include "FWCore/Framework/interface/MakerMacros.h"
 DEFINE_FWK_MODULE(SiPixelRawDump);
