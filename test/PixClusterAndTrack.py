@@ -48,8 +48,8 @@ process.hltfilter = hlt.hltHighLevel.clone(
 # Min-Bias	
 #    HLTPaths = ['HLT_Physics*'],
 #    HLTPaths = ['HLT_Random*'],
-    HLTPaths = ['HLT_ZeroBias*'],  # includes _part* and others 
-#    HLTPaths = ['HLT_ZeroBias_v*'],
+#    HLTPaths = ['HLT_ZeroBias*'],  # includes _part* and others 
+    HLTPaths = ['HLT_ZeroBias_v*'],
 #    HLTPaths = ['HLT_ZeroBias_part*'],  # empty
 #    HLTPaths = ['HLT_ZeroBias_FirstCollisionInTrain_*'], # empty
 #    HLTPaths = ['HLT_ZeroBias_LastCollisionInTrain_*'],  # empty

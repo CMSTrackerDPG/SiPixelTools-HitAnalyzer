@@ -28,16 +28,39 @@ mkdir -p /scratch/$USER/${SLURM_JOB_ID}
 sleep 10
 #
 cd /scratch/$USER/${SLURM_JOB_ID}
+cp $MYPWD/translation_pix.dat ./translation.dat
 #cmsRun $MYPWD/SimsToClus.py
 #cmsRun $MYPWD/SimsToRec.py
 #cmsRun $MYPWD/RawToRec.py
 #cmsRun $MYPWD/gen_sim.py
 #cmsRun $MYPWD/digitize.py
 #cmsRun $MYPWD/reco.py
-#cmsRun $MYPWD/runRawDumper_350462.py
+
+#cmsRun $MYPWD/runRawDumper_360927.py
+#cmsRun $MYPWD/runRawDumper_360942.py
+#cmsRun $MYPWD/runRawDumper_360991.py
+#cmsRun $MYPWD/runRawDumper_361045.py
+#cmsRun $MYPWD/runRawDumper_361188.py
+#cmsRun $MYPWD/runRawDumper_361223.py
+#cmsRun $MYPWD/runRawDumper_361239.py
+#cmsRun $MYPWD/runRawDumper_361417.py
+#cmsRun $MYPWD/runRawDumper_361443.py
+#cmsRun $MYPWD/runRawDumper_361468.py
+#cmsRun $MYPWD/runRawDumper_361475.py
+#cmsRun $MYPWD/runRawDumper_361512.py
+#cmsRun $MYPWD/runRawDumper_362614.py
+
 #cmsRun $MYPWD/runHotPixels_347874.py
-cmsRun $MYPWD/PixClusterAndTrack_357438.py
-#cmsRun $MYPWD/PixClusterAndTrack_357895.py
+#cmsRun $MYPWD/PixClusterAndTrack_360820.py
+#cmsRun $MYPWD/PixClusterAndTrack_361971.py
+#cmsRun $MYPWD/PixClusterAndTrack_361913.py
+#cmsRun $MYPWD/PixClusterAndTrack_361188.py
+#cmsRun $MYPWD/PixClusterAndTrack_361223.py
+cmsRun $MYPWD/PixClusterAndTrack_362439.py
+#cmsRun $MYPWD/PixClusterAndTrack_362643.py
+#cmsRun $MYPWD/PixClusterAndTrack_362758.py
+#cmsRun $MYPWD/PixClusterAndTrack_362696.py
+#cmsRun $MYPWD/PixClusterAndTrack_362698.py
 # 
 pwd
 ls 
@@ -47,7 +70,7 @@ ls /scratch/$USER/${SLURM_JOB_ID}
 #cp /scratch/$USER/${SLURM_JOB_ID}/noise.root $MYPWD/.
 #cp /scratch/$USER/${SLURM_JOB_ID}/simtorec.root $MYPWD/.
 #cp /scratch/$USER/${SLURM_JOB_ID}/rawtoreco.root $MYPWD/.
-#cp /scratch/$USER/${SLURM_JOB_ID}/raw.root $MYPWD/raw_350462.root
+#cp /scratch/$USER/${SLURM_JOB_ID}/raw.root $MYPWD/raw.root
 #cp /scratch/$USER/${SLURM_JOB_ID}/clus_ana_cosmics.root $MYPWD/.
 cp /scratch/$USER/${SLURM_JOB_ID}/clus_ana.root $MYPWD/.
 

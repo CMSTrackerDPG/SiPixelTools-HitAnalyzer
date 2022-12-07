@@ -822,6 +822,7 @@ private:
   int fedErrorsPKAM[n_of_FEDs][n_of_Channels];
   int fedErrorsAutoReset[n_of_FEDs][n_of_Channels];
   int fedErrorsAutoMask[n_of_FEDs][n_of_Channels];
+  bool fedErrorsAutoMaskInEvent[n_of_FEDs][n_of_Channels];
   int fedErrorsMask[n_of_FEDs][n_of_Channels];
   int decodeErrors[n_of_FEDs][n_of_Channels];
   int decodeErrors000[n_of_FEDs][n_of_Channels];  // pix 0 problem
@@ -861,9 +862,18 @@ private:
   TProfile *htotPixelsbx,*hbpixPixelsbx,*hbpixPixels1bx,*hbpixPixels2bx,*hbpixPixels3bx,*hbpixPixels4bx,
     *hfpixPixelsbx; 
 
-  TProfile2D *hfedchannelsize;
-  TH1D *hfedchannelsizeb,*hfedchannelsizeb1,*hfedchannelsizeb2,*hfedchannelsizeb3,*hfedchannelsizeb4,
-    *hfedchannelsizef;
+  TProfile2D *hfedchannelsize,*hfedchannelsizeFull,*hfedchannelsizeEff,
+    *hfedfibersizediff; //
+  TProfile2D *hfedchannelsize1,*hfedchannelsize2,*hfedchannelsize3,*hfedchannelsize4; 
+  TProfile2D *hfedfibersize1,*hfedfibersize2,*hfedfibersize3,*hfedfibersize4,
+    *hfedfibersizef; 
+
+  TH1D *hfedchannelsizeb,*hfedchannelsizeb1,*hfedchannelsizeb2,
+    *hfedchannelsizeb3,*hfedchannelsizeb4,*hfedchannelsizef;
+  TH1D *hfedfibersizeb1,*hfedfibersizeb2,*hfedfibersizeb3,*hfedfibersizeb4,
+    *hfedfibersizefpix;
+  TH1D *hfedfiberdiffb1,*hfedfiberdiffb2,*hfedfiberdiffb3,*hfedfiberdiffb4;
+
   TH1D *hadc1,*hadc2,*hadc3,*hadc4,*hadc0; 
   TProfile *hadc1ls,*hadc2ls,*hadc3ls,*hadc4ls,*hadc0ls; 
   TProfile *hadc1bx,*hadc2bx,*hadc3bx,*hadc4bx,*hadc0bx; 
@@ -880,15 +890,15 @@ private:
   TH2F *hfedErrorType1ls,*hfedErrorType2ls; // *hcountDouble2, *hcount0002;
   //TH1D *hcountDouble, *hcount000, *hrocDouble, *hroc000;
 
-  TH1D *htimeoutFed, *hpkamFed, *hnorFed, *heneFed, *hautomaskedFed, *htimeoutChan;
 
   TH2F *hfed2DErrors[30];
-
   TProfile *herrorType1ls, *herrorType2ls,*herrorType1bx,*herrorType2bx;
   TProfile *herrorlsP[30];
-  TH1F *herrorls[30];
-
-  TH1D *herrorTimels, *herrorPkamls;
+  TH1D *herrorls[30];
+  TH2F *htest;
+ 
+  //TH1D *htimeoutFed, *hpkamFed, *hnorFed, *heneFed, *hautomaskedFed, *htimeoutChan;
+  //TH1D *herrorTimels, *herrorPkamls;
   //TH2F *herrorVsLs10, *herrorVsLs11, *herrorVsLs12, *herrorVsLs13, *herrorVsLs15, *herrorVsLs16, 
   // *herrorVsLs17, *herrorVsLs18;
 
@@ -1027,6 +1037,15 @@ void SiPixelRawDump::endJob() {
   }
   cout<<endl;
 
+  float norm=1.;
+  if(countEvents>0) norm=1./float(countEvents);
+  for(int i=1;i<30;++i) {
+    hfed2DErrors[i]->Scale(norm);
+  } 
+
+
+  // analyze automasked errors 
+
 #ifdef OUTFILE
   outfile.close();
 #endif
@@ -1082,6 +1101,7 @@ void SiPixelRawDump::beginJob() {
       fedErrors[i][j]=0; fedErrorsENE[i][j]=0; fedErrorsTime[i][j]=0; 
       fedErrorsOver[i][j]=0;fedErrorsPKAM[i][j]=0;fedErrorsAutoReset[i][j]=0;
       fedErrorsAutoMask[i][j]=0;fedErrorsMask[i][j]=0;
+      fedErrorsAutoMaskInEvent[i][j]=false;
 
       layerIndex[i][j]=-1;
       if( i > fedIdBpixMax ) layerIndex[i][j]=0; // signal fpix
@@ -1140,7 +1160,9 @@ void SiPixelRawDump::beginJob() {
   htotPixels7 = fs->make<TH1D>( "htotPixels7", "tot pixels bpix3", 10000, -0.5, totMax);
   htotPixels8 = fs->make<TH1D>( "htotPixels8", "tot pixels bpix4", 10000, -0.5, totMax);
 
-  hchannelFED = fs->make<TH2F>("hchannelFED", "channel-FED hits",48,0.,48.,n_of_FEDs, -0.5, static_cast<float>(n_of_FEDs) - 0.5);
+  hchannelFED = fs->make<TH2F>("hchannelFED", "channel-FED hits",
+			       n_of_FEDs, -0.5, static_cast<float>(n_of_FEDs) - 0.5,
+			       48,0.,48.);
 
   //hchannelRoc = fs->make<TH2F>("hchannelRoc", "roc in a channel",48,0.,48.,9, -0.5,8.5);
   //hchannelRocs = fs->make<TH2F>("hchannelRocs", "num of rocs in a channel",48,0.,48.,9, -0.5,8.5);
@@ -1232,12 +1254,64 @@ void SiPixelRawDump::beginJob() {
   hfedchannelsize  = fs->make<TProfile2D>("hfedchannelsize", "pixels per fed&channel",
 					  n_of_FEDs,-0.5,static_cast<float>(n_of_FEDs) - 0.5,
 					  n_of_Channels, -0.5,maxChan,0.0,10000.);  
+  hfedchannelsizeFull = fs->make<TProfile2D>("hfedchannelsizeFull", "pixels per fed&channel >0",
+					  n_of_FEDs,-0.5,static_cast<float>(n_of_FEDs) - 0.5,
+					  n_of_Channels, -0.5,maxChan,0.0,10000.);  
+  hfedchannelsizeEff = fs->make<TProfile2D>("hfedchannelsizeEff", ">0packets fed&channel",
+					  n_of_FEDs,-0.5,static_cast<float>(n_of_FEDs) - 0.5,
+					  n_of_Channels, -0.5,maxChan,0.0,10000.);  
+  hfedchannelsize1 = fs->make<TProfile2D>("hfedchannelsize1", "fed&channel L1",
+					  n_of_FEDs,-0.5,static_cast<float>(n_of_FEDs) - 0.5,
+					  n_of_Channels, -0.5,maxChan,0.0,10000.);  
+  hfedchannelsize2 = fs->make<TProfile2D>("hfedchannelsize2", "fed&channel L2",
+					  n_of_FEDs,-0.5,static_cast<float>(n_of_FEDs) - 0.5,
+					  n_of_Channels, -0.5,maxChan,0.0,10000.);  
+  hfedchannelsize3 = fs->make<TProfile2D>("hfedchannelsize3", "fed&channel L3",
+					  n_of_FEDs,-0.5,static_cast<float>(n_of_FEDs) - 0.5,
+					  n_of_Channels, -0.5,maxChan,0.0,10000.);  
+  hfedchannelsize4 = fs->make<TProfile2D>("hfedchannelsize4", "fed&channel L4",
+					  n_of_FEDs,-0.5,static_cast<float>(n_of_FEDs) - 0.5,
+					  n_of_Channels, -0.5,maxChan,0.0,10000.);  
   hfedchannelsizeb   = fs->make<TH1D>("hfedchannelsizeb", "pixels per bpix channel",  int(maxLink),0.0,maxLink);
   hfedchannelsizeb1  = fs->make<TH1D>("hfedchannelsizeb1", "pixels per bpix1 channel",int(maxLink),0.0,maxLink);
   hfedchannelsizeb2  = fs->make<TH1D>("hfedchannelsizeb2", "pixels per bpix2 channel",int(maxLink),0.0,maxLink);
   hfedchannelsizeb3  = fs->make<TH1D>("hfedchannelsizeb3", "pixels per bpix3 channel",int(maxLink),0.0,maxLink);
   hfedchannelsizeb4  = fs->make<TH1D>("hfedchannelsizeb4", "pixels per bpix4 channel",int(maxLink),0.0,maxLink);
   hfedchannelsizef   = fs->make<TH1D>("hfedchannelsizef", "pixels per fpix channel",  int(maxLink),0.0,maxLink);
+
+
+
+  const int maxFiber=24; const float maxFiberF=23.5;
+  hfedfibersizediff = fs->make<TProfile2D>("hfedfibersizediff", 
+					   "fed&channel size diff",
+					     n_of_FEDs,-0.5,static_cast<float>(n_of_FEDs) - 0.5,
+					     maxFiber, -0.5,maxFiberF,0.0,10000.);  
+
+  hfedfibersize1 = fs->make<TProfile2D>("hfedfibersize1", "fed&channel L1",
+					n_of_FEDs,-0.5,static_cast<float>(n_of_FEDs) - 0.5,
+					maxFiber, -0.5,maxFiberF,0.0,10000.);  
+  hfedfibersize2 = fs->make<TProfile2D>("hfedfibersize2", "fed&channel L2",
+					n_of_FEDs,-0.5,static_cast<float>(n_of_FEDs) - 0.5,
+					maxFiber, -0.5,maxFiberF,0.0,10000.);  
+  hfedfibersize3 = fs->make<TProfile2D>("hfedfibersize3", "fed&channel L3",
+					n_of_FEDs,-0.5,static_cast<float>(n_of_FEDs) - 0.5,
+					maxFiber, -0.5,maxFiberF,0.0,10000.);  
+  hfedfibersize4 = fs->make<TProfile2D>("hfedfibersize4", "fed&channel L4",
+					n_of_FEDs,-0.5,static_cast<float>(n_of_FEDs) - 0.5,
+					maxFiber, -0.5,maxFiberF,0.0,10000.);  
+  hfedfibersizef = fs->make<TProfile2D>("hfedfibersizef", "fed&channel fpix",
+					n_of_FEDs,-0.5,static_cast<float>(n_of_FEDs) - 0.5,
+					maxFiber, -0.5,maxFiberF,0.0,10000.);  
+  hfedfibersizeb1  = fs->make<TH1D>("hfedfibersizeb1", "pixels per bpix1 channel",int(maxLink),0.0,maxLink);
+  hfedfibersizeb2  = fs->make<TH1D>("hfedfibersizeb2", "pixels per bpix2 channel",int(maxLink),0.0,maxLink);
+  hfedfibersizeb3  = fs->make<TH1D>("hfedfibersizeb3", "pixels per bpix3 channel",int(maxLink),0.0,maxLink);
+  hfedfibersizeb4  = fs->make<TH1D>("hfedfibersizeb4", "pixels per bpix4 channel",int(maxLink),0.0,maxLink);
+  hfedfibersizefpix= fs->make<TH1D>("hfedfibersizefpix", "pixels per fpix channel",  int(maxLink),0.0,maxLink);
+
+  hfedfiberdiffb1   = fs->make<TH1D>("hfedfiberdiffb1", "L1 packet diff",700,0.0,700.);
+  hfedfiberdiffb2   = fs->make<TH1D>("hfedfiberdiffb2", "L2 packet diff",700,0.0,700.);
+  hfedfiberdiffb3   = fs->make<TH1D>("hfedfiberdiffb3", "L3 packet diff",700,0.0,700.);
+  hfedfiberdiffb4   = fs->make<TH1D>("hfedfiberdiffb4", "L4 packet diff",700,0.0,700.);
 
   hadc1 = fs->make<TH1D>("hadc1","adc lay 1",255,0.,255.);
   hadc2 = fs->make<TH1D>("hadc2","adc lay 2",255,0.,255.);
@@ -1290,36 +1364,19 @@ void SiPixelRawDump::beginJob() {
   herrorType2ls = fs->make<TProfile>("herrorType2ls","decode errors vs ls",maxLS,0,float(maxLS),0,1000.);
   herrorType2bx = fs->make<TProfile>("herrorType2bx","decode errors vs bx",4000,-0.5,3999.5,0,300000.);
 
-  // specific errors
-  //hcountDouble = fs->make<TH1D>( "hcountDouble", "count double pixels", 100, -0.5, 99.5);
-  //hcountDouble2 = fs->make<TH2F>("hcountDouble2","count double pixels versus fed#",
-  //				 n_of_FEDs,-0.5,static_cast<float>(n_of_FEDs) - 0.5, 10,0.,10.); 
-  //hcount000 = fs->make<TH1D>( "hcount000", "count 000 pixels", 100, -0.5, 99.5);
-  //hcount0002 = fs->make<TH2F>("hcount0002","count 000 pixels versus fed",
-  //			      n_of_FEDs,-0.5,static_cast<float>(n_of_FEDs) - 0.5, 10,0.,10.); 
-  // hrocDouble = fs->make<TH1D>( "hrocDouble", "rocs with double pixels", 25,-0.5, 24.5);
-  //hroc000    = fs->make<TH1D>( "hroc000", "rocs with 000 pixels", 25,-0.5, 24.5);
+  htest = fs->make<TH2F>("htest", "chan1 vs chan2",50,0.,200., 50,0.,200.);
 
-  htimeoutFed  = fs->make<TH1D>("htimeoutFed","timeouts vs fed", n_of_FEDs,-0.5,static_cast<float>(n_of_FEDs) - 0.5);
-  hpkamFed     = fs->make<TH1D>("hpkamFed","pkam vs fed",        n_of_FEDs,-0.5,static_cast<float>(n_of_FEDs) - 0.5);
-  hnorFed      = fs->make<TH1D>("hnorFed","nors vs fed",         n_of_FEDs,-0.5,static_cast<float>(n_of_FEDs) - 0.5);
-  heneFed      = fs->make<TH1D>("heneFed","enes vs fed",         n_of_FEDs,-0.5,static_cast<float>(n_of_FEDs) - 0.5);
-  hautomaskedFed= fs->make<TH1D>("hautomaskedFed","automasked vs fed",n_of_FEDs,-0.5,static_cast<float>(n_of_FEDs) - 0.5);
-  htimeoutChan  = fs->make<TH1D>("htimeoutChan","timeouts vs channel", 49,-0.5,48.5);
+  //htimeoutFed  = fs->make<TH1D>("htimeoutFed","timeouts vs fed", n_of_FEDs,-0.5,static_cast<float>(n_of_FEDs) - 0.5);
+  //hpkamFed     = fs->make<TH1D>("hpkamFed","pkam vs fed",        n_of_FEDs,-0.5,static_cast<float>(n_of_FEDs) - 0.5);
+  //hnorFed      = fs->make<TH1D>("hnorFed","nors vs fed",         n_of_FEDs,-0.5,static_cast<float>(n_of_FEDs) - 0.5);
+  //heneFed      = fs->make<TH1D>("heneFed","enes vs fed",         n_of_FEDs,-0.5,static_cast<float>(n_of_FEDs) - 0.5);
+  //hautomaskedFed= fs->make<TH1D>("hautomaskedFed","automasked vs fed",n_of_FEDs,-0.5,static_cast<float>(n_of_FEDs) - 0.5);
+  //htimeoutChan  = fs->make<TH1D>("htimeoutChan","timeouts vs channel", 49,-0.5,48.5);
 
 
   // versus LS
-  herrorTimels = fs->make<TH1D>( "herrorTimels", "timeouts vs ls",maxLS,0,float(maxLS));
-  //herrorTimels1 = fs->make<TH1D>("herrorTimels1","timeouts vs ls lay1",maxLS,0,float(maxLS));
-  //herrorTimels2 = fs->make<TH1D>("herrorTimels2","timeouts vs ls lay2",maxLS,0,float(maxLS));
-  //herrorTimels3 = fs->make<TH1D>("herrorTimels3","timeouts vs ls lay3",maxLS,0,float(maxLS));
-  //herrorTimels0 = fs->make<TH1D>("herrorTimels0","timeouts vs ls disk",maxLS,0,float(maxLS));
-
-  herrorPkamls = fs->make<TH1D>( "herrorPkamls", "pkams vs ls",maxLS,0,float(maxLS));
-  //herrorOverls1 = fs->make<TH1D>("herrorOverls1","overflows vs ls lay1",maxLS,0,float(maxLS));
-  //herrorOverls2 = fs->make<TH1D>("herrorOverls2","overflows vs ls lay2",maxLS,0,float(maxLS));
-  //herrorOverls3 = fs->make<TH1D>("herrorOverls3","overflows vs ls lay3",maxLS,0,float(maxLS));
-  //herrorOverls0 = fs->make<TH1D>("herrorOverls0","overflows vs ls disk",maxLS,0,float(maxLS));
+  //herrorTimels = fs->make<TH1D>( "herrorTimels", "timeouts vs ls",maxLS,0,float(maxLS));
+  //herrorPkamls = fs->make<TH1D>( "herrorPkamls", "pkams vs ls",maxLS,0,float(maxLS));
 
   string name, title;
   static string errorName[30] = {  // FIXME - defined twice
@@ -1335,7 +1392,7 @@ void SiPixelRawDump::beginJob() {
     name="herror"+num+"lsP"; title="errors vs ls, type "+errorName[i];        
     herrorlsP[i] = fs->make<TProfile>(name.c_str(),title.c_str(),maxLS,0.,float(maxLS),0.,1000.);
     name="herror"+num+"ls"; title="errors vs ls, type "+errorName[i];        
-    herrorls[i] = fs->make<TH1F>(name.c_str(),title.c_str(),maxLS,0.,float(maxLS));
+    herrorls[i] = fs->make<TH1D>(name.c_str(),title.c_str(),maxLS,0.,float(maxLS));
     name="hfed2DErrors"+num; title="errors per fed/chan, type "+errorName[i];        
     hfed2DErrors[i] = fs->make<TH2F>(name.c_str(),title.c_str(),n_of_FEDs,-0.5,static_cast<float>(n_of_FEDs) - 0.5, n_of_Channels, -0.5,maxChan);
   }
@@ -1390,7 +1447,7 @@ void SiPixelRawDump::beginJob() {
 //-----------------------------------------------------------------------
 void SiPixelRawDump::analyzeHits(int fedId, int fedChannel) {
 
-  hchannelFED->Fill(float(fedChannel-1),float(fedId-fedId0));
+  hchannelFED->Fill(float(fedId-fedId0),float(fedChannel-1));
   int adc = decode.get_adc();
 
   int layer0 = layerIndex[fedId-fedId0][fedChannel-1];
@@ -1470,27 +1527,27 @@ void SiPixelRawDump::analyzeErrors(int fedId, int fedChannel, int status, int st
       break; }
       
     case(10) : { // Timeout
-      htimeoutFed->Fill(float(fedId-fedId0));
-      htimeoutChan->Fill(float(fedChannel));
-      fedErrorsTime[fedId-fedId0][(fedChannel-1)]++;
-      herrorTimels->Fill(float(lumiBlock));
+      //htimeoutFed->Fill(float(fedId-fedId0));
+      //htimeoutChan->Fill(float(fedChannel));
+      //fedErrorsTime[fedId-fedId0][(fedChannel-1)]++;
+      //herrorTimels->Fill(float(lumiBlock));
       hbx2->Fill(float(bx));
       break; } 
       
     case(11) : {  // ENE
-      heneFed->Fill(float(fedId-fedId0));
-      fedErrorsENE[fedId-fedId0][(fedChannel-1)]++;
+      //heneFed->Fill(float(fedId-fedId0));
+      //fedErrorsENE[fedId-fedId0][(fedChannel-1)]++;
       hbx3->Fill(float(bx));
       break; }
       
     case(12) : {  // NOR
-      hnorFed->Fill(float(fedId-fedId0));
-      fedErrorsOver[fedId-fedId0][(fedChannel-1)]++;   // use oveflow to count NORs for phase1 
+      //hnorFed->Fill(float(fedId-fedId0));
+      //fedErrorsOver[fedId-fedId0][(fedChannel-1)]++;   // use oveflow to count NORs for phase1 
       hbx4->Fill(float(bx));
       break; }
       
     case(13) : {  // Autoreset
-      fedErrorsAutoReset[fedId-fedId0][(fedChannel-1)]++;
+      //fedErrorsAutoReset[fedId-fedId0][(fedChannel-1)]++;
       break; }
       
     case(14) : {  // OVER
@@ -1500,23 +1557,24 @@ void SiPixelRawDump::analyzeErrors(int fedId, int fedChannel, int status, int st
       break; }
       
     case(16) : { // pkam
-      herrorPkamls->Fill(float(lumiBlock));
-      hpkamFed->Fill(float(fedId-fedId0));
-      fedErrorsPKAM[fedId-fedId0][(fedChannel-1)]++;
+      //herrorPkamls->Fill(float(lumiBlock));
+      //hpkamFed->Fill(float(fedId-fedId0));
+      //fedErrorsPKAM[fedId-fedId0][(fedChannel-1)]++;
       break; }
       
     case(17) : { // masked 
-      fedErrorsMask[fedId-fedId0][(fedChannel-1)]++;
-      if( (countAllEvents>1) && (fedErrorsMask[fedId-fedId0][(fedChannel-1)]==1) )
-	cout<<" new masked channel "<<countAllEvents<<" ls "<<lumiBlock<<" fed "<<fedId<<" ch "<<fedChannel<<endl;
-      if(saveLast) maskedChannels.push_back(make_pair(fedId,fedChannel));
-      if(saveFirst)maskedChannels0.push_back(make_pair(fedId,fedChannel));
+      //fedErrorsMask[fedId-fedId0][(fedChannel-1)]++;
+      //if( (countAllEvents>1) && (fedErrorsMask[fedId-fedId0][(fedChannel-1)]==1) )
+      //cout<<" new masked channel "<<countAllEvents<<" ls "<<lumiBlock<<" fed "<<fedId<<" ch "<<fedChannel<<endl;
+      //if(saveLast) maskedChannels.push_back(make_pair(fedId,fedChannel));
+      //if(saveFirst)maskedChannels0.push_back(make_pair(fedId,fedChannel));
       break; }
       
     case(18) : { // automasked 
-      hautomaskedFed->Fill(float(fedId-fedId0));
-      fedErrorsAutoMask[fedId-fedId0][(fedChannel-1)]++;
-      hbx5->Fill(float(bx));
+      //hautomaskedFed->Fill(float(fedId-fedId0));
+      //fedErrorsAutoMask[fedId-fedId0][(fedChannel-1)]++;
+      //fedErrorsAutoMaskInEvent[fedId-fedId0][(fedChannel-1)]=true;
+      //hbx5->Fill(float(bx));
       break; }
       
     case(19) : { // tbm reset        
@@ -1684,6 +1742,12 @@ void SiPixelRawDump::analyze(const  edm::Event& ev, const edm::EventSetup& es) {
   for(int i=0;i<30;++i) countErrors[i] = 0;
   countPixelsFPix=0; countPixelsBPix=0; countPixelsBPix1=0; countPixelsBPix2=0; countPixelsBPix3=0;countPixelsBPix4=0;
 
+  // clear auto-mask array for each event
+  for(int i = 0; i < n_of_FEDs; ++i) {
+    for(int j=0;j<n_of_Channels;++j) {
+      fedErrorsAutoMaskInEvent[i][j]=false;
+    }
+  }
 
   // Loop over FEDs
   for (int fedId = fedIds.first; fedId <= fedIds.second; fedId++) {
@@ -1815,32 +1879,103 @@ void SiPixelRawDump::analyze(const  edm::Event& ev, const edm::EventSetup& es) {
     }
     herrors->Fill(float(countErrorsInFed));
 
-    for(int i=0;i<n_of_Channels;++i) { 
-      hfedchannelsize->Fill( float(fedId-fedId0), float(i+1), float(fedchannelsize[i]) );
+    int sizeEven=0; int layer1st=-1; bool channel1st=false;
+    for(int i=0;i<n_of_Channels;++i) {  // loop over channels
 
-      if((fedId-fedId0)<fedIdBpixMax) {
-	hfedchannelsizeb->Fill( float(fedchannelsize[i]) );
-	int layer = layerIndex[(fedId-fedId0)][i]; // fedChannel=i+1
+      int fedIndex=fedId-fedId0;
+      int chanSize = fedchannelsize[i];
+      int layer = layerIndex[(fedIndex)][i]; // fedChannel=i+1
+
+      if(chanSize>0) 
+	hfedchannelsizeFull->Fill( float(fedIndex), float(i+1), float(chanSize) );
+
+      if(fedErrorsAutoMaskInEvent[fedIndex][i] ) { // auto-masked, skip
+	hfedchannelsizeEff->Fill( float(fedIndex), float(i+1), 0. ); //eff
+	
+      } else {  // not masked, OK, histogram
+
+	hfedchannelsize->Fill( float(fedIndex), float(i+1), float(chanSize) );
+	hfedchannelsizeEff->Fill( float(fedIndex), float(i+1), 1. );
+	
+	if((fedIndex)<fedIdBpixMax) {
+	  hfedchannelsizeb->Fill( float(chanSize) );
+	  if(layer==4)      {
+	    if(chanSize>0)hfedchannelsize4->Fill( float(fedIndex), float(i+1), float(chanSize) );
+	    hfedchannelsizeb4->Fill( float(chanSize) );  // layer 4
+	    if(chanSize> max4) max4=chanSize;
+	  } else if(layer==3) {
+	    if(chanSize>0)hfedchannelsize3->Fill( float(fedIndex), float(i+1), float(chanSize) );
+	    hfedchannelsizeb3->Fill( float(chanSize) );  // layer 3
+	    if(chanSize> max3) max3=chanSize;
+	  } else if(layer==2) {
+	    if(chanSize>0)hfedchannelsize2->Fill( float(fedIndex), float(i+1), float(chanSize) );
+	    hfedchannelsizeb2->Fill( float(chanSize) );  // layer 2
+	    if(chanSize> max2) max2=chanSize;
+	  } else if(layer==1) {
+	    if(chanSize>0)hfedchannelsize1->Fill( float(fedIndex), float(i+1), float(chanSize) );
+	    hfedchannelsizeb1->Fill( float(chanSize) );  // layer 1
+	    if(chanSize> max1) max1=chanSize;
+	  } else if(layer==-1) { continue;  // empty channel
+	  } else cout<<" Cannot be "<<layer<<" "<<fedId<<" "<<(i+1)<<endl;
+	} else  { // fpix
+	  hfedchannelsizef->Fill( float(chanSize) );  // fpix
+	  if(chanSize> max0) max0=chanSize;
+	}    
+      } // if automasked 
+
+      // get the higher channel count per fiber
+      if(i%2==0) {  // 1st channel in a fiber 
+	sizeEven=chanSize;
+	layer1st = layer;
+	channel1st=true;
+
+      } else { // 2nd channel of the same fiber 
+
+	if(layer != layer1st) {
+	  cout<<"something wrong with fiber-channel "
+	      <<layer<<" "<<layer1st<<" "<<fedIndex<<" "<<i<<endl;
+	  continue; // skip
+	}
+	if(!channel1st) {
+	  cout<<"something wrong, no first  fiber-channel "
+	      <<layer<<" "<<layer1st<<" "<<fedIndex<<" "<<i<<endl;
+	  continue; // skip
+	}
+
+	channel1st=false;
+
+	int sizeDiff = -1.0;
+	if(sizeEven>0. && chanSize>0.) {
+	  sizeDiff=abs(chanSize-sizeEven);
+	  if(layer==1) htest->Fill(float(chanSize),float(sizeEven));
+	}
+	float f= float( i/2);
+	if(sizeDiff>=0.) hfedfibersizediff->Fill( float(fedIndex), float(f), float(sizeDiff));
+	sizeEven=max(sizeEven,chanSize);
 	if(layer==4)      {
-	  hfedchannelsizeb4->Fill( float(fedchannelsize[i]) );  // layer 4
-	  if(fedchannelsize[i]> max4) max4=fedchannelsize[i];
+	  if(sizeEven>0) hfedfibersize4->Fill( float(fedIndex), float(f), float(sizeEven) );
+	  hfedfibersizeb4->Fill( float(sizeEven) );  // layer 4
+	  if(sizeDiff>=0.) hfedfiberdiffb4->Fill( float(sizeDiff) );  // layer 1
 	} else if(layer==3) {
-	  hfedchannelsizeb3->Fill( float(fedchannelsize[i]) );  // layer 3
-	  if(fedchannelsize[i]> max3) max3=fedchannelsize[i];
+	  if(sizeEven>0)hfedfibersize3->Fill( float(fedIndex), float(f), float(sizeEven) );
+	  hfedfibersizeb3->Fill( float(sizeEven) );  // layer 3
+	  if(sizeDiff>=0.) hfedfiberdiffb3->Fill( float(sizeDiff) );  // layer 1
 	} else if(layer==2) {
-	  hfedchannelsizeb2->Fill( float(fedchannelsize[i]) );  // layer 2
-	  if(fedchannelsize[i]> max2) max2=fedchannelsize[i];
+	  if(sizeEven>0)hfedfibersize2->Fill( float(fedIndex), float(f), float(sizeEven) );
+	  hfedfibersizeb2->Fill( float(sizeEven) );  // layer 2
+	  if(sizeDiff>=0.) hfedfiberdiffb2->Fill( float(sizeDiff) );  // layer 1
 	} else if(layer==1) {
-	  hfedchannelsizeb1->Fill( float(fedchannelsize[i]) );  // layer 1
-	  if(fedchannelsize[i]> max1) max1=fedchannelsize[i];
-	} else if(layer==-1) { continue;  // empty channel
-	} else cout<<" Cannot be "<<layer<<" "<<fedId<<" "<<(i+1)<<endl;
-      } else  {
-	hfedchannelsizef->Fill( float(fedchannelsize[i]) );  // fpix
-	if(fedchannelsize[i]> max0) max0=fedchannelsize[i];
-      }    
+	  if(sizeEven>0)hfedfibersize1->Fill( float(fedIndex), float(f), float(sizeEven) );
+	  hfedfibersizeb1->Fill( float(sizeEven) );  // layer 1
+	  if(sizeDiff>=0.) hfedfiberdiffb1->Fill( float(sizeDiff) );  // layer 1
+	} else  {  // fpix
+	  if(sizeEven>0) hfedfibersizef->Fill( float(fedIndex), float(f), float(sizeEven) );
+	  hfedfibersizefpix->Fill(float(sizeEven) );  // fpix
+	} // end layer 
 
-    }
+      } // per fiber
+
+    }  // channel
 
 #ifdef OUTFILE
     // print number of bytes per fed, CSV

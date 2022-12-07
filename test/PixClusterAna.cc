@@ -2403,6 +2403,10 @@ void PixClusterAna::analyze(const edm::Event& e,
   int bx        = e.bunchCrossing();
   int orbit     = e.orbitNumber();
 
+  if( (countAllEvents%1000) == 0 ) 
+    cout<<"Run "<<run<<" Event "<<event<<"/"<<countAllEvents
+	<<" LS "<<lumiBlock<<" bx "<<bx<<endl;
+
   hbx0->Fill(float(bx));
   hlumi0->Fill(float(lumiBlock));
 
