@@ -33,6 +33,7 @@
 #include <TF1.h>
 #include <TH2F.h>
 #include <TH1D.h>
+#include <TTree.h>
 #include <TProfile.h>
 #include <TProfile2D.h>
 
@@ -50,9 +51,11 @@ using namespace std;
 #define PHASE1
 #define TEST_LAYERS
 #define CHECK_BX
+#define USE_TREE
+//#define PER_FED
 
 namespace {
-  const bool FULL_DECODE = true;
+  //const bool FULL_DECODE = true;
   bool printErrors  = false;
   bool printData    = false;
   bool printHeaders = false;
@@ -78,12 +81,12 @@ namespace {
 // Class to get names, hide in namespace to avoid conflicts 
 class MyConvert {
 public:
-  MyConvert();
+  MyConvert();  // read translation.dat
   ~MyConvert() {}
-  static string moduleNameFromFedChan(int fed,int fedChan, int roc, string & tbm);
-  string moduleNameFromFedChan(int fed,int fedChan);
-  static int layerFromName(string name);
-  int layerFromFedChan(int fed, int fedChan);
+  string moduleNameFromFedChan(int fed,int fedChan); // gives module name using the setup table
+  int layerFromFedChan(int fed, int fedChan); // gives layer using the setup table
+  static string moduleNameFromFedChan(int fed,int fedChan, int roc, string & tbm); //reads translation.dat
+  static int layerFromName(string name);  // just parses the string name
   static int ladderFromName(string name);
   static int moduleFromName(string name);
   static int shellFromName(string name);
@@ -95,9 +98,10 @@ private:
 
 MyConvert::MyConvert() {
 
+  // layer number: 1,2,3,4, 0 for fpix, -1 for undefined
   for(int fed=0; fed<139; ++fed) {
     for(int chan=0; chan<48; ++chan) {
-      layerNumber[fed][chan]=0;
+      layerNumber[fed][chan]=-1;
       moduleName[fed][chan]="";
     }
   }
@@ -109,6 +113,7 @@ MyConvert::MyConvert() {
     cout << " File not found " << endl;
     return; // 
   }
+  cout<<"MyConvert constructor - read translation.dat, setup layer and module tables"<<endl;
 
   //string line;
   char line[500];
@@ -162,7 +167,7 @@ MyConvert::MyConvert() {
     } else {  // fpix 
       modName = name; 
       moduleName[fed-1200][fedChan-1] = modName;
-      // skip layer number
+      layerNumber[fed-1200][fedChan-1] = 0; // make fpix layer=0
     } 
   }  // end line loop
   
@@ -181,6 +186,7 @@ MyConvert::MyConvert() {
 
 } // end constructor 
 
+// used the table made in the constructor, fast but needs class instatiation
 string MyConvert::moduleNameFromFedChan(int fed,int fedChan) {
   string module="";
   if(fed<1200 || fed>1338 || fedChan<1 || fedChan>48) {
@@ -192,13 +198,16 @@ string MyConvert::moduleNameFromFedChan(int fed,int fedChan) {
   return module;
 }
 int MyConvert::layerFromFedChan(int fed, int fedChan) {
-  int layer = 0;
+  int layer = -1;
   if(fed<1200 || fed>1338 || fedChan<1 || fedChan>48) {
     cout<<" wrong fed/channel "<<fed<<"/"<<fedChan<<endl;
     return layer;
   }
-  layer = layerNumber[fed-1200][fedChan-1];
+  layer = layerNumber[fed-1200][fedChan-1]; // return -1 for non-existing channels
+  if(layer==-1) return -1;
+
   if(fed<1294 && layer==0) cout<<"layer number not fund "<<fed<<"/"<<fedChan<<endl;
+  if(fed>1294 && layer!=0) cout<<"layer number wrong for fpix "<<fed<<"/"<<fedChan<<endl;
   return layer;
 }
 
@@ -258,6 +267,7 @@ int MyConvert::shellFromName(string modName) {
 }
 
 // Method returns the module name and the tbm type as strings
+// Slow, read the translation.dat file each time 
 // input: int fed, fedChan
 // output: string name, tbm ("A" or "B")
 string MyConvert::moduleNameFromFedChan(int fed0,int fedChan0, int roc0, string & tbm0) {
@@ -390,11 +400,11 @@ MyDecode::MyDecode() {
 /////////////////////////////////////////////////////////////////////////////
 //Returns 1,2,3,4 for layer 1,2,3,4, 0 for fpix
 int MyDecode::getLayer(int fed, int chan) {
-  int layer = converter.layerFromFedChan(fed,chan);
+  int layer = converter.layerFromFedChan(fed,chan); // uses the table
   return layer;
 }
 string MyDecode::getModName(int fed, int chan) {
-  string name = converter.moduleNameFromFedChan(fed,chan);
+  string name = converter.moduleNameFromFedChan(fed,chan); // uses the table
   return name;
 }
 void MyDecode::setPrint(int fed, int chan) {
@@ -509,9 +519,10 @@ int MyDecode::error(int word, int & fedChannel, int fed, int & stat1, int & stat
 	cout<<"Masked: channel "<<channel<<" by automasking, in event "<<l1count;   
       }
     } else { // permanent mask (masked and unused channels)
-      //if(print) cout<<" Masked: channel "<<channel<<" by permanent mask";
+      if(print) cout<<" Masked: channel "<<channel<<" by permanent mask";
       status=-17;  // not filled in data
-      return 0; // skip printing it 
+      errorStatuses.push_back(17);
+      return status;  
     }
     
   } else if( (word&errorMask)==timeOut ) { // TIMEOUT
@@ -520,17 +531,20 @@ int MyDecode::error(int word, int & fedChannel, int fed, int & stat1, int & stat
 
     unsigned int bit20 = (word & bit20Mask); // works only for slink format
     if(bit20!=0) { // count timeout on first word
-      unsigned int diag = (word & tbmStackMask); // TBM stack 
+      unsigned int diag = (word & tbmStackMask); // TBM stack, does it have a meaning  
+      // no event number in the FEROL format
       if(print) {
 	cout << "Timeout Error - channel: " << channel ; 
 	cout <<" TBM Stack Count " << diag; 
       }
-      return 0;
-    } else {
-      unsigned int index=(word & tbmStackMask); // TBM chan
-      if(print) { cout << ", 2nd word:index = " << index; }
+      //cout<<"1st TO word"<<endl;
+      stat1=int(diag);
       status=-10;
       errorStatuses.push_back(10);
+    } else { // 2nd word, useless, nothing interesting  
+      unsigned int index=(word & tbmStackMask); // TBM chan, same as channel
+      //if(print) { cout << ", 2nd word:index = " << index; }
+      return 0;
     }
    
     //cout<<fed<<" "<<channel<<" "<<bit20<<" "<<l1acnt<<" "<<diag<<endl;
@@ -540,13 +554,16 @@ int MyDecode::error(int word, int & fedChannel, int fed, int & stat1, int & stat
 
     status = -11;
     errorStatuses.push_back(11);
-    unsigned int tbm_event   =  (word & tbmEventMask);
-    unsigned int fed_event   =  (word & eventNumMask)>>13;
+    unsigned int tbm_event   =  (word & tbmEventMask); // OK
+    unsigned int fed_event   =  (word & eventNumMask)>>13; //always 0 in FEROL 
     unsigned int tbm_header  =  (word & headerMask);
-    
+    stat1 = int(tbm_event);
+    stat2 = int(fed_event);
+    if(stat2>0) cout<<"ene tbm "<<stat1<<" fed "<<stat2<<endl;
+
     if(print) {
-      cout<<"Event Number Error- channel: "<<channel<<" tbm event nr. "
-	  <<tbm_event<<" fed event num "<<fed_event;
+      cout<<"Event Number Error- channel: "<<channel<<" tbm event "<<tbm_event;
+	//<<" fed event num "<<fed_event; // always 0
       if(tbm_header!=0) cout<<" NO header!";
     }
     
@@ -638,15 +655,14 @@ int MyDecode::data(int word, int & fedChannel, int fed, int & stat1, int & stat2
     //if(print) cout<<"data "<<hex<<word<<dec;
     channel_ = ((word&chnlmsk)>>linkshift);
 
-    if(channel_>0 && channel_ <= n_of_Channels) {  // valid channels 1-36
+    if(channel_>0 && channel_ <= n_of_Channels) {  // valid channels 1-48
       //cout<<hex<<word<<dec;
       dcol_=(word&dclmsk)>>16;
       pix_=(word&pxlmsk)>>8;
-
       adc_=(word&plsmsk);
       fedChannel = channel_;
 
-      if(!phase1) {cout<<"must be phase1 "<<endl; return 0;}
+      //if(!phase1) {cout<<"must be phase1 "<<endl; return 0;}
 
       if(print || CHECK_PIXELS ) {  // info 
 
@@ -654,12 +670,13 @@ int MyDecode::data(int word, int & fedChannel, int fed, int & stat1, int & stat2
 	int layer = getLayer(fed,fedChannel);
 	bool printOn = (print && (selectedChannel_==-1 || selectedChannel_==channel_) );
 
-	if(!FULL_DECODE) {
-	  col_=(word&colmsk)>>15;
-	  row_=(word&rowmsk)>>8;
-	  if(printOn) cout<<" Fed "<<fed<<" Channel- "<<channel_<<" ROC(order)- "<<(roc_-1)<<" DCOL- "
-			  <<dcol_<<" Pixel- "<<pix_<<" (OR col-"<<col_<<" row-"<<row_<<") ADC- "<<adc_<<endl;
-	} else {
+	// if(!FULL_DECODE) {
+	//   col_=(word&colmsk)>>15;
+	//   row_=(word&rowmsk)>>8;
+	//   if(printOn) cout<<" Fed "<<fed<<" Channel- "<<channel_<<" ROC(order)- "<<(roc_-1)<<" DCOL- "
+	// 		  <<dcol_<<" Pixel- "<<pix_<<" (OR col-"<<col_<<" row-"<<row_<<") ADC- "<<adc_<<endl;
+	// }
+	//} else {
 	  //int roc=0;
 	  //string tbm;
 	  //string modName0 = MyConvert::moduleNameFromFedChan(fed,fedChannel,roc,tbm);
@@ -667,64 +684,83 @@ int MyDecode::data(int word, int & fedChannel, int fed, int & stat1, int & stat2
 	  //if(bpix && (layer != layer0)) cout<<"wrong layer "<<layer<<" "<<layer0<<endl;
 	  //if(bpix && (modName != modName0)) cout<<"wrong module name "<<modName<<" "<<modName0<<endl;
 	  
-	  if(layer==1) { // for L1 
-	    col_=(word&colmsk)>>15;
-	    row_=(word&rowmsk)>>8;
-	    if(printOn) {
-	      cout<<" Fed "<<fed<<" Channel- "<<channel_<<" Mod "<<modName<<" ROC(order)- "<<(roc_-1)<<" DCOL- "
-		  <<dcol_<<" col- "<<col_<<" row- "<<row_<<" ADC- "<<adc_<<endl;
-	      //if(pix_==0) cout<<"for layer 1 there can be pix-0 hits"<<endl;
-	    }
-	  } else { // layer 2-4
-	    int colEvenOdd = pix_%2;  // module(2), 0-1st sol, 1-2nd col.
-	    // Transform
-	    col_ = dcol_ * 2 + colEvenOdd; // col address, starts from 0
-	    row_ = abs( int(pix_/2) - 80); // row addres, starts from 0
-	    if(printOn) cout<<" Fed "<<fed<<" Channel- "<<channel_<<" Mod "<<modName<<" ROC(order)- "<<(roc_-1)<<" DCOL- "
-			    <<dcol_<<" Pixel- "<<pix_<<" col- "<<col_<<" row- "<<row_<<" ADC- "<<adc_<<endl;
+	if(layer==1) { // for L1 
+	  col_=(word&colmsk)>>15;  // from 0 to 51
+	  row_=(word&rowmsk)>>8;   // from 0 to 59
+	  dcol_ = col_/2;  // for layer 1 just calculate the dcol from col 
+	  if(printOn) {
+	    cout<<" Fed "<<fed<<" Channel- "<<channel_<<" Mod "<<modName<<" ROC(order)- "<<(roc_-1)
+		<<" col- "<<col_<<" row- "<<row_<<" ADC- "<<adc_
+		<<" layer1 "
+		<<endl;
+	    //if(col_==0  && row_==0) cout<<"for layer 1 there can be pix 0/0 hits"<<endl;
 	  }
+	} else { // layer 2-4
+	  int colEvenOdd = pix_%2;  // module(2), 0-1st sol, 1-2nd col.
+	  // Transform
+	  col_ = dcol_ * 2 + colEvenOdd; // col address, starts from 0
+	  row_ = abs( int(pix_/2) - 80); // row addres, starts from 0
+	  if(printOn) cout<<" Fed "<<fed<<" Channel- "<<channel_<<" Mod "<<modName<<" ROC(order)- "<<(roc_-1)<<" DCOL- "
+			  <<dcol_<<" Pixel- "<<pix_<<" col- "<<col_<<" row- "<<row_<<" ADC- "<<adc_<<endl;
 	}
+	//}
 	
 	status=1;
 
 	if(CHECK_PIXELS) {
+	  printOn = (printErrors && ( (selectedChannel_==-1) || (selectedChannel_==channel_) ) );
+
 	  // Check invalid ROC numbers
 	  if(roc_>8 ) {  //inv ROC, per channel max 8 rocs
-	    if(printErrors) 
-		cout<<"Wrong roc number - Fed "<<fed
-		    <<" chan/roc(order)/dcol/pix/adc = "<<channel_<<"/"
-		    <<roc_-1<<"/"<<dcol_<<"/"<<pix_<<"/"<<adc_<<endl;
+	    if(printOn) 
+	      cout<<"Wrong roc number - Fed "<<fed
+		  <<" chan/roc(order)/dcol/pix/adc = "<<channel_<<"/"
+		  <<roc_-1<<"/"<<dcol_<<"/"<<pix_<<"/"<<adc_<<endl;
 	    status = -4;	
 	    errorStatuses.push_back(4);
 	  }
 
-	  
 	  // Check pixels
 	  if(layer!=1 && pix_==0) {  // PIX=0
 	    // Detect pixel 0 events
-	    if(printErrors) 
+	    if(printOn) 
 	      cout<<"Pix=0 - Fed "<<fed
 		  <<" chan/roc(order)/dcol/pix/adc = "<<channel_<<"/"<<roc_-1<<"/"
 		  <<dcol_<<"/"<<pix_<<"/"<<adc_
 		  <<" ("<<col_<<","<<row_<<")"
 		  <<" mod "<<modName<<" layer "<<layer<<endl;
 	    count0++;
-	    stat1 = roc_-1;
-	    stat2 = count0;
+	    //stat1 = roc_-1;
+	    //stat2 = count0;
 	    status = -5;
 	    errorStatuses.push_back(5);
-	    
-	  } else if( fed==fed0 && channel_==chan0 && roc_==roc0 && dcol_==dcol0 && pix_==pix0 ) {
-	    // detect multiple pixels in sequence  
-	    
+	  }	
+    
+	  // ADC=0
+	  if(adc_==0) {  // ADC=0
+	    if(printOn) 
+	      cout<<"ADC=0 - Fed "<<fed
+		  <<" chan/roc(order)/dcol/pix/adc = "<<channel_<<"/"<<roc_-1<<"/"
+		  <<dcol_<<"/"<<pix_<<"/"<<adc_
+		  <<" ("<<col_<<","<<row_<<")"
+		  <<" mod "<<modName<<" layer "<<layer<<endl;
 	    count0++;
-	    if(printErrors) 
+	    //stat1 = roc_-1;
+	    //stat2 = count0;
+	    status = -1;
+	    errorStatuses.push_back(1);
+	  }	
+    
+	  if( fed==fed0 && channel_==chan0 && roc_==roc0 && dcol_==dcol0 && pix_==pix0 ) {
+	    // detect multiple pixels in sequence  
+	    count0++;
+	    if(printOn) 
 	      cout<<"Double pixel - Fed "<<fed<<" chan/roc(order)/dcol/pix/adc = "
 		  <<channel_<<"/"<<roc_-1<<"/"<<dcol_<<"/"
 		  <<pix_<<"/"<<adc_<<" ("<<col_<<","<<row_<<") "
 		  <<" mod "<<modName<<" layer "<<layer<<endl;
-	    stat1 = roc_-1;
-	    stat2 = count0;
+	    //stat1 = roc_-1;
+	    //stat2 = count0;
 	    errorStatuses.push_back(6);
 	    status = -6;
 	  }
@@ -735,10 +771,10 @@ int MyDecode::data(int word, int & fedChannel, int fed, int & stat1, int & stat2
 	      dcol0=-1;
 	    } else {
 	      if(dcol_<dcol0) {
-	     	 if(printErrors) cout<<"Dcol number lower "<<dcol_<<" "<<dcol0
-				     <<" for fed/chan/roc "<<fed<<" "<<channel_
-				     <<" "<<(roc_-1)
-				     <<" mod "<<modName<<" layer "<<layer<<endl;
+	     	 if(printOn) cout<<"Dcol number lower "<<dcol_<<" "<<dcol0
+				 <<" for fed/chan/roc "<<fed<<" "<<channel_<<" "<<(roc_-1)
+				 <<"pix/adc/col/row "<<pix_<<"/"<<adc_<<" ("<<col_<<","<<row_<<") "
+				 <<" mod "<<modName<<" layer "<<layer<<endl;
 		status = -7;
 		errorStatuses.push_back(7);
 
@@ -746,7 +782,7 @@ int MyDecode::data(int word, int & fedChannel, int fed, int & stat1, int & stat2
 		// check pixel (row) order
 		if( (((col_%2)==0)&&(row_<row0) ) ||  // for even cols rows should go up  
 		    (((col_%2)==1)&&(row_>row0) ) ) {  // for odd cols rows should go down  
-		   if(printErrors) cout<<"Row number lower "<<row_<<" "<<row0<<" col "<<col_<<" "<<col0
+		   if(printOn) cout<<"Row number lower "<<row_<<" "<<row0<<" col "<<col_<<" "<<col0
 				       <<" for fed/chan/roc "<<fed<<"/"<<channel_
 				       <<"/"<<roc_<<" layer "<<layer<<" "<<modName<<endl;
 		  status = -3;
@@ -810,26 +846,29 @@ private:
   int selectedFED, selectedChannel, selectedType;
   bool bpixOnly;
   double printThreshold;
+  int makeTree;
   int countEvents, countAllEvents;
   int countTotErrors;
   int lastLS, firstLS;
   float sumPixels, sumFedSize, sumFedPixels[n_of_FEDs];
-  std::vector< std::pair<int,int> > maskedChannels, maskedChannels0;
+  //std::vector< std::pair<int,int> > maskedChannels, maskedChannels0;
+  int fedErrorsPerType[30][n_of_FEDs][n_of_Channels];
   int fedErrors[n_of_FEDs][n_of_Channels];
-  int fedErrorsENE[n_of_FEDs][n_of_Channels];
-  int fedErrorsTime[n_of_FEDs][n_of_Channels];
-  int fedErrorsOver[n_of_FEDs][n_of_Channels];
-  int fedErrorsPKAM[n_of_FEDs][n_of_Channels];
-  int fedErrorsAutoReset[n_of_FEDs][n_of_Channels];
-  int fedErrorsAutoMask[n_of_FEDs][n_of_Channels];
+  //int fedErrorsENE[n_of_FEDs][n_of_Channels];
+  //int fedErrorsTime[n_of_FEDs][n_of_Channels];
+  //int fedErrorsOver[n_of_FEDs][n_of_Channels];
+  //int fedErrorsPKAM[n_of_FEDs][n_of_Channels];
+  //int fedErrorsAutoReset[n_of_FEDs][n_of_Channels];
+  //int fedErrorsAutoMask[n_of_FEDs][n_of_Channels];
   bool fedErrorsAutoMaskInEvent[n_of_FEDs][n_of_Channels];
-  int fedErrorsMask[n_of_FEDs][n_of_Channels];
-  int decodeErrors[n_of_FEDs][n_of_Channels];
-  int decodeErrors000[n_of_FEDs][n_of_Channels];  // pix 0 problem
-  int decodeErrorsDouble[n_of_FEDs][n_of_Channels];  // double pix  problem
-  int decodeErrorsRow[n_of_FEDs][n_of_Channels];  // row order  problem
-  int decodeErrorsDcol[n_of_FEDs][n_of_Channels];  // dcol order  problem
-  int layerIndex[n_of_FEDs][n_of_Channels];  // layer number
+  bool fedErrorsMaskedInEvent[n_of_FEDs][n_of_Channels];
+  //int fedErrorsMask[n_of_FEDs][n_of_Channels];
+  //int decodeErrors[n_of_FEDs][n_of_Channels];
+  //int decodeErrors000[n_of_FEDs][n_of_Channels];  // pix 0 problem
+  //int decodeErrorsDouble[n_of_FEDs][n_of_Channels];  // double pix  problem
+  //int decodeErrorsRow[n_of_FEDs][n_of_Channels];  // row order  problem
+  //int decodeErrorsDcol[n_of_FEDs][n_of_Channels];  // dcol order  problem
+  //int layerIndex[n_of_FEDs][n_of_Channels];  // layer number
   int errorType[30];
   int countErrors[30];
   int fedId0;
@@ -840,8 +879,10 @@ private:
   int countPixelsBPix, countPixelsFPix;
   int countPixelsBPix1, countPixelsBPix2,countPixelsBPix3,countPixelsBPix4;
   int countErrorsInFed, countErrorsInFed1, countErrorsInFed2;
-  bool saveLast, saveFirst;
-
+  //bool saveLast, saveFirst;
+  int layer_;
+  int maskedPerEvent_[5]; // count masked channels per event, layer5=fpix
+  int eventId, stat1, stat2;
 #ifdef OUTFILE
   ofstream outfile;
 #endif
@@ -850,7 +891,7 @@ private:
 #ifdef IND_FEDS
   TH1D *hsizeFeds[n_of_FEDs];
 #endif
-  TH1D *hlumi, *horbit, *hbx, *hlumi0, *hbx0, *hbx1, *hbx2, *hbx3, *hbx4, *hbx5, *hbx6, *hbx7;
+  TH1D *hlumi, *horbit, *hbx, *hlumi0, *hbx0, *hbx1, *hbx7;
 
   TH1D *hpixels, *hpixels0, *hpixels1, *hpixels2, *hpixels3, *hpixels4;
   TH1D *htotPixels,*htotPixels0, *htotPixels1, *htotPixels2, *htotPixels3, *htotPixels4, *htotPixels5, 
@@ -886,23 +927,26 @@ private:
   TH1D *herrors, *htotErrors;
   TH1D *herrorType1, *herrorType1Fed, *herrorType2, *herrorType2Fed;
   TH2F *hfed2DErrorsType1,*hfed2DErrorsType2;
+  TH2F *hfedErrorType1ls,*hfedErrorType2ls;
+  TH2F *hchanErrorType1ls;
 
-  TH2F *hfedErrorType1ls,*hfedErrorType2ls; // *hcountDouble2, *hcount0002;
-  //TH1D *hcountDouble, *hcount000, *hrocDouble, *hroc000;
-
-
+  // Per erroor
   TH2F *hfed2DErrors[30];
-  TProfile *herrorType1ls, *herrorType2ls,*herrorType1bx,*herrorType2bx;
+  TH2F *hchanErrorsPerLS[30];
   TProfile *herrorlsP[30];
   TH1D *herrorls[30];
-  TH2F *htest;
- 
-  //TH1D *htimeoutFed, *hpkamFed, *hnorFed, *heneFed, *hautomaskedFed, *htimeoutChan;
-  //TH1D *herrorTimels, *herrorPkamls;
-  //TH2F *herrorVsLs10, *herrorVsLs11, *herrorVsLs12, *herrorVsLs13, *herrorVsLs15, *herrorVsLs16, 
-  // *herrorVsLs17, *herrorVsLs18;
+  // Per FED
+#ifdef PER_FED
+  TProfile2D *hfedChanLS[94], *hfedChanAutoMaskedLS[94];
+#endif
 
-  TH2F *hpix0Map[4],*hdoubleMap[4],*hdcolLowMap[4],*hpixOrderMap[4];
+  TProfile *herrorType1ls, *herrorType2ls,*herrorType1bx,*herrorType2bx;
+  TProfile *hmaskedL1ls,*hmaskedL2ls,*hmaskedL3ls,*hmaskedL4ls,*hmaskedFls;
+
+  //per layer 
+  TH2F *hfedChannelDefinition;
+  TH2F *hpix0Map[4],*hdoubleMap[4],*hdcolLowMap[4],*hpixOrderMap[4],*hadc0Map[4],*hadc0RocMap[4];
+  TH1D *htest1, *htest2, *htest3, *htest4, *htest5, *htest6;
  
 #ifdef IND_FEDS
   TH2F *hfed2DErrors1ls,*hfed2DErrors2ls,*hfed2DErrors3ls,*hfed2DErrors4ls,*hfed2DErrors5ls,
@@ -910,6 +954,12 @@ private:
     *hfed2DErrors13ls,*hfed2DErrors14ls,*hfed2DErrors15ls,*hfed2DErrors16ls;
 #endif
 
+#ifdef USE_TREE
+  TTree *tree;
+  int eventT,lsT,bxT,fedT,channelT,rocT,colT,rowT,errorT,layerT,ladderT,moduleT,adcT;
+  int errorFed, errorChan;
+#endif
+  
   MyDecode decode;
 };
 //----------------------------------------------------------------------------------
@@ -918,11 +968,13 @@ SiPixelRawDump::SiPixelRawDump( const edm::ParameterSet& cfg) : theConfig(cfg) {
   string label = theConfig.getUntrackedParameter<std::string>("InputLabel","source");
   // For the ByToken method
   rawData = consumes<FEDRawDataCollection>(label);
+  makeTree=0; // no trees
 } 
 //----------------------------------------------------------------------------------------
 void SiPixelRawDump::endJob() {
+  // 1 - adc=0
   // 2 - wrong channel
-  // 3 - wrong pix or dcol 
+  // 3 - wrong pix 
   // 4 - wrong roc
   // 5 - pix=0
   // 6 - double pixel
@@ -946,7 +998,7 @@ void SiPixelRawDump::endJob() {
   // 24 - SyncErr 
 
   static string errorName[30] = {
-    " "," ","wrong channel","wrong pix","wrong roc","pix=0",
+    " ","adc0","wrong channel","wrong pix","wrong roc","pix=0",
     " double-pix","wrong dcol","rocReset","NTP","TO",
     "ENE","NOR","autoreset","overflow",
     "Cal","pkam","masked","automasked","tbmReset",
@@ -983,59 +1035,77 @@ void SiPixelRawDump::endJob() {
   if(errorThreshold<100) errorThreshold=100;
 
   cout<<" Total number of errors "<<countTotErrors<<" print threshold "<< errorThreshold << " total errors per fed channel"<<endl;
-  cout<<" FED errors "<<endl<<"Fed  Channel Tot-Errors ENE-Errors  TO-Errors  NOR-Errors      PKAM      AutoMask/Masked  AutoReset"
-      <<endl;
 
-  for(int i = 0; i < n_of_FEDs; ++i) {
-    for(int j=0;j<n_of_Channels;++j) if( (fedErrors[i][j] > errorThreshold) ) {
-	cout<<(i+fedId0)<<" - "<<setw(3)<<(j+1)<<" -  "<<setw(8)<<fedErrors[i][j]<<" - "<<setw(8)<<fedErrorsENE[i][j]
-	    <<" -  "<<setw(8)<<fedErrorsTime[i][j]<<" - "<<setw(8)<<fedErrorsOver[i][j]<<" - "<<setw(8)<<fedErrorsPKAM[i][j]
-	    <<" - "<<setw(8)<<fedErrorsAutoMask[i][j]<<"/"<<setw(8)<<fedErrorsMask[i][j]<<" - "<<setw(8)<<fedErrorsAutoReset[i][j]<<endl;
-    }
-  }
-  cout<<" Decode errors "<<endl<<"Fed Channel Other Pix_000 Double_Pix Row-order Dcol-order"<<endl;
+  cout<<" FED errors "<<endl<<"Fed  Channel ENE-Errors  TO-Errors  NOR-Errors      PKAM      AutoMask   NTP  AutoReset"
+      <<endl;
+  // New counters
   for(int i = 0; i < n_of_FEDs; ++i) {
     for(int j=0;j<n_of_Channels;++j) {
-      int tmp = decodeErrors[i][j] + decodeErrors000[i][j] + decodeErrorsDouble[i][j] + decodeErrorsRow[i][j]+ decodeErrorsDcol[i][j];
-      if(tmp>10) 
+      int layer = decode.getLayer(i+1200,j+1);
+      if(layer==0) layer=5; // for fpix  
+      hfedChannelDefinition->Fill(float(i), float(j+1), float(layer)); //make the chan definition histo
+      if( (fedErrors[i][j] > errorThreshold) ) {
+	cout<<(i+fedId0)<<" - "<<setw(3)<<(j+1)
+	    <<" - "<<setw(8)<<fedErrorsPerType[11][i][j]  // ENE
+	    <<" - "<<setw(8)<<fedErrorsPerType[10][i][j]  //TO
+	    <<" - "<<setw(8)<<fedErrorsPerType[12][i][j] //NOR
+	    <<" - "<<setw(8)<<fedErrorsPerType[16][i][j]   // PKAM
+	    <<" - "<<setw(8)<<fedErrorsPerType[18][i][j]  //Automask
+	  //<<"/"  <<setw(8)<<fedErrorsPerType[17][i][j] //Mask
+	    <<" - "<<setw(8)<<fedErrorsPerType[9][i][j] //NTP
+	    <<" - "<<setw(8)<<fedErrorsPerType[13][i][j]<<endl; //Autoreset
+      } //if error
+    } // chans
+  }  //feds
+
+  // for(int i = 0; i < n_of_FEDs; ++i) {
+  //   for(int j=0;j<n_of_Channels;++j) if( (fedErrors[i][j] > errorThreshold) ) {
+  // 	cout<<(i+fedId0)<<" - "<<setw(3)<<(j+1)<<" -  "<<setw(8)<<fedErrors[i][j]<<" - "<<setw(8)<<fedErrorsENE[i][j]
+  // 	    <<" -  "<<setw(8)<<fedErrorsTime[i][j]<<" - "<<setw(8)<<fedErrorsOver[i][j]<<" - "<<setw(8)<<fedErrorsPKAM[i][j]
+  // 	    <<" - "<<setw(8)<<fedErrorsAutoMask[i][j]<<"/"<<setw(8)<<fedErrorsMask[i][j]<<" - "<<setw(8)<<fedErrorsAutoReset[i][j]<<endl;
+  //   }
+  // }
+
+
+  cout<<" Decode errors "<<endl<<"Fed Channel ADC0  Pix_000 Double_Pix Row-order Dcol-order"<<endl;
+  errorThreshold = int(countEvents*printThreshold);
+  if(errorThreshold<10) errorThreshold=10;
+  for(int i = 0; i < n_of_FEDs; ++i) {
+    for(int j=0;j<n_of_Channels;++j) {
+      int tmp=0;
+      for(int n=2;n<8;++n)  {tmp += fedErrorsPerType[n][i][j];}
+      tmp += fedErrorsPerType[1][i][j]/100.; // scale adc0 errors by 1/100
+      if(tmp>errorThreshold) // very arbitray                        
 	cout<<" "<<(i+fedId0)<<" -  "<<(j+1)<<"   -  "
-	    <<decodeErrors[i][j]<<"  -    "
-	    <<decodeErrors000[i][j]<<"  -   "
-	    <<decodeErrorsDouble[i][j]<<"  -  "
-	    <<decodeErrorsRow[i][j]<<"  -  "
-	    <<decodeErrorsDcol[i][j]
+	    <<fedErrorsPerType[1][i][j]<<"  -    "     // roc
+	    <<fedErrorsPerType[5][i][j]<<"  -   "   // pix=0
+	    <<fedErrorsPerType[6][i][j]<<"  -  "  // double pix
+	    <<fedErrorsPerType[3][i][j]<<"  -  " // bad row
+	    <<fedErrorsPerType[7][i][j]  // bad dcol
 	    <<endl;
     }
   }
 
+  //cout<<" Decode errors "<<endl<<"Fed Channel Other Pix_000 Double_Pix Row-order Dcol-order"<<endl;
+  // for(int i = 0; i < n_of_FEDs; ++i) {
+  //   for(int j=0;j<n_of_Channels;++j) {
+  //     int tmp = decodeErrors[i][j] + decodeErrors000[i][j] + decodeErrorsDouble[i][j] + decodeErrorsRow[i][j]+ decodeErrorsDcol[i][j];
+  //     if(tmp>10) 
+  // 	cout<<" "<<(i+fedId0)<<" -  "<<(j+1)<<"   -  "
+  // 	    <<decodeErrors[i][j]<<"  -    "
+  // 	    <<decodeErrors000[i][j]<<"  -   "
+  // 	    <<decodeErrorsDouble[i][j]<<"  -  "
+  // 	    <<decodeErrorsRow[i][j]<<"  -  "
+  // 	    <<decodeErrorsDcol[i][j]
+  // 	    <<endl;
+  //   }
+  // }
+
   cout<<" Total errors for all feds "<<endl<<" Type Name Num-Of-Errors"<<endl;
   for(int i=0;i<30;++i) {
-    if( errorType[i]>0 ) cout<<"   "<<i<<" - "<<errorName[i]<<" - "<<errorType[i]<<endl;
+    if( errorType[i]>0 && i!=17 ) cout<<"   "<<i<<" - "<<errorName[i]<<" - "<<errorType[i]<<endl;
   }
-
-  //cout<<" Test decode errors "<<countDecodeErrors1<<" "<<countDecodeErrors2<<endl;
   cout<<"max pixels per channel L1/2/3/4/FPix - "<<max1<<" "<<max2<<" "<<max3<<" "<<max4<<" "<<max0<<endl;;
-
-  int oldFed=-1;
-  cout<<" Masked channels at LS "<<firstLS<<" size = "<<maskedChannels0.size()<<endl;
-  for(unsigned int i=0; i<maskedChannels0.size(); ++i) {
-    if(maskedChannels0[i].first == oldFed) cout<<" "<<maskedChannels0[i].second;
-    else {
-      oldFed=maskedChannels0[i].first;
-      cout<<endl<<maskedChannels0[i].first<<" "<<maskedChannels0[i].second;
-    }
-  }
-  cout<<endl;
-  oldFed=-1;
-  cout<<" Masked channels at LS "<<lastLS<<" size = "<<maskedChannels.size()<<endl;
-  for(unsigned int i=0; i<maskedChannels.size(); ++i) {
-    if(maskedChannels[i].first == oldFed) cout<<" "<<maskedChannels[i].second;
-    else {
-      oldFed=maskedChannels[i].first;
-      cout<<endl<<maskedChannels[i].first<<" "<<maskedChannels[i].second;
-    }
-  }
-  cout<<endl;
 
   float norm=1.;
   if(countEvents>0) norm=1./float(countEvents);
@@ -1043,14 +1113,9 @@ void SiPixelRawDump::endJob() {
     hfed2DErrors[i]->Scale(norm);
   } 
 
-
-  // analyze automasked errors 
-
 #ifdef OUTFILE
   outfile.close();
 #endif
-
-
 
 }
 //----------------------------------------------------------------------
@@ -1062,8 +1127,12 @@ void SiPixelRawDump::beginJob() {
   selectedChannel = theConfig.getUntrackedParameter<int>("selectedChannel",-1);
   selectedType = theConfig.getUntrackedParameter<int>("selectedType",-1);  // not used 
   bpixOnly = theConfig.getUntrackedParameter<bool>("bpixOnly",false);   
+#ifdef USE_TREE
+  makeTree = theConfig.getUntrackedParameter<int>("makeTree",0);   
+#endif 
   
-  cout<<" beginjob "<<printVerbosity<<" "<<printThreshold<<" select FED "<<selectedFED<<" select Type "<<selectedType<<endl;  
+  cout<<" beginjob "<<printVerbosity<<" "<<printThreshold<<" select FED "<<selectedFED
+      <<" select Type "<<selectedType<<" tree "<<makeTree<<endl;  
 
   if(printVerbosity>0) printErrors  = true;
   else printErrors = false;
@@ -1089,38 +1158,42 @@ void SiPixelRawDump::beginJob() {
   sumPixels=0.;
   sumFedSize=0;
   lastLS=0; firstLS=9999;
-  maskedChannels.clear();
-  maskedChannels0.clear();
+  //maskedChannels.clear();
+  //maskedChannels0.clear();
   //string tbm=" ";
   //int roc=-1;
   for(int i = 0; i < n_of_FEDs; ++i) {
     sumFedPixels[i]=0;
     for(int j=0;j<n_of_Channels;++j) {
-      decodeErrors[i][j]=0; decodeErrors000[i][j]=0; decodeErrorsDouble[i][j]=0;
-      decodeErrorsRow[i][j]=0; decodeErrorsDcol[i][j]=0;
-      fedErrors[i][j]=0; fedErrorsENE[i][j]=0; fedErrorsTime[i][j]=0; 
-      fedErrorsOver[i][j]=0;fedErrorsPKAM[i][j]=0;fedErrorsAutoReset[i][j]=0;
-      fedErrorsAutoMask[i][j]=0;fedErrorsMask[i][j]=0;
+      //decodeErrors[i][j]=0; decodeErrors000[i][j]=0; decodeErrorsDouble[i][j]=0;
+      //decodeErrorsRow[i][j]=0; decodeErrorsDcol[i][j]=0;
+      fedErrors[i][j]=0; 
+      //fedErrorsENE[i][j]=0; fedErrorsTime[i][j]=0; 
+      //fedErrorsOver[i][j]=0;fedErrorsPKAM[i][j]=0;fedErrorsAutoReset[i][j]=0;
+      //fedErrorsAutoMask[i][j]=0;fedErrorsMask[i][j]=0;
       fedErrorsAutoMaskInEvent[i][j]=false;
+      fedErrorsMaskedInEvent[i][j]=false;
+      for(int n=0;n<30;++n) {fedErrorsPerType[n][i][j]=0;}
 
-      layerIndex[i][j]=-1;
-      if( i > fedIdBpixMax ) layerIndex[i][j]=0; // signal fpix
-      else {
-	// Get the module name and tbm type 
-	//string modName = MyConvert::moduleNameFromFedChan((i+fedId0),(j+1),roc,tbm);
-	string modName = decode.getModName((i+fedId0),(j+1));
-	if(modName != "") { // skip nonexistant (empty) channels 
-	  //int layer = MyConvert::layerFromName(modName);
-	  int layer = decode.getLayer( (i+fedId0), (j+1) );
-	  if(layer>=0 && layer<=4) layerIndex[i][j]=layer;
-	  else cout<<"error "<<(i+fedId0)<<" "<<(j+1)<<" "<<modName<<" "<<layer<<endl;
-	  //cout<<(i+fedId0)<<" "<<(j+1)<<" "<<modName<<" "<<layer<<endl;
-	}
-      }
-    }
-  }
-  
+      //cout<<"Build the layer index table. Is it used?"<<endl;
+      // layerIndex[i][j]=-1;
+      // if( i > fedIdBpixMax ) layerIndex[i][j]=0; // signal fpix
+      // else {
+      // 	// Get the module name and tbm type 
+      // 	//string modName = MyConvert::moduleNameFromFedChan((i+fedId0),(j+1),roc,tbm);
+      // 	string modName = decode.getModName((i+fedId0),(j+1));
+      // 	if(modName != "") { // skip nonexistant (empty) channels 
+      // 	  //int layer = MyConvert::layerFromName(modName);
+      // 	  int layer = decode.getLayer( (i+fedId0), (j+1) );
+      // 	  if(layer>=0 && layer<=4) layerIndex[i][j]=layer;
+      // 	  else cout<<"error "<<(i+fedId0)<<" "<<(j+1)<<" "<<modName<<" "<<layer<<endl;
+      // 	  //cout<<(i+fedId0)<<" "<<(j+1)<<" "<<modName<<" "<<layer<<endl;
+      // 	}	
+      // }
 
+    } // CHAN
+  } // fed
+   
   for(int i=0;i<30;++i) errorType[i]=0;
 
   edm::Service<TFileService> fs;
@@ -1132,7 +1205,7 @@ void SiPixelRawDump::beginJob() {
   //const float pixMax = 19999.5;  // hi value 
   //const float totMax = 399999.5; // hi value 
   const float maxLink = 1000.;   // hi value
-  const float maxChan = static_cast<float>(n_of_Channels) - 0.5;
+  const float maxChan = static_cast<float>(n_of_Channels) + 0.5;
   const int maxLS=1000;
   hsize  = fs->make<TH1D>( "hsize", "FED event size in words-4(incl err)", 6000, -0.5, pixMax);
   hsize0 = fs->make<TH1D>( "hsize0", "FED event size in words-4(zoomed)", 2000, -0.5, 1999.5);
@@ -1163,12 +1236,9 @@ void SiPixelRawDump::beginJob() {
   hchannelFED = fs->make<TH2F>("hchannelFED", "channel-FED hits",
 			       n_of_FEDs, -0.5, static_cast<float>(n_of_FEDs) - 0.5,
 			       48,0.,48.);
-
-  //hchannelRoc = fs->make<TH2F>("hchannelRoc", "roc in a channel",48,0.,48.,9, -0.5,8.5);
-  //hchannelRocs = fs->make<TH2F>("hchannelRocs", "num of rocs in a channel",48,0.,48.,9, -0.5,8.5);
-  //hchannelPixels = fs->make<TH2F>("hchannelPixels", "pixels in a channel",48,0.,48.,200, -0.5,199.5);
-  //hchannelPixPerRoc = fs->make<TH2F>("hchannelPixPerRoc", "pixels in a roc",48,0.,48.,100, -0.5,199.5);
-
+  hfedChannelDefinition = fs->make<TH2F>("hfedChannelDefinition", "define channel-FED 1,2,3,4,5",
+			       n_of_FEDs, -0.5, static_cast<float>(n_of_FEDs) - 0.5,
+			       48,0.,48.);
 #ifdef IND_FEDS
   hsizeFeds[0] = fs->make<TH1D>( "hsizeFed0", "FED 0 event size ", 1000, -0.5, pixMax);
   hsizeFeds[1] = fs->make<TH1D>( "hsizeFed1", "FED 1 event size ", 1000, -0.5, pixMax);
@@ -1214,17 +1284,17 @@ void SiPixelRawDump::beginJob() {
 
   //hevent = fs->make<TH1D>("hevent","event",1000,0,10000000.);
   //horbit = fs->make<TH1D>("horbit","orbit",100, 0,100000000.);
-  hlumi   = fs->make<TH1D>("hlumi", "lumi-section all",  maxLS,0,float(maxLS));
-  hlumi0  = fs->make<TH1D>("hlumi0","lumi-section pix>0",maxLS,0,float(maxLS));
+  hlumi0   = fs->make<TH1D>("hlumi0","lumi-section all",maxLS,0,float(maxLS));
+  hlumi  = fs->make<TH1D>("hlumi","lumi-section pix>0",maxLS,0,float(maxLS));
  
   hbx    = fs->make<TH1D>("hbx",   "bx (cmssw) with hits",4000,0,4000.);  
   hbx0    = fs->make<TH1D>("hbx0",   "bx (cmssw) all",    4000,0,4000.);  
   hbx1    = fs->make<TH1D>("hbx1",   "bx fed payload",    4000,0,4000.);  
-  hbx2    = fs->make<TH1D>("hbx2",   "bx fed errors",    4000,0,4000.);  
-  hbx3    = fs->make<TH1D>("hbx3",   "bx fed errors",    4000,0,4000.);  
-  hbx4    = fs->make<TH1D>("hbx4",   "bx fed errors",    4000,0,4000.);  
-  hbx5    = fs->make<TH1D>("hbx5",   "bx fed errors",    4000,0,4000.);  
-  hbx6    = fs->make<TH1D>("hbx6",   "bx fed errors",    4000,0,4000.);  
+  //hbx2    = fs->make<TH1D>("hbx2",   "bx fed errors",    4000,0,4000.);  
+  //hbx3    = fs->make<TH1D>("hbx3",   "bx fed errors",    4000,0,4000.);  
+  //hbx4    = fs->make<TH1D>("hbx4",   "bx fed errors",    4000,0,4000.);  
+  //hbx5    = fs->make<TH1D>("hbx5",   "bx fed errors",    4000,0,4000.);  
+  //hbx6    = fs->make<TH1D>("hbx6",   "bx fed errors",    4000,0,4000.);  
 #ifdef CHECK_BX
   hbx7    = fs->make<TH1D>("hbx7",   "bad (cmssw) bx",    4000,0,4000.);  
 #endif
@@ -1253,25 +1323,25 @@ void SiPixelRawDump::beginJob() {
 
   hfedchannelsize  = fs->make<TProfile2D>("hfedchannelsize", "pixels per fed&channel",
 					  n_of_FEDs,-0.5,static_cast<float>(n_of_FEDs) - 0.5,
-					  n_of_Channels, -0.5,maxChan,0.0,10000.);  
+					  n_of_Channels, 0.5,maxChan,0.0,10000.);  
   hfedchannelsizeFull = fs->make<TProfile2D>("hfedchannelsizeFull", "pixels per fed&channel >0",
 					  n_of_FEDs,-0.5,static_cast<float>(n_of_FEDs) - 0.5,
-					  n_of_Channels, -0.5,maxChan,0.0,10000.);  
+					  n_of_Channels, 0.5,maxChan,0.0,10000.);  
   hfedchannelsizeEff = fs->make<TProfile2D>("hfedchannelsizeEff", ">0packets fed&channel",
 					  n_of_FEDs,-0.5,static_cast<float>(n_of_FEDs) - 0.5,
-					  n_of_Channels, -0.5,maxChan,0.0,10000.);  
+					  n_of_Channels, 0.5,maxChan,0.0,10000.);  
   hfedchannelsize1 = fs->make<TProfile2D>("hfedchannelsize1", "fed&channel L1",
 					  n_of_FEDs,-0.5,static_cast<float>(n_of_FEDs) - 0.5,
-					  n_of_Channels, -0.5,maxChan,0.0,10000.);  
+					  n_of_Channels, 0.5,maxChan,0.0,10000.);  
   hfedchannelsize2 = fs->make<TProfile2D>("hfedchannelsize2", "fed&channel L2",
 					  n_of_FEDs,-0.5,static_cast<float>(n_of_FEDs) - 0.5,
-					  n_of_Channels, -0.5,maxChan,0.0,10000.);  
+					  n_of_Channels, 0.5,maxChan,0.0,10000.);  
   hfedchannelsize3 = fs->make<TProfile2D>("hfedchannelsize3", "fed&channel L3",
 					  n_of_FEDs,-0.5,static_cast<float>(n_of_FEDs) - 0.5,
-					  n_of_Channels, -0.5,maxChan,0.0,10000.);  
+					  n_of_Channels, 0.5,maxChan,0.0,10000.);  
   hfedchannelsize4 = fs->make<TProfile2D>("hfedchannelsize4", "fed&channel L4",
 					  n_of_FEDs,-0.5,static_cast<float>(n_of_FEDs) - 0.5,
-					  n_of_Channels, -0.5,maxChan,0.0,10000.);  
+					  n_of_Channels, 0.5,maxChan,0.0,10000.);  
   hfedchannelsizeb   = fs->make<TH1D>("hfedchannelsizeb", "pixels per bpix channel",  int(maxLink),0.0,maxLink);
   hfedchannelsizeb1  = fs->make<TH1D>("hfedchannelsizeb1", "pixels per bpix1 channel",int(maxLink),0.0,maxLink);
   hfedchannelsizeb2  = fs->make<TH1D>("hfedchannelsizeb2", "pixels per bpix2 channel",int(maxLink),0.0,maxLink);
@@ -1340,12 +1410,14 @@ void SiPixelRawDump::beginJob() {
   herrorType1Fed  = fs->make<TH1D>( "herrorType1Fed", "fed errors per FED", 
 				    n_of_FEDs, -0.5, static_cast<float>(n_of_FEDs) - 0.5);
   //herrorType1Chan = fs->make<TH1D>( "herrorType1Chan", "errors-1(fed) per chan", 
-  //				    n_of_Channels, -0.5,maxChan);
+  //				    n_of_Channels, 0.5,maxChan);
   hfed2DErrorsType1 = fs->make<TH2F>("hfed2DErrorsType1", "fed errors per FED&chan", 
-	  n_of_FEDs,-0.5,static_cast<float>(n_of_FEDs) - 0.5, n_of_Channels, -0.5,maxChan);
+	  n_of_FEDs,-0.5,static_cast<float>(n_of_FEDs) - 0.5, n_of_Channels,0.5,maxChan);
 
   hfedErrorType1ls = fs->make<TH2F>( "hfedErrorType1ls", "FEDs with fed-errors vs lumi",
           maxLS,0,float(maxLS), n_of_FEDs,-0.5,static_cast<float>(n_of_FEDs) - 0.5); // 
+  hchanErrorType1ls = fs->make<TH2F>( "hchanErrorType1ls", "Chans with fed-errors vs lumi",
+				      maxLS,0,float(maxLS), n_of_Channels,0.5,maxChan); // 
   herrorType1ls = fs->make<TProfile>("herrorType1ls","fed error vs ls",maxLS,0,float(maxLS),0,1000.);
   herrorType1bx = fs->make<TProfile>("herrorType1bx","fed error vs bx",4000,-0.5,3999.5,0,300000.);
 
@@ -1355,16 +1427,33 @@ void SiPixelRawDump::beginJob() {
 				    30, -0.5, 29.5);
   herrorType2Fed  = fs->make<TH1D>( "herrorType2Fed", "readout decode errors per FED", 
 				    n_of_FEDs, -0.5, static_cast<float>(n_of_FEDs) - 0.5);
+
   //herrorType2Chan = fs->make<TH1D>( "herrorType2Chan", "readout errors type-2 (decode) per chan", 
-  //				    n_of_Channels, -0.5,maxChan);
+  //				    n_of_Channels, 0.5,maxChan);
   hfed2DErrorsType2 = fs->make<TH2F>("hfed2DErrorsType2", "decode errors vs FED&chan", 
-	  n_of_FEDs,-0.5,static_cast<float>(n_of_FEDs) - 0.5, n_of_Channels, -0.5,maxChan);
+	  n_of_FEDs,-0.5,static_cast<float>(n_of_FEDs) - 0.5, n_of_Channels, 0.5,maxChan);
   hfedErrorType2ls = fs->make<TH2F>( "hfedErrorType2ls", "FEDs with decode errors vs lumi",
           maxLS,0,float(maxLS), n_of_FEDs,-0.5,static_cast<float>(n_of_FEDs) - 0.5); //
   herrorType2ls = fs->make<TProfile>("herrorType2ls","decode errors vs ls",maxLS,0,float(maxLS),0,1000.);
   herrorType2bx = fs->make<TProfile>("herrorType2bx","decode errors vs bx",4000,-0.5,3999.5,0,300000.);
 
-  htest = fs->make<TH2F>("htest", "chan1 vs chan2",50,0.,200., 50,0.,200.);
+  //hsizels = fs->make<TProfile>("hsizels"," bpix fed size vs ls",          maxLS,0,float(maxLS),0,200000.);  
+  hmaskedL1ls = fs->make<TProfile>("hmaskedL1ls","L1 masked chans vs ls"
+				    ,maxLS,0,float(maxLS),0,1000.);
+  hmaskedL2ls = fs->make<TProfile>("hmaskedL2ls","L2 masked chans vs ls"
+				    ,maxLS,0,float(maxLS),0,1000.);
+  hmaskedL3ls = fs->make<TProfile>("hmaskedL3ls","L3 masked chans vs ls"
+				    ,maxLS,0,float(maxLS),0,1000.);
+  hmaskedL4ls = fs->make<TProfile>("hmaskedL4ls","L4 masked chans vs ls"
+				    ,maxLS,0,float(maxLS),0,1000.);
+  hmaskedFls = fs->make<TProfile>("hmaskedFls","FPix masked chans vs ls"
+				    ,maxLS,0,float(maxLS),0,1000.);
+
+  htest1 = fs->make<TH1D>("htest1", "event diff",255,0.,255);
+  htest2 = fs->make<TH1D>("htest2", "event diff",255,0.,255);
+  htest3 = fs->make<TH1D>("htest3", "event diff ",512,-255.,255);
+  htest4 = fs->make<TH1D>("htest4", "event diff ",512,-255.,255);
+  htest5 = fs->make<TH1D>("htest5", "event diff ",512,-255.,255);
 
   //htimeoutFed  = fs->make<TH1D>("htimeoutFed","timeouts vs fed", n_of_FEDs,-0.5,static_cast<float>(n_of_FEDs) - 0.5);
   //hpkamFed     = fs->make<TH1D>("hpkamFed","pkam vs fed",        n_of_FEDs,-0.5,static_cast<float>(n_of_FEDs) - 0.5);
@@ -1393,24 +1482,49 @@ void SiPixelRawDump::beginJob() {
     herrorlsP[i] = fs->make<TProfile>(name.c_str(),title.c_str(),maxLS,0.,float(maxLS),0.,1000.);
     name="herror"+num+"ls"; title="errors vs ls, type "+errorName[i];        
     herrorls[i] = fs->make<TH1D>(name.c_str(),title.c_str(),maxLS,0.,float(maxLS));
-    name="hfed2DErrors"+num; title="errors per fed/chan, type "+errorName[i];        
-    hfed2DErrors[i] = fs->make<TH2F>(name.c_str(),title.c_str(),n_of_FEDs,-0.5,static_cast<float>(n_of_FEDs) - 0.5, n_of_Channels, -0.5,maxChan);
+    name="hfed2DErrors"+num; title="Errors per fed/chan/event, type "+errorName[i];        
+    hfed2DErrors[i] = fs->make<TH2F>(name.c_str(),title.c_str(),n_of_FEDs,-0.5,static_cast<float>(n_of_FEDs) - 0.5, n_of_Channels, 0.5,maxChan);
+    name="hchanErrorsPerLS"+num; title="errors per chan, type "+errorName[i];        
+    if((i==16)||(i==18)||(i>=9&&i<=12))
+      hchanErrorsPerLS[i] = fs->make<TH2F>(name.c_str(),title.c_str(),100,0.,100., n_of_Channels, 0.5,maxChan);
   }
 
-  
-  string histoName[4] = {"hpix0Map","hdoubleMap","hdcolLowMap","hpixOrderMap"};
-  string titleName[4] = {"pix0 hits in L","double hits in L","dcol low hits in L","wrong pix order in L"};
+
+#ifdef PER_FED
+  const int nLS=100; // 100, number of lumi sections
+  const float minLS=1., mLS=100.;
+  //const float minLS=1051., mLS=1250.;
+  //const float minLS=1251., mLS=1450.;
+  for(int i=0;i<94;++i) {
+    string num = std::to_string(i);
+    name="hfedChanLS"+num; title="Channel size vs LS for FED "+num;        
+    hfedChanLS[i] = fs->make<TProfile2D>(name.c_str(),title.c_str(),
+					 nLS,minLS,mLS,
+					 n_of_Channels,0.5,maxChan,0.0,10000.);
+    name="hfedChanAutoMaskedLS"+num; title="Channel masked vs LS for FED "+num;        
+    hfedChanAutoMaskedLS[i] = fs->make<TProfile2D>(name.c_str(),title.c_str(),
+					 nLS,minLS,mLS,
+				     	 n_of_Channels,0.5,maxChan,0.0,10000.);
+  }
+#endif
+
+  string histoName[5] = {"hpix0Map","hdoubleMap","hdcolLowMap","hpixOrderMap","hadc0Map"};
+  string titleName[5] = {"pix0 hits in L","double hits in L","dcol low hits in L","wrong pix order in L",
+			 "adc0 hits in L"};
   int sizeH[4] = {13,29,45,65};
   float binH[4]={6.5,14.5,22.5,32.5};
   //string name, title;
   for(int i=0; i<4; ++i) { // loop over bpix layers 
     string num = std::to_string(i+1);
-    for(int j=0; j<4; ++j) { // loop over error type 
+    name="hadc0RocMap"+num; title="ADC=0, ROC Map for L"+num;
+    hadc0RocMap[i] = fs->make<TH2F>(name.c_str(),title.c_str(),52,0.,52.,80,0.,80.);
+    for(int j=0; j<5; ++j) { // loop over error type 
       name=histoName[j]+num; title=titleName[j]+num;        
       if(j==0)      hpix0Map[i] =   fs->make<TH2F>(name.c_str(),title.c_str(),9,-4.5,4.5,sizeH[i],-binH[i],binH[i]);
       else if(j==1) hdoubleMap[i] = fs->make<TH2F>(name.c_str(),title.c_str(),9,-4.5,4.5,sizeH[i],-binH[i],binH[i]);
       else if(j==2) hdcolLowMap[i] =fs->make<TH2F>(name.c_str(),title.c_str(),9,-4.5,4.5,sizeH[i],-binH[i],binH[i]);
       else if(j==3) hpixOrderMap[i]=fs->make<TH2F>(name.c_str(),title.c_str(),9,-4.5,4.5,sizeH[i],-binH[i],binH[i]);
+      else if(j==4) hadc0Map[i]    =fs->make<TH2F>(name.c_str(),title.c_str(),9,-4.5,4.5,sizeH[i],-binH[i],binH[i]);
     }
   }
 
@@ -1434,6 +1548,25 @@ void SiPixelRawDump::beginJob() {
 #endif
 
 
+#ifdef USE_TREE
+  if(makeTree>0) {
+    tree = fs->make<TTree>("RawTree","RawTree");
+    tree->Branch("event",&eventT,"event/I");
+    tree->Branch("ls",&lsT,"ls/I");
+    tree->Branch("bx",&bxT,"bx/I");
+    tree->Branch("fed",&fedT,"fed/I");
+    tree->Branch("channel",&channelT,"channel/I");
+    tree->Branch("roc",&rocT,"roc/I");
+    tree->Branch("module",&moduleT,"module/I");
+    tree->Branch("ladder",&ladderT,"ladder/I");
+    tree->Branch("layer",&layerT,"layer/I");
+    tree->Branch("col",&colT,"col/I");
+    tree->Branch("row",&rowT,"row/I");
+    tree->Branch("adc",&adcT,"adc/I");
+    tree->Branch("error",&errorT,"error/I");
+  }
+#endif 
+
 #ifdef OUTFILE
   outfile.open("pixfed.csv");
   for(int i = 0; i < n_of_FEDs; ++i) {if(i<39) outfile<<i<<","; else outfile<<i<<endl;}
@@ -1449,11 +1582,14 @@ void SiPixelRawDump::analyzeHits(int fedId, int fedChannel) {
 
   hchannelFED->Fill(float(fedId-fedId0),float(fedChannel-1));
   int adc = decode.get_adc();
+  int layer = layer_;
+  //just for testing, delete later
+  //int layer0 = layerIndex[fedId-fedId0][fedChannel-1];
+  //int layer1 = decode.getLayer(fedId,fedChannel);
+  //cout<<"getLayer in analyzeHits "<<layer1<<endl;
+  //if(layer!=layer0) cout<<"Wrong layer numebr "<<layer<<" "<<layer0<<endl;
+  //if(layer!=layer1) cout<<"Wrong layer number "<<layer<<" "<<layer1<<endl;
 
-  int layer0 = layerIndex[fedId-fedId0][fedChannel-1];
-  int layer = decode.getLayer(fedId,fedChannel);
-  if(layer!=layer0) cout<<"Wrong layer numebr "<<layer<<" "<<layer0<<endl;
-  
   if(layer==1)      
     {countPixelsBPix++;countPixelsBPix1++;hadc1->Fill(float(adc));hadc1ls->Fill(float(lumiBlock),float(adc));
       hadc1bx->Fill(float(bx),float(adc));}
@@ -1468,7 +1604,25 @@ void SiPixelRawDump::analyzeHits(int fedId, int fedChannel) {
       hadc4bx->Fill(float(bx),float(adc));}
   else if(layer==0)  // fpix 
     {countPixelsFPix++;hadc0->Fill(float(adc));hadc0ls->Fill(float(lumiBlock),float(adc));hadc0bx->Fill(float(bx),float(adc));}
-  else cout<<" invalid layer "<<layer<<endl;
+  else {cout<<" invalid layer "<<layer<<endl;}
+
+#ifdef USE_TREE
+  if( (makeTree==6) || (makeTree>0 && makeTree==layer) ) {
+    fedT=fedId;
+    channelT=fedChannel;
+    adcT=adc;
+    layerT=layer;
+    rocT = decode.get_roc();
+    colT = decode.get_col();
+    rowT = decode.get_row();
+    string modName =   decode.getModName(fedId,fedChannel);
+    ladderT = MyConvert::ladderFromName(modName);
+    moduleT = MyConvert::moduleFromName(modName);
+    if( (fedId!=errorFed) || (fedChannel!=errorChan) ) errorT=0; // otherwise keep it
+    tree->Fill();
+
+  }
+#endif
   
 }
 
@@ -1498,25 +1652,41 @@ void SiPixelRawDump::analyzeErrors(int fedId, int fedChannel, int status, int st
   // 23 - clearEVT
   // 24 - SyncErr/Trig 
   
+#ifdef USE_TREE
+  if(makeTree>0) {
+    errorT=status;
+    errorFed = fedId;
+    errorChan = fedChannel;
+  }
+#endif
+
   if(status<30) {
-    errorType[status]++;
-    countErrors[status]++;
+    errorType[status]++; // count errors in the whole run 
+    countErrors[status]++; // count errors in  one event  
     hfed2DErrors[status]->Fill(float(fedId-fedId0),float(fedChannel));
   }
-  hfed2d->Fill(float(fedId-fedId0),float(status)); // fed # versus type
-	  
+
+  if(status!=17) hfed2d->Fill(float(fedId-fedId0),float(status)); // fed # versus type, skip disabled 
+  //else cout<<"disabled"<<endl;
+
   if(status>=8) {  // hard errors
     // Type - 1 Errors
-    herrorType1->Fill(float(status));
-    countErrorsInFed1++;
-    herrorType1Fed->Fill(float(fedId-fedId0));
-    //herrorType1Chan->Fill(float(fedChannel));
-    hfedErrorType1ls->Fill(float(lumiBlock),float(fedId-fedId0)); // hard errors
-    hfed2DErrorsType1->Fill(float(fedId-fedId0),float(fedChannel));
-    fedErrors[fedId-fedId0][(fedChannel-1)]++; 
-    hbx6->Fill(float(bx));
-  
-    if(status<30) herrorls[status]->Fill(float(lumiBlock)); // 1D
+    if(status!=17) { // skip disabled channels
+      countErrorsInFed1++;
+      fedErrors[fedId-fedId0][(fedChannel-1)]++; 
+      if(status!=18) { // skip automasked channels 
+	herrorType1->Fill(float(status));      
+	herrorType1Fed->Fill(float(fedId-fedId0));
+	hfedErrorType1ls->Fill(float(lumiBlock),float(fedId-fedId0)); 
+	hchanErrorType1ls->Fill(float(lumiBlock),float(fedChannel)); 
+	hfed2DErrorsType1->Fill(float(fedId-fedId0),float(fedChannel));
+      }
+    }
+
+    if(status<30) {
+      herrorls[status]->Fill(float(lumiBlock)); // 1D
+      fedErrorsPerType[status][fedId-fedId0][(fedChannel-1)]++;
+    }
 
     switch(status) {
 
@@ -1524,6 +1694,7 @@ void SiPixelRawDump::analyzeErrors(int fedId, int fedChannel, int status, int st
       break; }
       
     case(9) : { //  ntp
+      hchanErrorsPerLS[9]->Fill(float(lumiBlock),float(fedChannel));
       break; }
       
     case(10) : { // Timeout
@@ -1531,19 +1702,25 @@ void SiPixelRawDump::analyzeErrors(int fedId, int fedChannel, int status, int st
       //htimeoutChan->Fill(float(fedChannel));
       //fedErrorsTime[fedId-fedId0][(fedChannel-1)]++;
       //herrorTimels->Fill(float(lumiBlock));
-      hbx2->Fill(float(bx));
+      hchanErrorsPerLS[10]->Fill(float(lumiBlock),float(fedChannel));
+      htest2->Fill(float(eventId%256));
+      htest3->Fill(float(stat1));
       break; } 
       
     case(11) : {  // ENE
       //heneFed->Fill(float(fedId-fedId0));
       //fedErrorsENE[fedId-fedId0][(fedChannel-1)]++;
-      hbx3->Fill(float(bx));
+      hchanErrorsPerLS[11]->Fill(float(lumiBlock),float(fedChannel));
+      htest1->Fill(float(stat1));
+      htest4->Fill(float(stat1-(eventId%256)));
+      //hbx3->Fill(float(bx));
       break; }
       
     case(12) : {  // NOR
+      hchanErrorsPerLS[12]->Fill(float(lumiBlock),float(fedChannel));
       //hnorFed->Fill(float(fedId-fedId0));
       //fedErrorsOver[fedId-fedId0][(fedChannel-1)]++;   // use oveflow to count NORs for phase1 
-      hbx4->Fill(float(bx));
+      //hbx4->Fill(float(bx));
       break; }
       
     case(13) : {  // Autoreset
@@ -1557,6 +1734,7 @@ void SiPixelRawDump::analyzeErrors(int fedId, int fedChannel, int status, int st
       break; }
       
     case(16) : { // pkam
+      hchanErrorsPerLS[16]->Fill(float(lumiBlock),float(fedChannel));
       //herrorPkamls->Fill(float(lumiBlock));
       //hpkamFed->Fill(float(fedId-fedId0));
       //fedErrorsPKAM[fedId-fedId0][(fedChannel-1)]++;
@@ -1568,13 +1746,17 @@ void SiPixelRawDump::analyzeErrors(int fedId, int fedChannel, int status, int st
       //cout<<" new masked channel "<<countAllEvents<<" ls "<<lumiBlock<<" fed "<<fedId<<" ch "<<fedChannel<<endl;
       //if(saveLast) maskedChannels.push_back(make_pair(fedId,fedChannel));
       //if(saveFirst)maskedChannels0.push_back(make_pair(fedId,fedChannel));
+      fedErrorsMaskedInEvent[fedId-fedId0][(fedChannel-1)]=true;
       break; }
       
     case(18) : { // automasked 
+      hchanErrorsPerLS[18]->Fill(float(lumiBlock),float(fedChannel));
       //hautomaskedFed->Fill(float(fedId-fedId0));
       //fedErrorsAutoMask[fedId-fedId0][(fedChannel-1)]++;
-      //fedErrorsAutoMaskInEvent[fedId-fedId0][(fedChannel-1)]=true;
+      fedErrorsAutoMaskInEvent[fedId-fedId0][(fedChannel-1)]=true;
       //hbx5->Fill(float(bx));
+      int index = layer_-1; if(layer_==0) index=4; // make fpix layer=5
+      maskedPerEvent_[index]++;
       break; }
       
     case(19) : { // tbm reset        
@@ -1593,44 +1775,57 @@ void SiPixelRawDump::analyzeErrors(int fedId, int fedChannel, int status, int st
 
     // need layer, ladder, module 
     string modName = decode.getModName(fedId,fedChannel);
-    int layer = decode.getLayer(fedId,fedChannel);
+    int layer = decode.getLayer(fedId,fedChannel);  // 0 for fpix 
+    //cout<<"getLayer in AnalyzeErrors "<<layer<<endl;
     int ladder = MyConvert::ladderFromName(modName);
     int module = MyConvert::moduleFromName(modName);
     //cout<<fedId<<" "<<fedChannel<<" "<<layer<<" "<<ladder<<" "<<module<<endl;
 
-    if(status<30) herrorls[status]->Fill(float(lumiBlock)); // 1D
+    if(status<30) {
+      herrorls[status]->Fill(float(lumiBlock)); // 1D
+      fedErrorsPerType[status][fedId-fedId0][(fedChannel-1)]++;
+    }
 
     switch(status) {
       
+    case(1) : {  // adc=0
+      if(layer>0) {
+	int col = decode.get_col();
+	int row = decode.get_row();
+	hadc0Map[layer-1]->Fill(float(module),float(ladder));
+	hadc0RocMap[layer-1]->Fill(float(col),float(row));
+      }
+      break; }
+      
     case(3) : {  //  inv. pix
-      decodeErrorsRow[fedId-fedId0][(fedChannel-1)]++;
+      //decodeErrorsRow[fedId-fedId0][(fedChannel-1)]++;
       if(layer>0) hpixOrderMap[layer-1]->Fill(float(module),float(ladder));
       break; }
       
     case(4) : {  // inv roc
-      decodeErrors[fedId-fedId0][(fedChannel-1)]++;
+      //decodeErrors[fedId-fedId0][(fedChannel-1)]++;
       break; }
       
     case(5) : {  // pix=0
-      decodeErrors000[fedId-fedId0][(fedChannel-1)]++;
+      //decodeErrors000[fedId-fedId0][(fedChannel-1)]++;
       if(layer>0) hpix0Map[layer-1]->Fill(float(module),float(ladder));
       //cout<<"pix0- "<<fedId<<" "<<fedChannel<<" "<<layer<<" "<<ladder<<" "<<module<<endl;
       break; }
       
     case(6) : {  // double pix
-      decodeErrorsDouble[fedId-fedId0][(fedChannel-1)]++;
+      //decodeErrorsDouble[fedId-fedId0][(fedChannel-1)]++;
       if(layer>0) hdoubleMap[layer-1]->Fill(float(module),float(ladder));
       //cout<<"double- "<<fedId<<" "<<fedChannel<<" "<<layer<<" "<<ladder<<" "<<module<<endl;
       break; }
       
     case(7) : {  // lower dcol
-      decodeErrorsDcol[fedId-fedId0][(fedChannel-1)]++;
+      //decodeErrorsDcol[fedId-fedId0][(fedChannel-1)]++;
       if(layer>0) hdcolLowMap[layer-1]->Fill(float(module),float(ladder));
       //cout<<"dcol- "<<fedId<<" "<<fedChannel<<" "<<layer<<" "<<ladder<<" "<<module<<endl;
       break;}
       
-    case(1) : {  // unknown
-      decodeErrors[fedId-fedId0][(fedChannel-1)]++;
+    default : {  // unknown
+      //decodeErrors[fedId-fedId0][(fedChannel-1)]++;
       break; }
       
     }  // end switch
@@ -1638,6 +1833,8 @@ void SiPixelRawDump::analyzeErrors(int fedId, int fedChannel, int status, int st
 
 }
 //----------------------------------------------------------------------------
+// This is called for each event
+// Loops ober raw data in every pixel FED
 void SiPixelRawDump::analyze(const  edm::Event& ev, const edm::EventSetup& es) {
   const bool printEventInfo = false;
   //const bool print = false;
@@ -1662,24 +1859,21 @@ void SiPixelRawDump::analyze(const  edm::Event& ev, const edm::EventSetup& es) {
   hbx0->Fill(float(bx));
   //horbit->Fill(float(orbit));
 
-  saveLast=false; saveFirst=false;
-  if(lumiBlock>lastLS) {
-    lastLS=lumiBlock;
-    saveLast=true;
-    if(maskedChannels.size()>0) maskedChannels.clear();
+
+#ifdef USE_TREE
+  if(makeTree>0) {
+    eventT=eventCMSSW;
+    lsT=lumiBlock;
+    bxT=bx;
   }
-  if(lumiBlock<firstLS) {
-    firstLS=lumiBlock;
-    saveFirst=true;
-    if(maskedChannels0.size()>0) maskedChannels0.clear();
-  }
+#endif
 
   if(printEventInfo) {
     // if(countAllEvents<100 || (countAllEvents&1000)==0 )
     //   cout<<" Run "<<run<<" LS "<<lumiBlock<<" event "<<event<<" bx "<<bx
     // 	  <<" all "<<countAllEvents<<endl;
     //if( lumiBlock != LS) {
-    cout<<"CMSSW:  Run "<<run<<" LS "<<lumiBlock<<" event "<<eventCMSSW<<" bx "<<bx
+    cout<<endl<<"CMSSW:  Run "<<run<<" LS "<<lumiBlock<<" event "<<eventCMSSW<<" bx "<<bx
 	<<" all "<<countAllEvents<<endl;
     //LS=lumiBlock;
     //}
@@ -1691,7 +1885,7 @@ void SiPixelRawDump::analyze(const  edm::Event& ev, const edm::EventSetup& es) {
   }
 
   if(printHeaders) 
-    cout<<"Event = "<<countAllEvents<<" CMSSW Event number "<<eventCMSSW<<"/"<<hex<<eventCMSSW<<dec<<" Run "<<run
+    cout<<endl<<"Event = "<<countAllEvents<<" CMSSW Event number "<<eventCMSSW<<"/"<<hex<<eventCMSSW<<dec<<" Run "<<run
 	<<" LS "<<lumiBlock<<" bx "<<bx<<endl;
 
 
@@ -1730,22 +1924,23 @@ void SiPixelRawDump::analyze(const  edm::Event& ev, const edm::EventSetup& es) {
   typedef uint64_t Word64;
   int status=0;
   int countPixels=0;
-  int eventId = -1;
+  eventId = -1;
   int countErrorsPerEvent=0;
   int countErrorsPerEvent1=0;
   int countErrorsPerEvent2=0;
   double aveFedSize = 0.;
   float countBpixFeds=0;
-  int stat1=-1, stat2=-1;
+  stat1=-1; stat2=-1;
   int fedchannelsize[n_of_Channels];
   bool wrongBX=false;
   for(int i=0;i<30;++i) countErrors[i] = 0;
   countPixelsFPix=0; countPixelsBPix=0; countPixelsBPix1=0; countPixelsBPix2=0; countPixelsBPix3=0;countPixelsBPix4=0;
+  for(int i=0;i<5;++i) {maskedPerEvent_[i]=0;} // per layer (with fpix)
 
   // clear auto-mask array for each event
   for(int i = 0; i < n_of_FEDs; ++i) {
     for(int j=0;j<n_of_Channels;++j) {
-      fedErrorsAutoMaskInEvent[i][j]=false;
+      fedErrorsAutoMaskInEvent[i][j]=false; fedErrorsMaskedInEvent[i][j]=false;
     }
   }
 
@@ -1756,8 +1951,7 @@ void SiPixelRawDump::analyze(const  edm::Event& ev, const edm::EventSetup& es) {
     if(selectedFED>-1 && fedId!=selectedFED) continue; // skip if not selected 
 
     //edm::DetSetVector<PixelDigi> collection;
-    PixelDataFormatter::Errors errors;
-
+    //PixelDataFormatter::Errors errors;
     //get event data for this fed
     const FEDRawData& rawData = buffers->FEDData( fedId );
 
@@ -1814,6 +2008,7 @@ void SiPixelRawDump::analyze(const  edm::Event& ev, const edm::EventSetup& es) {
     int countPixelsInFed=0;
     int fedChannel = 0;
     int num=0;
+    errorFed=-1; errorChan=-1; // cleat the error-hit assocuation 
     // Loop over payload words
     for (const Word64* word = header+1; word != trailer; word++) { // loop ober word8
       static const Word64 WORD32_mask  = 0xffffffff;
@@ -1832,6 +2027,10 @@ void SiPixelRawDump::analyze(const  edm::Event& ev, const edm::EventSetup& es) {
 	status = decode.data(w,fedChannel, fedId, stat1, stat2, printData);
 	if(selectedChannel>-1 && fedChannel!=selectedChannel) continue;
 
+	layer_ = decode.getLayer(fedId,fedChannel); // get layer number, 0 for fpix  
+	//cout<<"getlayer in Analyze "<<layer_<<" "<<status<<endl;
+
+	htest5->Fill(float((eventId%256)-(eventCMSSW%256)));
 	if(status>0) {  // ok, it is data
 	  countPixels++;
 	  countPixelsInFed++;
@@ -1840,18 +2039,28 @@ void SiPixelRawDump::analyze(const  edm::Event& ev, const edm::EventSetup& es) {
 
 	} else if(status<0) {  // error word
 	  status=abs(status);
-	  if(status!=17 || !SKIP_PERMANENT_MASK) {
+	  //if(status==17  && 1) {  //permanent masked channel 
+	  //cout<<"IS status ever 17? "<<fedId<<" "<<fedChannel<<endl;
+	  //}
+	  if(status!=17 || !SKIP_PERMANENT_MASK) {  // skip disabled channels
 	    countErrorsInFed++;
-	    if(printErrors) cout<<"    Bad status for FED "<<fedId<<" FED Event# "<<eventId<<"/(mod256)"<<(eventId%256)
-				<<" ev.count "<<countAllEvents<<" chan "<<fedChannel<<" status "<<status<<endl;
-	    vector<int>* statuses = decode.getStatuses();
-	    //cout<<"Statuses "<<statuses->size()<<endl;
-	    for(vector<int>::iterator i=statuses->begin();i!=statuses->end();++i) {
-	      //cout<<*i<<endl;
-	      int stat = *i; 
-	      analyzeErrors(fedId, fedChannel, stat, stat1, stat2);
-	    }
-	  }
+	    if(printErrors) {
+	      cout<<"    Bad status for FED: "<<fedId
+		  <<" local event "<<countAllEvents
+		  <<" FED Event# "<<eventId<<"/(mod256)"<<(eventId%256)
+		  <<" CMSSW Event# "<<eventCMSSW<<"/(mod256)"<<(eventCMSSW%256)
+		  <<" chan "<<fedChannel<<" status "<<status<<endl;
+	    } // if print 
+	  } 
+	  vector<int>* statuses = decode.getStatuses();
+	  //cout<<"Statuses "<<statuses->size()<<endl;
+	  for(vector<int>::iterator i=statuses->begin();i!=statuses->end();++i) {
+	    int stat = *i; 
+	    //if(stat==17  && 1) {  //permanent masked channel 
+	    //cout<<"status 17? "<<fedId<<" "<<fedChannel<<" "<<lumiBlock<<endl;
+	    //}
+	    analyzeErrors(fedId, fedChannel, stat, stat1, stat2);
+	  } // for loop 
 
 	} // error/data
       } // for  1/2 word
@@ -1884,39 +2093,58 @@ void SiPixelRawDump::analyze(const  edm::Event& ev, const edm::EventSetup& es) {
 
       int fedIndex=fedId-fedId0;
       int chanSize = fedchannelsize[i];
-      int layer = layerIndex[(fedIndex)][i]; // fedChannel=i+1
+      int chanIndex=i+1;
+      // here layer_ is not valid anymore, we are out of the error loop, have to get it again
+      //int layer1 = layerIndex[(fedIndex)][i]; // fedChannel=i+1
+      int layer = decode.getLayer(fedId,chanIndex);
+      //if(layer>1 && (layer!=layer1)) cout<<"something wrong "<<layer<<" "<<layer1<<" "<<fedId<<" "<<i<<endl;
 
-      if(chanSize>0) 
-	hfedchannelsizeFull->Fill( float(fedIndex), float(i+1), float(chanSize) );
-
+      if(chanSize>0) {
+	hfedchannelsizeFull->Fill( float(fedIndex), float(chanIndex), float(chanSize) );
+#ifdef PER_FED
+	if(fedIndex<94) hfedChanLS[fedIndex]->Fill(float(lumiBlock),float(chanIndex),float(chanSize));
+#endif
+      }
       if(fedErrorsAutoMaskInEvent[fedIndex][i] ) { // auto-masked, skip
-	hfedchannelsizeEff->Fill( float(fedIndex), float(i+1), 0. ); //eff
+	hfedchannelsizeEff->Fill( float(fedIndex), float(chanIndex), 0. ); //eff  , this measres the masked fraction 
+#ifdef PER_FED
+	if(fedIndex<94) hfedChanAutoMaskedLS[fedIndex]->Fill(float(lumiBlock),float(chanIndex),1.);
+#endif
+      } else if(fedErrorsMaskedInEvent[fedIndex][i] ) { // permanently masked, skip
+	hfedchannelsizeEff->Fill( float(fedIndex), float(chanIndex), 0. ); //eff  , this measres the masked fraction 
+#ifdef PER_FED
+	if(fedIndex<94) hfedChanAutoMaskedLS[fedIndex]->Fill(float(lumiBlock),float(chanIndex),2.);
+#endif
 	
       } else {  // not masked, OK, histogram
 
-	hfedchannelsize->Fill( float(fedIndex), float(i+1), float(chanSize) );
-	hfedchannelsizeEff->Fill( float(fedIndex), float(i+1), 1. );
+#ifdef PER_FED
+	if(fedIndex<94) hfedChanAutoMaskedLS[fedIndex]->Fill(float(lumiBlock),float(chanIndex),0.);
+#endif
+	// do only for not-masked channels
+	hfedchannelsize->Fill( float(fedIndex), float(chanIndex), float(chanSize) );
+	hfedchannelsizeEff->Fill( float(fedIndex), float(chanIndex), 1. );
 	
 	if((fedIndex)<fedIdBpixMax) {
 	  hfedchannelsizeb->Fill( float(chanSize) );
 	  if(layer==4)      {
-	    if(chanSize>0)hfedchannelsize4->Fill( float(fedIndex), float(i+1), float(chanSize) );
+	    if(chanSize>0)hfedchannelsize4->Fill( float(fedIndex), float(chanIndex), float(chanSize) );
 	    hfedchannelsizeb4->Fill( float(chanSize) );  // layer 4
 	    if(chanSize> max4) max4=chanSize;
 	  } else if(layer==3) {
-	    if(chanSize>0)hfedchannelsize3->Fill( float(fedIndex), float(i+1), float(chanSize) );
+	    if(chanSize>0)hfedchannelsize3->Fill( float(fedIndex), float(chanIndex), float(chanSize) );
 	    hfedchannelsizeb3->Fill( float(chanSize) );  // layer 3
 	    if(chanSize> max3) max3=chanSize;
 	  } else if(layer==2) {
-	    if(chanSize>0)hfedchannelsize2->Fill( float(fedIndex), float(i+1), float(chanSize) );
+	    if(chanSize>0)hfedchannelsize2->Fill( float(fedIndex), float(chanIndex), float(chanSize) );
 	    hfedchannelsizeb2->Fill( float(chanSize) );  // layer 2
 	    if(chanSize> max2) max2=chanSize;
 	  } else if(layer==1) {
-	    if(chanSize>0)hfedchannelsize1->Fill( float(fedIndex), float(i+1), float(chanSize) );
+	    if(chanSize>0)hfedchannelsize1->Fill( float(fedIndex), float(chanIndex), float(chanSize) );
 	    hfedchannelsizeb1->Fill( float(chanSize) );  // layer 1
 	    if(chanSize> max1) max1=chanSize;
 	  } else if(layer==-1) { continue;  // empty channel
-	  } else cout<<" Cannot be "<<layer<<" "<<fedId<<" "<<(i+1)<<endl;
+	  } else cout<<" Cannot be "<<layer<<" "<<fedId<<" "<<(chanIndex)<<endl;
 	} else  { // fpix
 	  hfedchannelsizef->Fill( float(chanSize) );  // fpix
 	  if(chanSize> max0) max0=chanSize;
@@ -1947,31 +2175,33 @@ void SiPixelRawDump::analyze(const  edm::Event& ev, const edm::EventSetup& es) {
 	int sizeDiff = -1.0;
 	if(sizeEven>0. && chanSize>0.) {
 	  sizeDiff=abs(chanSize-sizeEven);
-	  if(layer==1) htest->Fill(float(chanSize),float(sizeEven));
+	  //if(layer==1) htest->Fill(float(chanSize),float(sizeEven));
 	}
-	float f= float( i/2);
+	float f= float(i/2)+1.;
 	if(sizeDiff>=0.) hfedfibersizediff->Fill( float(fedIndex), float(f), float(sizeDiff));
 	sizeEven=max(sizeEven,chanSize);
-	if(layer==4)      {
-	  if(sizeEven>0) hfedfibersize4->Fill( float(fedIndex), float(f), float(sizeEven) );
-	  hfedfibersizeb4->Fill( float(sizeEven) );  // layer 4
-	  if(sizeDiff>=0.) hfedfiberdiffb4->Fill( float(sizeDiff) );  // layer 1
-	} else if(layer==3) {
-	  if(sizeEven>0)hfedfibersize3->Fill( float(fedIndex), float(f), float(sizeEven) );
-	  hfedfibersizeb3->Fill( float(sizeEven) );  // layer 3
-	  if(sizeDiff>=0.) hfedfiberdiffb3->Fill( float(sizeDiff) );  // layer 1
-	} else if(layer==2) {
-	  if(sizeEven>0)hfedfibersize2->Fill( float(fedIndex), float(f), float(sizeEven) );
-	  hfedfibersizeb2->Fill( float(sizeEven) );  // layer 2
-	  if(sizeDiff>=0.) hfedfiberdiffb2->Fill( float(sizeDiff) );  // layer 1
-	} else if(layer==1) {
-	  if(sizeEven>0)hfedfibersize1->Fill( float(fedIndex), float(f), float(sizeEven) );
-	  hfedfibersizeb1->Fill( float(sizeEven) );  // layer 1
-	  if(sizeDiff>=0.) hfedfiberdiffb1->Fill( float(sizeDiff) );  // layer 1
-	} else  {  // fpix
-	  if(sizeEven>0) hfedfibersizef->Fill( float(fedIndex), float(f), float(sizeEven) );
-	  hfedfibersizefpix->Fill(float(sizeEven) );  // fpix
-	} // end layer 
+	if(sizeEven>0) {
+	  if(layer==4)      {
+	    hfedfibersize4->Fill( float(fedIndex), float(f), float(sizeEven) );
+	    hfedfibersizeb4->Fill( float(sizeEven) );  // layer 4
+	    if(sizeDiff>=0.) hfedfiberdiffb4->Fill( float(sizeDiff) );  // layer 4
+	  } else if(layer==3) {
+	    hfedfibersize3->Fill( float(fedIndex), float(f), float(sizeEven) );
+	    hfedfibersizeb3->Fill( float(sizeEven) );  // layer 3
+	    if(sizeDiff>=0.) hfedfiberdiffb3->Fill( float(sizeDiff) );  // layer 3
+	  } else if(layer==2) {
+	    hfedfibersize2->Fill( float(fedIndex), float(f), float(sizeEven) );
+	    hfedfibersizeb2->Fill( float(sizeEven) );  // layer 2
+	    if(sizeDiff>=0.) hfedfiberdiffb2->Fill( float(sizeDiff) );  // layer 2
+	  } else if(layer==1) {
+	    hfedfibersize1->Fill( float(fedIndex), float(f), float(sizeEven) );
+	    hfedfibersizeb1->Fill( float(sizeEven) );  // layer 1
+	    if(sizeDiff>=0.) hfedfiberdiffb1->Fill( float(sizeDiff) );  // layer 1
+	  } else  {  // fpix
+	    hfedfibersizef->Fill( float(fedIndex), float(f), float(sizeEven) );
+	    hfedfibersizefpix->Fill(float(sizeEven) );  // fpix
+	  } // end layer
+	} // size>0 
 
       } // per fiber
 
@@ -1994,6 +2224,12 @@ void SiPixelRawDump::analyze(const  edm::Event& ev, const edm::EventSetup& es) {
   htotPixels6->Fill(float(countPixelsBPix2));
   htotPixels7->Fill(float(countPixelsBPix3));
   htotPixels8->Fill(float(countPixelsBPix4));
+
+  hmaskedL1ls->Fill(float(lumiBlock),float(maskedPerEvent_[0]));
+  hmaskedL2ls->Fill(float(lumiBlock),float(maskedPerEvent_[1]));
+  hmaskedL3ls->Fill(float(lumiBlock),float(maskedPerEvent_[2]));
+  hmaskedL4ls->Fill(float(lumiBlock),float(maskedPerEvent_[3]));
+  hmaskedFls->Fill(float(lumiBlock),float(maskedPerEvent_[4]));
 
 #ifdef CHECK_BX
   if(wrongBX && printBX && !phase1) {

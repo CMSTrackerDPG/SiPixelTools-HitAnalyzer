@@ -483,7 +483,7 @@ class PixClusterAna : public edm::one::EDAnalyzer<edm::one::WatchRuns, edm::one:
 #ifdef TEST_DCOLS
   void histogramDcols(int layer, int ladder, int ring);
 #endif
-  const int maxClus=15000;
+  const int maxClus=30000;  // this is to save pixels/clus to trees 
 
  private:
   edm::ParameterSet conf_;
@@ -776,6 +776,7 @@ edm::EDGetTokenT<HFRecHitCollection> HFHitsToken_;
   int perEvent;
   bool fillPixelTree;
   bool treeBpixOnly;
+  int selectLayerTree;
 #endif
 
 #ifdef BX
@@ -841,7 +842,8 @@ PixClusterAna::PixClusterAna(edm::ParameterSet const& conf)
   doTree = conf.getUntrackedParameter<bool>("doTree",false);
   if(doTree) {
     fillPixelTree = true; // pixel hits - true, clusters = false
-    treeBpixOnly = true; // fill only bpix 
+    treeBpixOnly = true; // fill only bpix
+    selectLayerTree = 1; // 1,2,3,4 select Layer, 0 all layers 
     cout<<" tree = "<<doTree<<"  pixels = "<<fillPixelTree<<" bpixonly "<<treeBpixOnly<<endl; 
     layerT = new int[maxClus];
     ladderOnT = new int[maxClus];
@@ -2116,7 +2118,7 @@ void PixClusterAna::endJob(){
   hladder3id->Scale(norm/8.);
   hladder4id->Scale(norm/8.);
 
-  hz1id->Scale(norm1);
+  hz1id->Scale(norm1);  // per module per event
   hz2id->Scale(norm2);
   hz3id->Scale(norm3);
   hz4id->Scale(norm4);
@@ -2126,7 +2128,7 @@ void PixClusterAna::endJob(){
   hpladder3id->Scale(norm/8.);
   hpladder4id->Scale(norm/8.);
 
-  hpz1id->Scale(norm1);
+  hpz1id->Scale(norm1); // per module/per event
   hpz2id->Scale(norm2);
   hpz3id->Scale(norm3);
   hpz4id->Scale(norm4);
@@ -3104,18 +3106,20 @@ void PixClusterAna::analyze(const edm::Event& e,
       float rPos = gR;
 
 #ifdef USE_TREE
+      // Save clus in tree
       if(doTree&&!fillPixelTree&&(!treeBpixOnly||(treeBpixOnly&&(layer>0)))) {
 	if(perEvent>maxClus) {
 	  cout<<"Too many clus per event for the tree "<<maxClus<<endl;
 	} else {
 	  if(!treeBpixOnly) {diskT[perEvent]=disk; bladeT[perEvent]=blade; ringT[perEvent]=ring;sideT[perEvent]=side; panelT[perEvent]=panel;}
-
-	layerT[perEvent]=layer; ladderOnT[perEvent]=ladder; moduleT[perEvent]=module;
-	gZT[perEvent]=gZ; gPhiT[perEvent]=gPhi; gRT[perEvent]=gR;
-	chargeT[perEvent]=ch; sizeT[perEvent]=float(size); sizeXT[perEvent]=float(sizeX); sizeYT[perEvent]=float(sizeY);
-	colT[perEvent]=y; rowT[perEvent]=x;
-	//cout<<"layer "<<perEvent<<" "<<layerT[perEvent]<<" "<<layer<<" "<<disk<<endl;
-	perEvent++;
+	  if( (selectLayerTree==0) || (selectLayerTree==layer) ) {  // check if layer has to be selected 
+	    layerT[perEvent]=layer; ladderOnT[perEvent]=ladder; moduleT[perEvent]=module;
+	    gZT[perEvent]=gZ; gPhiT[perEvent]=gPhi; gRT[perEvent]=gR;
+	    chargeT[perEvent]=ch; sizeT[perEvent]=float(size); sizeXT[perEvent]=float(sizeX); sizeYT[perEvent]=float(sizeY);
+	    colT[perEvent]=y; rowT[perEvent]=x;
+	    //cout<<"layer "<<perEvent<<" "<<layerT[perEvent]<<" "<<layer<<" "<<disk<<endl;
+	    perEvent++;
+	  } // if selectlayer 
 	}
       }
 #endif // USE_TREE
@@ -3148,6 +3152,7 @@ void PixClusterAna::analyze(const edm::Event& e,
 	float adc = (float(intADC)/1000.);
 
 #ifdef USE_TREE
+	// save pixel to tree  tree
 	if(doTree&&fillPixelTree&&(!treeBpixOnly||(treeBpixOnly&&(layer>0)))) {
 	  // get global z position of the cluster
 	  LocalPoint lp = topol->localPosition(MeasurementPoint(pixx,pixy));
@@ -3164,15 +3169,18 @@ void PixClusterAna::analyze(const edm::Event& e,
 	  //float rPos = gR;
 
 	  if(perEvent>maxClus) {
-	    cout<<"Too many pix per event for the tree "<<maxClus<<endl;
+	    cout<<"Too many pixels per event for the tree "<<maxClus<<endl;
+
 	  } else {
 
-	  colT[perEvent]=pixy; rowT[perEvent]=pixx; chargeT[perEvent]=adc;
-	  sizeT[perEvent]=size; sizeXT[perEvent]=sizeX;  sizeYT[perEvent]=sizeY;
-	  gZT[perEvent]=gZ; gPhiT[perEvent]=gPhi; gRT[perEvent]=gR;  
-	  if(!treeBpixOnly) {diskT[perEvent]=disk; bladeT[perEvent]=blade; ringT[perEvent]=ring;sideT[perEvent]=side; panelT[perEvent]=panel;}
-	  layerT[perEvent]=layer; ladderOnT[perEvent]=ladder; moduleT[perEvent]=module;
-	  perEvent++;
+	    if( (selectLayerTree==0) || (selectLayerTree==layer) ) {
+	      colT[perEvent]=pixy; rowT[perEvent]=pixx; chargeT[perEvent]=adc;
+	      sizeT[perEvent]=size; sizeXT[perEvent]=sizeX;  sizeYT[perEvent]=sizeY;
+	      gZT[perEvent]=gZ; gPhiT[perEvent]=gPhi; gRT[perEvent]=gR;  
+	      if(!treeBpixOnly) {diskT[perEvent]=disk; bladeT[perEvent]=blade; ringT[perEvent]=ring;sideT[perEvent]=side; panelT[perEvent]=panel;}
+	      layerT[perEvent]=layer; ladderOnT[perEvent]=ladder; moduleT[perEvent]=module;
+	      perEvent++;
+	    } // select layer 
 	  }
 	}
 #endif // USE_TREE

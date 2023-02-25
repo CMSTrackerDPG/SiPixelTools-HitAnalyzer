@@ -52,15 +52,19 @@ cp $MYPWD/translation_pix.dat ./translation.dat
 
 #cmsRun $MYPWD/runHotPixels_347874.py
 #cmsRun $MYPWD/PixClusterAndTrack_360820.py
+#cmsRun $MYPWD/PixClusterAndTrack_360991.py
 #cmsRun $MYPWD/PixClusterAndTrack_361971.py
 #cmsRun $MYPWD/PixClusterAndTrack_361913.py
 #cmsRun $MYPWD/PixClusterAndTrack_361188.py
 #cmsRun $MYPWD/PixClusterAndTrack_361223.py
-cmsRun $MYPWD/PixClusterAndTrack_362439.py
+#cmsRun $MYPWD/PixClusterAndTrack_362439.py
 #cmsRun $MYPWD/PixClusterAndTrack_362643.py
-#cmsRun $MYPWD/PixClusterAndTrack_362758.py
+#cmsRun $MYPWD/PixClusterAndTrack_362695.py
+#cmsRun $MYPWD/PixClusterAndTrack_362695_tree.py
 #cmsRun $MYPWD/PixClusterAndTrack_362696.py
 #cmsRun $MYPWD/PixClusterAndTrack_362698.py
+#cmsRun $MYPWD/PixClusterAndTrack_362758.py
+cmsRun $MYPWD/PixClusterAndTrack_ephmeral.py
 # 
 pwd
 ls 
