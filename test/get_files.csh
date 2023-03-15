@@ -30,7 +30,6 @@
  # ZB
 #dasgoclient -query='file dataset=/ZeroBias/Commissioning2021-v1/RAW run=346396'  
 # 2022
-#dasgoclient -query='file dataset=/ExpressCosmics/Commissioning2022-Express-v1/FEVT run=352040'
 #dasgoclient -query='file dataset=/ExpressPhysics/Commissioning2022-Express-v1/FEVT run=352165'
 #dasgoclient -query='file dataset=/ExpressCosmics/Run2022A-Express-v1/FEVT run=352417'
 #dasgoclient -query='file dataset=/ExpressPhysics/Run2022B-Express-v1/FEVT run=355100'
@@ -38,5 +37,8 @@
 #dasgoclient -query='file dataset=/ExpressPhysics/Run2022D-Express-v2/FEVT run=357895'
 #dasgoclient -query='file dataset=/ExpressCosmics/Run2022D-Express-v3/FEVT run=358831'
 #dasgoclient -query='file dataset=/ExpressPhysics/Run2022E-Express-v1/FEVT run=359291'
-#dasgoclient -query='file dataset=/ExpressPhysics/Run2022F-Express-v1/FEVT run=361045'
-dasgoclient -query='file dataset=/ExpressPhysics/Run2022G-Express-v1/FEVT run=362614'
+#dasgoclient -query='file dataset=/ExpressPhysics/Run2022G-Express-v1/FEVT run=362614'
+# 2023
+#dasgoclient -query='file dataset=/ExpressCosmics/Commissioning2023-Express-v1/FEVT run=364174'
+dasgoclient -query='file dataset=/ExpressCosmics/Commissioning2023-Express-v2/FEVT run=364727'
+

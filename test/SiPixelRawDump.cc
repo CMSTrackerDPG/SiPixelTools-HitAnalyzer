@@ -872,7 +872,7 @@ private:
   int errorType[30];
   int countErrors[30];
   int fedId0;
-  int max1,max2,max3,max4,max0;
+  int max1,max2,max3,max4,max0,maxfed1,maxfed2,maxfed3,maxfed4,maxfed0,maxchan1,maxchan2,maxchan3,maxchan4,maxchan0 ;
   // to distribute information 
   int run, bx, lumiBlock;
   unsigned long long eventCMSSW;
@@ -1105,7 +1105,11 @@ void SiPixelRawDump::endJob() {
   for(int i=0;i<30;++i) {
     if( errorType[i]>0 && i!=17 ) cout<<"   "<<i<<" - "<<errorName[i]<<" - "<<errorType[i]<<endl;
   }
-  cout<<"max pixels per channel L1/2/3/4/FPix - "<<max1<<" "<<max2<<" "<<max3<<" "<<max4<<" "<<max0<<endl;;
+  cout<<"max pixels per channel L1/2/3/4/FPix - "
+      <<max1<<" "<<max2<<" "<<max3<<" "<<max4<<" "<<max0
+      <<maxfed1<<" "<<maxfed2<<" "<<maxfed3<<" "<<maxfed4<<" "<<maxfed0
+      <<maxchan1<<" "<<maxchan2<<" "<<maxchan3<<" "<<maxchan4<<" "<<maxchan0
+      <<endl;;
 
   float norm=1.;
   if(countEvents>0) norm=1./float(countEvents);
@@ -1152,6 +1156,8 @@ void SiPixelRawDump::beginJob() {
 #endif
 
   max1=max2=max3=max4=max0=0;
+  maxfed1=maxfed2=maxfed3=maxfed4=maxfed0=0;
+  maxchan1=maxchan2=maxchan3=maxchan4=maxchan0=0;
   countEvents=0;
   countAllEvents=0;
   countTotErrors=0;
@@ -2130,19 +2136,19 @@ void SiPixelRawDump::analyze(const  edm::Event& ev, const edm::EventSetup& es) {
 	  if(layer==4)      {
 	    if(chanSize>0)hfedchannelsize4->Fill( float(fedIndex), float(chanIndex), float(chanSize) );
 	    hfedchannelsizeb4->Fill( float(chanSize) );  // layer 4
-	    if(chanSize> max4) max4=chanSize;
+	    if(chanSize> max4) {max4=chanSize;maxfed4=fedIndex; maxchan4=chanIndex;}
 	  } else if(layer==3) {
 	    if(chanSize>0)hfedchannelsize3->Fill( float(fedIndex), float(chanIndex), float(chanSize) );
 	    hfedchannelsizeb3->Fill( float(chanSize) );  // layer 3
-	    if(chanSize> max3) max3=chanSize;
+	    if(chanSize> max3) {max3=chanSize;maxfed3=fedIndex; maxchan3=chanIndex;}
 	  } else if(layer==2) {
 	    if(chanSize>0)hfedchannelsize2->Fill( float(fedIndex), float(chanIndex), float(chanSize) );
 	    hfedchannelsizeb2->Fill( float(chanSize) );  // layer 2
-	    if(chanSize> max2) max2=chanSize;
+	    if(chanSize> max2) {max2=chanSize;maxfed2=fedIndex; maxchan2=chanIndex;}
 	  } else if(layer==1) {
 	    if(chanSize>0)hfedchannelsize1->Fill( float(fedIndex), float(chanIndex), float(chanSize) );
 	    hfedchannelsizeb1->Fill( float(chanSize) );  // layer 1
-	    if(chanSize> max1) max1=chanSize;
+	    if(chanSize> max1) {max1=chanSize; maxfed1=fedIndex; maxchan1=chanIndex;}
 	  } else if(layer==-1) { continue;  // empty channel
 	  } else cout<<" Cannot be "<<layer<<" "<<fedId<<" "<<(chanIndex)<<endl;
 	} else  { // fpix
