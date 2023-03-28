@@ -96,7 +96,7 @@
 #define HISTOS
 //#define L1
 #define HLT
-//#define SINGLE_MODULES
+#define SINGLE_MODULES
 #define DCOLS
 #define DO_THR // use the threshold histo
 
@@ -139,6 +139,11 @@ public:
   int moduleIndex(int ladder,int module); 
   bool validIndex(int index, bool print); 
   int rocId(int pixy,int pixx);  // 0-15, column, row
+  int rocZLocal(int rocId, bool flipped);  // roc z coordinate in local 
+  int rocPhiLocal(int rocId, bool flipped);  // roc phi coordinate in local 
+  float rocZGlobal(int module, int ladder);  // roc z coordinate in global 
+  float rocPhiGlobal(int module, int ladder);  // roc phi coordinate in global
+  bool isFlipped(int layer, int ladder);
 #ifdef USE_GAINS
   float calibrate(uint32_t detid, int adc, int col, int row);  
 #endif
@@ -332,9 +337,48 @@ int PixDigisTest::rocId(int col, int row) {
   int rocCol = col/52;
   int rocId = rocCol + rocRow*8;
   return rocId;
- }
-//      int roc = rocId(int(pixy),int(pixx));  // 0-15, column, row
+}
 
+bool PixDigisTest::isFlipped(int layer, int ladderOn) {
+  bool inner=false;
+  if(layer>=1  && layer<=4) { // for layer 1
+    if(ladderOn>0) {  // +x ladders
+      if(ladderOn%2 ==0 ) inner=true;  // even
+      else inner=false; // odd
+    } else { // -x ladders 
+      if( abs(ladderOn)%2 ==1 ) inner=true; // odd
+      else inner=false; // even
+    }
+  } else {  // for fpix just return false
+    inner=false;
+  }
+  return inner; // inner is flipped, outer (not inner) is not flipped
+}
+int PixDigisTest::rocZLocal(int rocId, bool flipped) {
+  // roc z coordinate in local 
+  int rocz = rocId%8; // 0-7
+  return rocz;
+}
+int PixDigisTest::rocPhiLocal(int rocId, bool flipped) {
+  // roc phi coordinate in local
+  int rocphi = int(rocId/8); // 0 & 1
+  if(flipped) rocphi = abs(rocphi-1); // 0->1 and 1->0
+  return rocphi;
+}
+float PixDigisTest::rocZGlobal(int module, int rocZLoc) {  
+  // roc z coordinate in global
+  float rocz=0;
+  //if(module>0) rocz = float(module) + (0.125/2.) - (float(rocZLoc) * 0.125); //z
+  //else         rocz = float(module) + 1.0 + (0.125/2.) - (float(rocZLoc) * 0.125); //z
+  if(module>0) rocz = float(module) - (0.125/2.) - (float(rocZLoc) * 0.125); //z
+  else         rocz = float(module) + 1.0 - (0.125/2.) - (float(rocZLoc) * 0.125); //z
+  return rocz;
+}
+float PixDigisTest::rocPhiGlobal(int ladder, int rocPhiLoc) {
+  // roc phi coordinate in global
+  float rocphi = float(ladder) - 0.5 + (0.5/2.)   + (float(rocPhiLoc) * 0.5); 
+  return rocphi;
+}
 
 // this is just to turn the L1 ladder&module into a 1D index 
 int PixDigisTest::moduleIndex(int ladder, int module) {
@@ -1179,12 +1223,23 @@ void PixDigisTest::analyze(const edm::Event& iEvent,
 	// channel index needed to look for the simlink to simtracks
 	int channel = PixelChannelIdentifier::pixelToChannel(row,col);
         int roc = rocId(col,row);  // 0-15, column, row
-        int link = int(roc/8); // link 0 & 1
-        int rocInCol = roc%8; // 0-7
-	float rocZ=0;
-        if(module>0) rocZ = float(module) + (0.125/2.) - (float(rocInCol) * 0.125); //z
-        else         rocZ = float(module) + 1.0 + (0.125/2.) - (float(rocInCol) * 0.125); //z
-        float rocPhi = float(ladder) - 0.5 + (0.5/2.)   + (float(link) * 0.5); 
+        //int link = int(roc/8); // link 0 & 1 not used in digis 
+
+        //int rocInCol = roc%8; // 0-7
+	//float rocZ0=0;
+        //if(module>0) rocZ0 = float(module) + (0.125/2.) - (float(rocInCol) * 0.125); //z
+        //else         rocZ0 = float(module) + 1.0 + (0.125/2.) - (float(rocInCol) * 0.125); //z
+        //float rocPhi0 = float(ladder) - 0.5 + (0.5/2.)   + (float(link) * 0.5); 
+
+	bool flipped = isFlipped(layer,ladder);
+ 	int rocZLoc = rocZLocal(roc,flipped);
+ 	int rocPhiLoc = rocPhiLocal(roc,flipped);
+	float rocZ = rocZGlobal(module,rocZLoc);
+	float rocPhi = rocPhiGlobal(ladder, rocPhiLoc);
+
+	//if(rocZ != rocZ0) cout<<"wrong z "<<rocZ<<" "<<rocZ0<<endl;
+	//if(rocPhi != rocPhi0) cout<<"wrong phi "<<rocPhi<<" "<<rocPhi0<<endl;
+
 	float electrons=0.;
 #ifdef USE_GAINS
 	// Apply the calibration 
@@ -1210,7 +1265,7 @@ void PixDigisTest::analyze(const edm::Event& iEvent,
  	  oneModule[col][row]++;
 	  if(layer==1) {
 	    int ind = moduleIndex(ladder,module);
-	    int roc = rocId(col,row);
+	    //int roc = rocId(col,row);
 	    int dcol = (col%52)/2;
 	    dCols[ind][roc][dcol]++;
 #ifdef DCOLS
@@ -1290,17 +1345,19 @@ void PixDigisTest::analyze(const edm::Event& iEvent,
 	 hadc1bx->Fill(float(bx),float(adc));
 
 #ifdef SINGLE_MODULES
+	    //cout<<layer<<" "<<ladder<<" "<<module<<" "<<pixy<<" "<<pixx<<" "<<col<<" "<<row<<" "
+	    //	  <<rocZ<<" "<<rocPhi<<" "<<rocZLoc<<" "<<rocPhiLoc<<endl;
+	    //float weight1=electrons;
 	    if     ( ladder==-1 && module== 1) hpixDetMap10->Fill(pixy,pixx,weight); // 
 	    else if( ladder==-2 && module== 1) hpixDetMap11->Fill(pixy,pixx,weight); // "
-	    else if( ladder==-3 && module== 1) hpixDetMap12->Fill(pixy,pixx,weight); // "
-	    else if( ladder== 1 && module== 1) hpixDetMap13->Fill(pixy,pixx,weight); // 
-	    else if( ladder== 1 && module==-1) hpixDetMap14->Fill(pixy,pixx,weight); // 
-	    float weight1=electrons;
-	    if     ( ladder==-1 && module== 1) hpixDetMap15->Fill(pixy,pixx,weight1); // 
-	    else if( ladder==-2 && module== 1) hpixDetMap16->Fill(pixy,pixx,weight1); //
-	    else if( ladder==-3 && module== 1) hpixDetMap17->Fill(pixy,pixx,weight1); // 
-	    else if( ladder== 1 && module== 1) hpixDetMap18->Fill(pixy,pixx,weight1); // 
-	    else if( ladder== 1 && module==-1) hpixDetMap19->Fill(pixy,pixx,weight1); // 
+	    else if( ladder==-1 && module==-1) hpixDetMap12->Fill(pixy,pixx,weight); // "
+	    else if( ladder==-2 && module==-1) hpixDetMap13->Fill(pixy,pixx,weight); // 
+	    else if( ladder== 1 && module== 1) hpixDetMap14->Fill(pixy,pixx,weight); //
+	    else if( ladder== 2 && module== 1) hpixDetMap15->Fill(pixy,pixx,weight); // 
+	    else if( ladder== 1 && module==-1) hpixDetMap16->Fill(pixy,pixx,weight); //
+	    else if( ladder== 2 && module==-1) hpixDetMap17->Fill(pixy,pixx,weight); // 
+	    else if( ladder== 2 && module== 3) hpixDetMap18->Fill(pixy,pixx,weight); // 
+	    else if( ladder== 2 && module==-3) hpixDetMap19->Fill(pixy,pixx,weight); // 
 
 	    //if     ( ladder==-1 && module==-4) hpixDetMap11->Fill(pixy,pixx,1.); // "
 	    //else if( ladder== 6 && module== 1) hpixDetMap12->Fill(pixy,pixx,1.); // 
@@ -1671,7 +1728,7 @@ void PixDigisTest::analyze(const edm::Event& iEvent,
 		int rocInCol = roc%8; // 0-7
 		float rocZ=0;
 		if(module>0) rocZ = float(module) + (0.125/2.) - (float(rocInCol) * 0.125); //z
-		else         rocZ = float(module) + 1.0 + (0.125/2.) - (float(rocInCol) * 0.125); //z
+		else         rocZ = float(module) + 1.0 + (0.125/2.) - (float(rocInCol) * 0.125); //-z
 		float rocPhi = float(ladder) - 0.5 + (0.5/2.)   + (float(link) * 0.5); 
 		hrocMap1_2->Fill(rocZ,rocPhi);
 

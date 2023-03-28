@@ -157,15 +157,15 @@
 
 using namespace std;
 
-#ifdef ROC_RATE
+//#ifdef ROC_RATE
 // decode a simplified ROC address
- int rocId(int col, int row) {
-   int rocRow = row/80;
-   int rocCol = col/52;
-   int rocId = rocCol + rocRow*8;
-   return rocId;
- }
-#endif
+// int rocId(int col, int row) {
+//   int rocRow = row/80;
+//   int rocCol = col/52;
+//   int rocId = rocCol + rocRow*8;
+//   return rocId;
+// }
+//#endif
 
 class PixClustersWithTracks : public edm::one::EDAnalyzer<edm::one::SharedResources> {
  public:
@@ -181,6 +181,13 @@ class PixClustersWithTracks : public edm::one::EDAnalyzer<edm::one::SharedResour
   void histogramClus(float cha, int size, int sizex, int sizey, bool same, int corner);
   void histogramPix(float pixchar, int size, int sizex, int sizey, bool same, int corner);
 #endif
+  int rocId(int pixy,int pixx);  // 0-15, column, row
+  int rocZLocal(int rocId, bool flipped);  // roc z coordinate in local 
+  int rocPhiLocal(int rocId, bool flipped);  // roc phi coordinate in local 
+  float rocZGlobal(int module, int ladder);  // roc z coordinate in global 
+  float rocPhiGlobal(int module, int ladder);  // roc phi coordinate in global
+  bool isFlipped(int layer, int ladder);
+
   const int maxClus = 100; 
 
  private:
@@ -540,6 +547,55 @@ PixClustersWithTracks::PixClustersWithTracks(edm::ParameterSet const& conf)
 
 // Virtual destructor needed.
 PixClustersWithTracks::~PixClustersWithTracks() { }  
+
+// decode a simplified ROC address
+int PixClustersWithTracks::rocId(int col, int row) {
+  int rocRow = row/80;
+  int rocCol = col/52;
+  int rocId = rocCol + rocRow*8;
+  return rocId;
+}
+
+bool PixClustersWithTracks::isFlipped(int layer, int ladderOn) {
+  bool inner=false;
+  if(layer>=1  && layer<=4) { // for layer 1
+    if(ladderOn>0) {  // +x ladders
+      if(ladderOn%2 ==0 ) inner=true;  // even
+      else inner=false; // odd
+    } else { // -x ladders 
+      if( abs(ladderOn)%2 ==1 ) inner=true; // odd
+      else inner=false; // even
+    }
+  } else {  // for fpix just return false
+    inner=false;
+  }
+  return inner; // inner is flipped, outer (not inner) is not flipped
+}
+int PixClustersWithTracks::rocZLocal(int rocId, bool flipped) {
+  // roc z coordinate in local 
+  int rocz = rocId%8; // 0-7
+  return rocz;
+}
+int PixClustersWithTracks::rocPhiLocal(int rocId, bool flipped) {
+  // roc phi coordinate in local
+  int rocphi = int(rocId/8); // 0 & 1
+  if(flipped) rocphi = abs(rocphi-1); // 0->1 and 1->0
+  return rocphi;
+}
+float PixClustersWithTracks::rocZGlobal(int module, int rocZLoc) {  
+  // roc z coordinate in global
+  float rocz=0;
+  //if(module>0) rocz = float(module) + (0.125/2.) - (float(rocZLoc) * 0.125); //z
+  //else         rocz = float(module) + 1.0 + (0.125/2.) - (float(rocZLoc) * 0.125); //z
+  if(module>0) rocz = float(module) - (0.125/2.) - (float(rocZLoc) * 0.125); //z
+  else         rocz = float(module) + 1.0 - (0.125/2.) - (float(rocZLoc) * 0.125); //z
+  return rocz;
+}
+float PixClustersWithTracks::rocPhiGlobal(int ladder, int rocPhiLoc) {
+  // roc phi coordinate in global
+  float rocphi = float(ladder) - 0.5 + (0.5/2.)   + (float(rocPhiLoc) * 0.5); 
+  return rocphi;
+}
 
 // ------------ method called at the begining   ------------
 void PixClustersWithTracks::beginRun(const edm::EventSetup& iSetup) {
@@ -2140,10 +2196,12 @@ void PixClustersWithTracks::analyze(const edm::Event& e,
       }
     }
 
-    // select only high purity tracks
-    if( !(t->quality(Track::highPurity)) ) continue;
-    //if( !(track->quality(Track::tight)) ) continue;
-    //if( !(track->quality(Track::loose)) ) continue;
+    if(select1!=17) {
+      // select only high purity tracks
+      if( !(t->quality(Track::highPurity)) ) continue;
+      //if( !(track->quality(Track::tight)) ) continue;
+      //if( !(track->quality(Track::loose)) ) continue;
+    }
 
     hEta->Fill(eta);
     hPhi->Fill(phi);
@@ -2272,7 +2330,7 @@ void PixClustersWithTracks::analyze(const edm::Event& e,
       
 
 #ifdef ROC_RATE
-      int roc = -1, link = -1, rocInCol = -1;
+      int roc = -1; //  link = -1, rocInCol = -1;
       float rocZ=-1., rocPhi=-1.;
 #endif
 
@@ -3124,11 +3182,19 @@ void PixClustersWithTracks::analyze(const edm::Event& e,
 
 #ifdef ROC_RATE
 	  roc = rocId(int(pixy),int(pixx));  // 0-15, column, row
-	  link = int(roc/8); // link 0 & 1
-	  rocInCol = roc%8; // 0-7
-	  if(module>0) rocZ=float(module)-(0.125/2.)-(float(rocInCol)*0.125);//z
-	  else         rocZ=float(module)+1.0-(0.125/2.)-(float(rocInCol)*0.125); //z
-	  rocPhi = float(ladder) - 0.5 + (0.5/2.)   + (float(link) * 0.5); 
+	  //link = int(roc/8); // link 0 & 1 unused
+
+	  //rocInCol = roc%8; // 0-7
+	  //if(module>0) rocZ=float(module)-(0.125/2.)-(float(rocInCol)*0.125);//z
+	  //else         rocZ=float(module)+1.0-(0.125/2.)-(float(rocInCol)*0.125); //z
+	  //rocPhi = float(ladder) - 0.5 + (0.5/2.)   + (float(link) * 0.5); 
+
+	  bool flipped = isFlipped(layer,ladder);
+	  int rocZLoc = rocZLocal(roc,flipped);
+	  int rocPhiLoc = rocPhiLocal(roc,flipped);
+	  float rocZ = rocZGlobal(module,rocZLoc);
+	  float rocPhi = rocPhiGlobal(ladder, rocPhiLoc);
+
 #endif
 
 #ifdef USE_PROFILES
