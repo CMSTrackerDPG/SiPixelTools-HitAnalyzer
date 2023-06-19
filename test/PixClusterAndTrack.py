@@ -24,16 +24,10 @@ from Configuration.AlCa.GlobalTag import GlobalTag
 #process.GlobalTag.globaltag = '100X_dataRun2_Express_v2' # 
 #process.GlobalTag.globaltag = '101X_dataRun2_Express_v8' # 
 
-# 2021
+# 2021-23
 process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:run3_data_express', '')
 #process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:run3_data_prompt', '')
 
-# 2016
-#process.GlobalTag.globaltag = '80X_dataRun2_Prompt_v3' # for 266277
-#process.GlobalTag.globaltag = '80X_dataRun2_Prompt_v9' # >=8010
-#process.GlobalTag.globaltag = '80X_dataRun2_Prompt_v10' # >=8014
-#process.GlobalTag.globaltag = '80X_dataRun2_Express_v10' # >8010
-#process.GlobalTag.globaltag = '80X_dataRun2_Express_v12' # >8014
 # AUTO conditions 
 #process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:run2_data', '')
 #process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:run1_data', '')
@@ -106,7 +100,7 @@ process.source = cms.Source("PoolSource",
 #)
 
 #process.source.lumisToProcess = cms.untracked.VLuminosityBlockRange('124230:26-124230:9999','124030:2-124030:9999')
-#process.source.lumisToProcess = cms.untracked.VLuminosityBlockRange('355133:60-355133:9999')
+process.source.lumisToProcess = cms.untracked.VLuminosityBlockRange('366:1-366:100')
 
 process.source.skipBadFiles = cms.untracked.bool( True )
 

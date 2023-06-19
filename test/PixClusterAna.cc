@@ -124,6 +124,7 @@ using namespace std;
 //#define STUDY_ONEMOD
 #define DO_FPIX
 #define USE_TREE
+#define MONITOR_COLS
 
 #ifdef HF
 #include "DataFormats/HcalRecHit/interface/HcalRecHitCollections.h"
@@ -662,7 +663,7 @@ edm::EDGetTokenT<HFRecHitCollection> HFHitsToken_;
   TH1D *hl1a1, *hl1t1;
 #endif
 #ifdef HLT
-  TH1D *hlt1, *hlt2, *hlt3;
+  TH1D *hlt1, *hlt2;
 #endif
  
 #ifdef TEST_DCOLS 		 
@@ -770,6 +771,10 @@ edm::EDGetTokenT<HFRecHitCollection> HFHitsToken_;
   TH2F *hfpixm11,*hfpixm21,*hfpixm31,*hfpixm12,*hfpixm22,*hfpixm32; 
 #endif
 
+#ifdef MONITOR_COLS
+  TH1D *hcolsL1,*hcolsL2,*hcolsL3,*hcolsL4; 
+#endif
+ 
 #ifdef USE_TREE
   TTree *tree;
   int runT, eventT, lumiBlockT, bxT;
@@ -1709,9 +1714,9 @@ void PixClusterAna::beginJob() {
   hl1a1 = fs->make<TH1D>("hl1a1","l1a1",128,-0.5,127.5);
 #endif
 #ifdef HLT
-  hlt1 = fs->make<TH1D>("hlt1","hlt1",512,-0.5,511.5);
-  hlt2 = fs->make<TH1D>("hlt2","hlt2",512,-0.5,511.5);
-  hlt3 = fs->make<TH1D>("hlt3","hlt3",512,-0.5,511.5);
+  const int hltSize = 1024;
+  hlt1 = fs->make<TH1D>("hlt1","hlt all events",hltSize,-0.5,float(hltSize)-0.5);
+  hlt2 = fs->make<TH1D>("hlt2","hlt selected events",hltSize,-0.5,float(hltSize)-0.5);
 #endif
   
 #ifdef USE_RESYNCS
@@ -1744,68 +1749,68 @@ void PixClusterAna::beginJob() {
   hpixDetMap19 = fs->make<TH2F>( "hpixDetMap19", "pix det layer 1",
 				  416,0.,416.,160,0.,160.);
 
-  hpixDetMap20 = fs->make<TH2F>( "hpixDetMap20", "pix det layer 2",
-				 416,0.,416.,160,0.,160.);
-  hpixDetMap21 = fs->make<TH2F>( "hpixDetMap21", "pix det layer 2",
-				 416,0.,416.,160,0.,160.);
-  hpixDetMap22 = fs->make<TH2F>( "hpixDetMap22", "pix det layer 2",
-				 416,0.,416.,160,0.,160.);
-  hpixDetMap23 = fs->make<TH2F>( "hpixDetMap23", "pix det layer 2",
-				 416,0.,416.,160,0.,160.);
-  hpixDetMap24 = fs->make<TH2F>( "hpixDetMap24", "pix det layer 2",
-				  416,0.,416.,160,0.,160.);
-  hpixDetMap25 = fs->make<TH2F>( "hpixDetMap25", "pix det layer 2",
-				  416,0.,416.,160,0.,160.);
-  hpixDetMap26 = fs->make<TH2F>( "hpixDetMap26", "pix det layer 2",
-				  416,0.,416.,160,0.,160.);
-  hpixDetMap27 = fs->make<TH2F>( "hpixDetMap27", "pix det layer 2",
-				  416,0.,416.,160,0.,160.);
-  hpixDetMap28 = fs->make<TH2F>( "hpixDetMap28", "pix det layer 2",
-				  416,0.,416.,160,0.,160.);
-  hpixDetMap29 = fs->make<TH2F>( "hpixDetMap29", "pix det layer 2",
-				  416,0.,416.,160,0.,160.);
+  // hpixDetMap20 = fs->make<TH2F>( "hpixDetMap20", "pix det layer 2",
+  // 				 416,0.,416.,160,0.,160.);
+  // hpixDetMap21 = fs->make<TH2F>( "hpixDetMap21", "pix det layer 2",
+  // 				 416,0.,416.,160,0.,160.);
+  // hpixDetMap22 = fs->make<TH2F>( "hpixDetMap22", "pix det layer 2",
+  // 				 416,0.,416.,160,0.,160.);
+  // hpixDetMap23 = fs->make<TH2F>( "hpixDetMap23", "pix det layer 2",
+  // 				 416,0.,416.,160,0.,160.);
+  // hpixDetMap24 = fs->make<TH2F>( "hpixDetMap24", "pix det layer 2",
+  // 				  416,0.,416.,160,0.,160.);
+  // hpixDetMap25 = fs->make<TH2F>( "hpixDetMap25", "pix det layer 2",
+  // 				  416,0.,416.,160,0.,160.);
+  // hpixDetMap26 = fs->make<TH2F>( "hpixDetMap26", "pix det layer 2",
+  // 				  416,0.,416.,160,0.,160.);
+  // hpixDetMap27 = fs->make<TH2F>( "hpixDetMap27", "pix det layer 2",
+  // 				  416,0.,416.,160,0.,160.);
+  // hpixDetMap28 = fs->make<TH2F>( "hpixDetMap28", "pix det layer 2",
+  // 				  416,0.,416.,160,0.,160.);
+  // hpixDetMap29 = fs->make<TH2F>( "hpixDetMap29", "pix det layer 2",
+  // 				  416,0.,416.,160,0.,160.);
 
-  hpixDetMap30 = fs->make<TH2F>( "hpixDetMap30", "pix det layer 3",
-				 416,0.,416.,160,0.,160.);
-  hpixDetMap31 = fs->make<TH2F>( "hpixDetMap31", "pix det layer 3",
-				 416,0.,416.,160,0.,160.);
-  hpixDetMap32 = fs->make<TH2F>( "hpixDetMap32", "pix det layer 3",
-				 416,0.,416.,160,0.,160.);
-  hpixDetMap33 = fs->make<TH2F>( "hpixDetMap33", "pix det layer 3",
-				 416,0.,416.,160,0.,160.);
-  hpixDetMap34 = fs->make<TH2F>( "hpixDetMap34", "pix det layer 3",
-				  416,0.,416.,160,0.,160.);
-  hpixDetMap35 = fs->make<TH2F>( "hpixDetMap35", "pix det layer 3",
-				  416,0.,416.,160,0.,160.);
-  hpixDetMap36 = fs->make<TH2F>( "hpixDetMap36", "pix det layer 3",
-				  416,0.,416.,160,0.,160.);
-  hpixDetMap37 = fs->make<TH2F>( "hpixDetMap37", "pix det layer 3",
-				  416,0.,416.,160,0.,160.);
-  hpixDetMap38 = fs->make<TH2F>( "hpixDetMap38", "pix det layer 3",
-				  416,0.,416.,160,0.,160.);
-  hpixDetMap39 = fs->make<TH2F>( "hpixDetMap39", "pix det layer 3",
-				 416,0.,416.,160,0.,160.);
+  // hpixDetMap30 = fs->make<TH2F>( "hpixDetMap30", "pix det layer 3",
+  // 				 416,0.,416.,160,0.,160.);
+  // hpixDetMap31 = fs->make<TH2F>( "hpixDetMap31", "pix det layer 3",
+  // 				 416,0.,416.,160,0.,160.);
+  // hpixDetMap32 = fs->make<TH2F>( "hpixDetMap32", "pix det layer 3",
+  // 				 416,0.,416.,160,0.,160.);
+  // hpixDetMap33 = fs->make<TH2F>( "hpixDetMap33", "pix det layer 3",
+  // 				 416,0.,416.,160,0.,160.);
+  // hpixDetMap34 = fs->make<TH2F>( "hpixDetMap34", "pix det layer 3",
+  // 				  416,0.,416.,160,0.,160.);
+  // hpixDetMap35 = fs->make<TH2F>( "hpixDetMap35", "pix det layer 3",
+  // 				  416,0.,416.,160,0.,160.);
+  // hpixDetMap36 = fs->make<TH2F>( "hpixDetMap36", "pix det layer 3",
+  // 				  416,0.,416.,160,0.,160.);
+  // hpixDetMap37 = fs->make<TH2F>( "hpixDetMap37", "pix det layer 3",
+  // 				  416,0.,416.,160,0.,160.);
+  // hpixDetMap38 = fs->make<TH2F>( "hpixDetMap38", "pix det layer 3",
+  // 				  416,0.,416.,160,0.,160.);
+  // hpixDetMap39 = fs->make<TH2F>( "hpixDetMap39", "pix det layer 3",
+  // 				 416,0.,416.,160,0.,160.);
 
-  hpixDetMap40 = fs->make<TH2F>( "hpixDetMap40", "pix det layer 4",
-				 416,0.,416.,160,0.,160.);
-  hpixDetMap41 = fs->make<TH2F>( "hpixDetMap41", "pix det layer 4",
-				 416,0.,416.,160,0.,160.);
-  hpixDetMap42 = fs->make<TH2F>( "hpixDetMap42", "pix det layer 4",
-				 416,0.,416.,160,0.,160.);
-  hpixDetMap43 = fs->make<TH2F>( "hpixDetMap43", "pix det layer 4",
-				 416,0.,416.,160,0.,160.);
-  hpixDetMap44 = fs->make<TH2F>( "hpixDetMap44", "pix det layer 4",
-				  416,0.,416.,160,0.,160.);
-  hpixDetMap45 = fs->make<TH2F>( "hpixDetMap45", "pix det layer 4",
-				  416,0.,416.,160,0.,160.);
-  hpixDetMap46 = fs->make<TH2F>( "hpixDetMap46", "pix det layer 4",
-				  416,0.,416.,160,0.,160.);
-  hpixDetMap47 = fs->make<TH2F>( "hpixDetMap47", "pix det layer 4",
-				  416,0.,416.,160,0.,160.);
-  hpixDetMap48 = fs->make<TH2F>( "hpixDetMap48", "pix det layer 4",
-				  416,0.,416.,160,0.,160.);
-  hpixDetMap49 = fs->make<TH2F>( "hpixDetMap49", "pix det layer 4",
-				  416,0.,416.,160,0.,160.);
+  // hpixDetMap40 = fs->make<TH2F>( "hpixDetMap40", "pix det layer 4",
+  // 				 416,0.,416.,160,0.,160.);
+  // hpixDetMap41 = fs->make<TH2F>( "hpixDetMap41", "pix det layer 4",
+  // 				 416,0.,416.,160,0.,160.);
+  // hpixDetMap42 = fs->make<TH2F>( "hpixDetMap42", "pix det layer 4",
+  // 				 416,0.,416.,160,0.,160.);
+  // hpixDetMap43 = fs->make<TH2F>( "hpixDetMap43", "pix det layer 4",
+  // 				 416,0.,416.,160,0.,160.);
+  // hpixDetMap44 = fs->make<TH2F>( "hpixDetMap44", "pix det layer 4",
+  // 				  416,0.,416.,160,0.,160.);
+  // hpixDetMap45 = fs->make<TH2F>( "hpixDetMap45", "pix det layer 4",
+  // 				  416,0.,416.,160,0.,160.);
+  // hpixDetMap46 = fs->make<TH2F>( "hpixDetMap46", "pix det layer 4",
+  // 				  416,0.,416.,160,0.,160.);
+  // hpixDetMap47 = fs->make<TH2F>( "hpixDetMap47", "pix det layer 4",
+  // 				  416,0.,416.,160,0.,160.);
+  // hpixDetMap48 = fs->make<TH2F>( "hpixDetMap48", "pix det layer 4",
+  // 				  416,0.,416.,160,0.,160.);
+  // hpixDetMap49 = fs->make<TH2F>( "hpixDetMap49", "pix det layer 4",
+  //				  416,0.,416.,160,0.,160.);
 #endif 
 
 #ifdef STUDY_LAY1
@@ -2087,6 +2092,14 @@ void PixClusterAna::beginJob() {
   hfpixm22 = fs->make<TH2F>("hfpixm22","fpix -z d2 p2",160,-16.,16.,160,-16.,16.);
   hfpixm32 = fs->make<TH2F>("hfpixm32","fpix -z d3 p2",160,-16.,16.,160,-16.,16.);
 #endif
+
+
+#ifdef MONITOR_COLS
+  int length = 9 *13 * 416;
+  hcolsL1 = fs->make<TH1D>("hcolsL1","roc columns L1",length,0.,float(length));
+  //hcolsL2,*hcolsL3,*hcolsL4; 
+#endif
+
 
   countEvents=0;
   countAllEvents=0;
@@ -2706,21 +2719,12 @@ void PixClusterAna::analyze(const edm::Event& e,
 	hltt->Fill(float(i)); // prescaled 
       }
 
-
     } // for loop
-    //cout<<dec<<endl;
-
   } // if l1a
 #endif
 
-  //bool bptx_and = bptx_m && bptx_p;
-  //bool bptx_or  = bptx_m || bptx_p;
-  //bool bptx_xor = bptx_or && !bptx_and;
-
-  //---------------------------------------
-  // Analyse HLT
-  //bool passHLT1=false,passHLT2=false,passHLT3=false,passHLT4=false,passHLT5=false;
 #ifdef HLT
+  // Analyse HLT
   const int hltSize = 1024;
   bool hlt[hltSize];
   for(int i=0;i<hltSize;++i) hlt[i]=false;
@@ -2728,30 +2732,21 @@ void PixClusterAna::analyze(const edm::Event& e,
   edm::TriggerNames TrigNames;
   edm::Handle<edm::TriggerResults> HLTResults;
   // Extract the HLT results
-  //e.getByLabel(edm::InputTag("TriggerResults","","HLT"),HLTResults);
   e.getByToken(TrigResultsToken, HLTResults);
 
   if ((HLTResults.isValid() == true) && (HLTResults->size() > 0)) {
     //TrigNames.init(*HLTResults);
     const edm::TriggerNames & TrigNames = e.triggerNames(*HLTResults);
-
     if(TrigNames.triggerNames().size() > hltSize) cout<<" extend the hlt array above "<<hltSize<<endl;
 
     for (unsigned int i = 0; i < TrigNames.triggerNames().size(); i++) {  // loop over trigger
       if(countAllEvents==1) cout<<i<<" "<<TrigNames.triggerName(i)<<endl;
-
       if ( 
 	   (HLTResults->wasrun(TrigNames.triggerIndex(TrigNames.triggerName(i))) == true) &&
 	   (HLTResults->accept(TrigNames.triggerIndex(TrigNames.triggerName(i))) == true) &&
 	   (HLTResults->error( TrigNames.triggerIndex(TrigNames.triggerName(i))) == false) ) {
-
 	hlt[i]=true;
 	hlt1->Fill(float(i));
-
-// 	if (      TrigNames.triggerName(i) == "HLT_L1Tech_BSC_minBias") passHLT1=true;
-// 	else if  (TrigNames.triggerName(i) == "HLT_L1_ZeroBias") passHLT5=true;
-//	  passHLT5=true;
-
       } // if hlt
 
     } // loop 
@@ -2826,7 +2821,7 @@ void PixClusterAna::analyze(const edm::Event& e,
   hbx->Fill(float(bx));
   //horbit->Fill(float(orbit));
 #ifdef HLT
-  for (unsigned int i=0;i<256;i++) if(hlt[i]==true) hlt2->Fill(float(i));
+  for (unsigned int i=0;i<hltSize;i++) if(hlt[i]==true) hlt2->Fill(float(i));
 #endif
 
   // if(run!=runNumberOld) {
@@ -2983,6 +2978,7 @@ void PixClusterAna::analyze(const edm::Event& e,
     bool goodL2Modules = false;
     bool badL2Modules = false;
     bool newL1Modules = false;
+    int ladderIndex=0, moduleIndex=0;
 
 
     // Endcap ids
@@ -2998,6 +2994,7 @@ void PixClusterAna::analyze(const edm::Event& e,
     bool ring12=false; // rings 1&2
 #endif
     edmNew::DetSet<SiPixelCluster>::const_iterator clustIt;
+    bool flipped=true; // for bpix ladders
 
     // Subdet id, pix barrel=1, forward=2
     if(subid==2) {  // forward
@@ -3046,7 +3043,9 @@ void PixClusterAna::analyze(const edm::Event& e,
       // change ladeer sign for Outer )x<0)
       if(shell==1 || shell==3) ladder = -ladder;
 
-
+      flipped = isFlipped(layer,ladder);
+      moduleIndex = module+4; // goes from 0 to 9
+      ladderIndex = ladder+6; // goes from 0 to 13
       // if( layer==2 && select1!=9998 ) {
       // 	if( (ladder ==-1) && ( (module == 1) || (module == 2) || (module == 3)) ) badL2Modules=true;
       // 	else if( (ladder ==-5) &&( (module == -1) || (module == -2) || (module == -3)) ) badL2Modules=true;
@@ -3162,6 +3161,10 @@ void PixClusterAna::analyze(const edm::Event& e,
       float zPos = gZ;
       //float rPos = detR + lx;
       float rPos = gR;
+#ifdef ROC_RATE
+      int roc = -1; //  link = -1;
+      //float rocZ=-1., rocPhi=-1.;
+#endif
 
 #ifdef USE_TREE
       // Save clus in tree
@@ -3194,8 +3197,8 @@ void PixClusterAna::analyze(const edm::Event& e,
       //int noisy = 0;
 
 #ifdef ROC_RATE
-      int roc = -1; //  link = -1;
-      float rocZ=-1., rocPhi=-1.;
+      roc = -1; //  link = -1;
+      //rocZ=-1.; rocPhi=-1.;
 #endif
 
       if(pixelsVec.size()>maxPixPerClu) maxPixPerClu = pixelsVec.size();
@@ -3253,18 +3256,10 @@ void PixClusterAna::analyze(const edm::Event& e,
 #ifdef ROC_RATE
 	roc = rocId(int(pixy),int(pixx));  // 0-15, column, row
 	//link = int(roc/8); // link 0 & 1 unused
-
-	//rocInCol = roc%8; // 0-7
-	//if(module>0) rocZ = float(module) - (0.125/2.) - (float(rocInCol) * 0.125); //z
-	//else         rocZ = float(module) + 1.0 - (0.125/2.) - (float(rocInCol) * 0.125); //z
-	//rocPhi = float(ladder) - 0.5 + (0.5/2.)   + (float(link) * 0.5); 
-
-        bool flipped = isFlipped(layer,ladder);
         int rocZLoc = rocZLocal(roc,flipped);
         int rocPhiLoc = rocPhiLocal(roc,flipped);
         float rocZ = rocZGlobal(module,rocZLoc);
         float rocPhi = rocPhiGlobal(ladder, rocPhiLoc);
-
 #endif
 
 	//int chan = PixelChannelIdentifier::pixelToChannel(int(pixx),int(pixy));
@@ -3359,18 +3354,55 @@ void PixClusterAna::analyze(const edm::Event& e,
 	    } // size=1/2
 #endif
 
+#ifdef MONITOR_COLS
+	    float colNum =  (ladderIndex*9*416) + 
+	      (moduleIndex*416) + pixy;
+	    hcolsL1->Fill(colNum);
+#endif
+
 #ifdef SINGLE_MODULES
 	    float weight = 1.; // adc
-	    // if     ( ladder==-6 && module==-1) hpixDetMap10->Fill(pixy,pixx,weight); // 
-	    // else if( ladder==-1 && module==-1) hpixDetMap11->Fill(pixy,pixx,weight); // "
-	    // else if( ladder==-1 && module==-2) hpixDetMap12->Fill(pixy,pixx,weight); // "
-	    // else if( ladder==-3 && module==-4) hpixDetMap13->Fill(pixy,pixx,weight); // 
-	    // else if( ladder== 4 && module==-2) hpixDetMap14->Fill(pixy,pixx,weight); // 
-	    // else if( ladder== 6 && module==-1) hpixDetMap15->Fill(pixy,pixx,weight); // 
-	    // else if( ladder== 4 && module== 1) hpixDetMap16->Fill(pixy,pixx,weight); //
-	    // else if( ladder== 2 && module== 1) hpixDetMap17->Fill(pixy,pixx,weight); // 
-	    // else if( ladder==-4 && module== 2) hpixDetMap18->Fill(pixy,pixx,weight); // 
-	    // else if( ladder==-1 && module== 2) hpixDetMap19->Fill(pixy,pixx,weight); // 
+	    if     ( ladder== 2 && module== 4) hpixDetMap10->Fill(pixy,pixx,weight); // 
+	    else if( ladder== 3 && module== 3) hpixDetMap11->Fill(pixy,pixx,weight); // 
+	    else if( ladder== 3 && module== 4) hpixDetMap12->Fill(pixy,pixx,weight); // 
+
+	    // else if( ladder==-1 && module== 2) hpixDetMap13->Fill(pixy,pixx,weight); // 
+	    // else if( ladder==-4 && module== 2) hpixDetMap14->Fill(pixy,pixx,weight); // 
+	    // else if( ladder==-4 && module== 3) hpixDetMap15->Fill(pixy,pixx,weight); // 
+
+	    // else if( ladder== 6 && module==-3) hpixDetMap16->Fill(pixy,pixx,weight); //
+	    // else if( ladder== 6 && module==-4) hpixDetMap17->Fill(pixy,pixx,weight); // 
+
+	    // else if( ladder==-4 && module==-4) hpixDetMap18->Fill(pixy,pixx,weight); // 
+	    // else if( ladder==-5 && module==-2) hpixDetMap19->Fill(pixy,pixx,weight); // 
+
+	    // else if( ladder== 4 && module== 2) hpixDetMap30->Fill(pixy,pixx,weight); // 
+	    // else if( ladder== 4 && module== 4) hpixDetMap31->Fill(pixy,pixx,weight); // 
+	    // else if( ladder== 5 && module== 1) hpixDetMap32->Fill(pixy,pixx,weight); // "
+	    // else if( ladder== 5 && module== 2) hpixDetMap33->Fill(pixy,pixx,weight); // "
+	    // else if( ladder== 6 && module== 3) hpixDetMap34->Fill(pixy,pixx,weight); // 
+	    // else if( ladder== 6 && module== 4) hpixDetMap35->Fill(pixy,pixx,weight); // 
+
+
+	    // else if( ladder==-2 && module== 4) hpixDetMap36->Fill(pixy,pixx,weight); // 
+	    // else if( ladder==-1 && module== 4) hpixDetMap37->Fill(pixy,pixx,weight); //
+	    // else if( ladder==-6 && module== 1) hpixDetMap38->Fill(pixy,pixx,weight); // 
+
+	    // else if( ladder== 4 && module==-4) hpixDetMap39->Fill(pixy,pixx,weight); // 
+	    // else if( ladder== 3 && module==-2) hpixDetMap40->Fill(pixy,pixx,weight); // 
+	    // else if( ladder== 2 && module==-2) hpixDetMap41->Fill(pixy,pixx,weight); // 
+
+	    // else if( ladder==-1 && module==-1) hpixDetMap42->Fill(pixy,pixx,weight); // 
+	    // else if( ladder==-2 && module==-4) hpixDetMap43->Fill(pixy,pixx,weight); // 
+
+	    // else if( ladder== 1 && module== 4) hpixDetMap44->Fill(pixy,pixx,weight); // 
+	    // else if( ladder== 5 && module== 4) hpixDetMap45->Fill(pixy,pixx,weight); // 
+	    // else if( ladder==-1 && module== 4) hpixDetMap46->Fill(pixy,pixx,weight); // 
+	    // else if( ladder==-4 && module== 4) hpixDetMap47->Fill(pixy,pixx,weight); //
+	    // else if( ladder==-6 && module== 4) hpixDetMap48->Fill(pixy,pixx,weight); // 
+
+	    // else hpixDetMap49->Fill(pixy,pixx,weight); // 
+
 #endif
 
 #ifdef LS_TESTS
@@ -3470,21 +3502,21 @@ void PixClusterAna::analyze(const edm::Event& e,
 	    }
 
 #ifdef SINGLE_MODULES
-	   if     (ladder== -1 && module== 1) hpixDetMap20->Fill(pixy,pixx); // dcdc 
-	   else if(ladder== -1 && module== 2) hpixDetMap21->Fill(pixy,pixx); //  "
-	   else if(ladder== -1 && module== 3) hpixDetMap22->Fill(pixy,pixx); //  "
-	   else if(ladder== -5 && module==-1) hpixDetMap23->Fill(pixy,pixx); //  "
-	   else if(ladder== -5 && module==-2) hpixDetMap24->Fill(pixy,pixx); //  "
-	   else if(ladder== -5 && module==-3) hpixDetMap25->Fill(pixy,pixx); //
-	   else if(ladder== 12 && module==-1) hpixDetMap26->Fill(pixy,pixx); // dcdc
-	   else if(ladder== 11 && module==-4) hpixDetMap27->Fill(pixy,pixx); // dcdc
-	   else if(ladder== 14 && module==-1) hpixDetMap28->Fill(pixy,pixx); // dcdc
-	   else if(ladder== 13 && module==-4) hpixDetMap29->Fill(pixy,pixx); // "
+	   // if     (ladder== -1 && module== 1) hpixDetMap20->Fill(pixy,pixx); // dcdc 
+	   // else if(ladder== -1 && module== 2) hpixDetMap21->Fill(pixy,pixx); //  "
+	   // else if(ladder== -1 && module== 3) hpixDetMap22->Fill(pixy,pixx); //  "
+	   // else if(ladder== -5 && module==-1) hpixDetMap23->Fill(pixy,pixx); //  "
+	   // else if(ladder== -5 && module==-2) hpixDetMap24->Fill(pixy,pixx); //  "
+	   // else if(ladder== -5 && module==-3) hpixDetMap25->Fill(pixy,pixx); //
+	   // else if(ladder== 12 && module==-1) hpixDetMap26->Fill(pixy,pixx); // dcdc
+	   // else if(ladder== 11 && module==-4) hpixDetMap27->Fill(pixy,pixx); // dcdc
+	   // else if(ladder== 14 && module==-1) hpixDetMap28->Fill(pixy,pixx); // dcdc
+	   // else if(ladder== 13 && module==-4) hpixDetMap29->Fill(pixy,pixx); // "
 
-	   else if(ladder== 7 && module== 1) hpixDetMap30->Fill(pixy,pixx); // "
-	   else if(ladder== 1 && module== 1) hpixDetMap31->Fill(pixy,pixx); // "
-	   else if(ladder== 1 && module== 2) hpixDetMap32->Fill(pixy,pixx); // "
-	   else if(ladder== 1 && module== 3) hpixDetMap33->Fill(pixy,pixx); // "
+	   //else if(ladder== 7 && module== 1) hpixDetMap30->Fill(pixy,pixx); // "
+	   //else if(ladder== 1 && module== 1) hpixDetMap31->Fill(pixy,pixx); // "
+	   //else if(ladder== 1 && module== 2) hpixDetMap32->Fill(pixy,pixx); // "
+	   //else if(ladder== 1 && module== 3) hpixDetMap33->Fill(pixy,pixx); // "
 #endif
 
 #if defined(BX) || defined(BX_NEW)
@@ -3726,8 +3758,16 @@ void PixClusterAna::analyze(const edm::Event& e,
 #ifdef HISTOS
       // Cluster histos
       if (subid==1 && (selectEvent==-1 || countEvents==selectEvent) ) {  // barrel
-	//if (subid==1) {  // barrel
+#ifdef ROC_RATE
+	roc = rocId(int(y),int(x));  // 0-15, column, row
+	//link = int(roc/8); // link 0 & 1 unused
+        int rocZLoc = rocZLocal(roc,flipped);
+        int rocPhiLoc = rocPhiLocal(roc,flipped);
+        float rocZ = rocZGlobal(module,rocZLoc);
+        float rocPhi = rocPhiGlobal(ladder, rocPhiLoc);
+#endif
 
+	//if (subid==1) {  // barrel
 	if(layer==1) {  // layer 1
 	  
 	  hcluDets1->Fill(float(module),float(ladder));
@@ -4576,10 +4616,6 @@ if(doTree) {
 
 #endif // L1
 
-    // HLT bits
-#ifdef HLT
-    for (unsigned int i=0;i<256;i++) if(hlt[i]) hlt3->Fill(float(i));
-#endif    
   } // if select event
 
 #endif // HISTOS

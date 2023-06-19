@@ -96,7 +96,7 @@
 #define HISTOS
 //#define L1
 #define HLT
-#define SINGLE_MODULES
+//#define SINGLE_MODULES
 #define DCOLS
 #define DO_THR // use the threshold histo
 
@@ -1411,14 +1411,14 @@ void PixDigisTest::analyze(const edm::Event& iEvent,
 	 numOfDigisPerDet2++;
 
 #ifdef SINGLE_MODULES
-	 //if     ( ladder== 5 && module==-3) hpixDetMap20->Fill(pixy,pixx,weight); // 
-	 //if( ladder== 5 && module==-3) hpixDetMap21->Fill(pixy,pixx,1.); // special case
-	 // else if( ladder== 3 && module== 3) hpixDetMap22->Fill(pixy,pixx,weight); // 
-	 // else if( ladder==13 && module==-1) hpixDetMap23->Fill(pixy,pixx,weight); //
-	 // else if( ladder==-3 && module==4) hpixDetMap24->Fill(pixy,pixx,weight); //
-	 // else if( ladder==-4 && module==4) hpixDetMap25->Fill(pixy,pixx,weight); // 
-	 // else if( ladder==-5 && module==4) hpixDetMap26->Fill(pixy,pixx,weight); // 
-	 // else if( ladder==-6 && module==4) hpixDetMap27->Fill(pixy,pixx,weight); // 
+	 if     ( ladder==-1 && module== 1) hpixDetMap20->Fill(pixy,pixx,weight); // 
+	 else if( ladder==-2 && module== 1) hpixDetMap21->Fill(pixy,pixx,weight); // "
+	 else if( ladder==-1 && module==-1) hpixDetMap22->Fill(pixy,pixx,weight); // "
+	 else if( ladder==-2 && module==-1) hpixDetMap23->Fill(pixy,pixx,weight); // 
+	 else if( ladder== 1 && module== 1) hpixDetMap24->Fill(pixy,pixx,weight); //
+	 else if( ladder== 2 && module== 1) hpixDetMap25->Fill(pixy,pixx,weight); // 
+	 else if( ladder== 1 && module==-1) hpixDetMap26->Fill(pixy,pixx,weight); //
+	 else if( ladder== 2 && module==-1) hpixDetMap27->Fill(pixy,pixx,weight); // 
 	 // else if( ladder==-1 && module==-4) hpixDetMap28->Fill(pixy,pixx,weight); //
 	 // else if( ladder==-2 && module==-4) hpixDetMap29->Fill(pixy,pixx,weight); // 
 #endif
@@ -1448,12 +1448,14 @@ void PixDigisTest::analyze(const edm::Event& iEvent,
 	 numOfDigisPerDet3++;
 
 #ifdef SINGLE_MODULES
-	 if     ( ladder== 20 && module== 2) hpixDetMap30->Fill(pixy,pixx,weight); // 
-	 //if( ladder==-22 && module==-2) hpixDetMap31->Fill(pixy,pixx,1.); // special case
-	 else if( ladder== 5 && module== -1) hpixDetMap31->Fill(pixy,pixx,weight); // 
-	 //else if( ladder==12 && module== 4) hpixDetMap32->Fill(pixy,pixx,weight); // 
-	 //else if( ladder==19 && module==-4) hpixDetMap33->Fill(pixy,pixx,weight); // 
-	 //else if( ladder==14 && module==-3) hpixDetMap34->Fill(pixy,pixx,weight); // 
+	 if     ( ladder==-1 && module== 1) hpixDetMap30->Fill(pixy,pixx,weight); // 
+	 else if( ladder==-2 && module== 1) hpixDetMap31->Fill(pixy,pixx,weight); // "
+	 else if( ladder==-1 && module==-1) hpixDetMap32->Fill(pixy,pixx,weight); // "
+	 else if( ladder==-2 && module==-1) hpixDetMap33->Fill(pixy,pixx,weight); // 
+	 else if( ladder== 1 && module== 1) hpixDetMap34->Fill(pixy,pixx,weight); //
+	 else if( ladder== 2 && module== 1) hpixDetMap35->Fill(pixy,pixx,weight); // 
+	 else if( ladder== 1 && module==-1) hpixDetMap36->Fill(pixy,pixx,weight); //
+	 else if( ladder== 2 && module==-1) hpixDetMap37->Fill(pixy,pixx,weight); // 
 #endif
        } else if(layer==4) {
 	 //if(rescaleVcal) electrons = (vcal * 47.25 + offset)/1000.; //L4 at 51.5fb-1 47->47.25
@@ -1479,12 +1481,14 @@ void PixDigisTest::analyze(const edm::Event& iEvent,
 	 numOfDigisPerDet4++;
 
 #ifdef SINGLE_MODULES
-	 //if     ( ladder== 6 && module== 1) hpixDetMap40->Fill(pixy,pixx,weight); // 
-	 //if( ladder== 6 && module== 1) hpixDetMap41->Fill(pixy,pixx,1.); //  special case  
-	 //else if( ladder== 6 && module== 3) hpixDetMap42->Fill(pixy,pixx,weight); // 
-	 //else if( ladder== 6 && module== 4) hpixDetMap43->Fill(pixy,pixx,weight); // 
-	 //else if( ladder==-27 && module==1) hpixDetMap44->Fill(pixy,pixx,weight); // 
-	 //else if( ladder== 3 && module==-4) hpixDetMap45->Fill(pixy,pixx,weight); // 
+	 if     ( ladder==-1 && module== 1) hpixDetMap40->Fill(pixy,pixx,weight); // 
+	 else if( ladder==-2 && module== 1) hpixDetMap41->Fill(pixy,pixx,weight); // "
+	 else if( ladder==-1 && module==-1) hpixDetMap42->Fill(pixy,pixx,weight); // "
+	 else if( ladder==-2 && module==-1) hpixDetMap43->Fill(pixy,pixx,weight); // 
+	 else if( ladder== 1 && module== 1) hpixDetMap44->Fill(pixy,pixx,weight); //
+	 else if( ladder== 2 && module== 1) hpixDetMap45->Fill(pixy,pixx,weight); // 
+	 else if( ladder== 1 && module==-1) hpixDetMap46->Fill(pixy,pixx,weight); //
+	 else if( ladder== 2 && module==-1) hpixDetMap47->Fill(pixy,pixx,weight); // 
 #endif
        } else if(disk==1) {
 	 electrons = (vcal * conversionFactor + offset)/1000.; 

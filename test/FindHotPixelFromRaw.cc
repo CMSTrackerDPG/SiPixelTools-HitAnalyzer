@@ -417,7 +417,7 @@ public:
 
   ~HotPixels() {
   }
-  void update(int channel, int roc, int dcol, int pix); 
+  int update(int channel, int roc, int dcol, int pix); 
   int code(int channel, int roc, int dcol, int pix); 
   void decode(int index, int &channel, int &roc, int &dcol, int &pix); 
   //void print(int, int, double);
@@ -507,13 +507,15 @@ void HotPixels::decodeROC(int index, int &channel, int &roc) {
   channel = index/10;
   roc     = (index%10);
 }
-void HotPixels::update(int channel, int roc, int dcol, int pix) {
+int HotPixels::update(int channel, int roc, int dcol, int pix) {
+  int ret = 0;
   int index = code(channel, roc, dcol, pix);
   //cout<<channel<<"   "<<roc<<"    "<<dcol<<"    "<<pix<<"    "<<index<<endl;
   bool found = false;
   for(int i=0;i<count;++i) {
     if(index == array[i]) {
       data[i]++;
+      ret=data[i];
       found=true;
       break;
     }
@@ -525,9 +527,10 @@ void HotPixels::update(int channel, int roc, int dcol, int pix) {
       data[count] =1;
       array[count]=index;
       count++;
+      ret=1;
     }
   }
-
+  return ret;
 }
 void HotPixels::print(int events, int fed_id, double fraction, TH2F* hfedchannelp) {
   // for layer-1
@@ -565,7 +568,6 @@ void HotPixels::print(int events, int fed_id, double fraction, TH2F* hfedchannel
     // Get the module name and tbm type 
     string modName = " ",tbm=" ";
     int rocNumber=-1;
-    //modName = MyConvert::moduleNameFromFedChan(fed_id,channel,roc,tbm);
     string  name = MyConvert::rocModuleNameFromFedChan(fed_id,channel,rocOrder,tbm);
     string::size_type idx;
     idx = name.find("_ROC");
@@ -576,12 +578,15 @@ void HotPixels::print(int events, int fed_id, double fraction, TH2F* hfedchannel
     }
     
     int realRocNum = -1;
-    int colROC = -1, rowROC = -1, layer = 0;
+    int colROC = -1, rowROC = -1; // layer0 = 0;
+    int layer = MyConvert::layerFromName(name);
     //string::size_type id;
-    if     ( modName.find("_LYR1_") != string::npos ) layer=1;  
-    else if( modName.find("_LYR2_") != string::npos ) layer=2;  
-    else if( modName.find("_LYR3_") != string::npos ) layer=3;  
-    else if( modName.find("_LYR4_") != string::npos ) layer=4;  
+    //if     ( modName.find("_LYR1_") != string::npos ) layer0=1;  
+    //else if( modName.find("_LYR2_") != string::npos ) layer0=2;  
+    //else if( modName.find("_LYR3_") != string::npos ) layer0=3;  
+    //else if( modName.find("_LYR4_") != string::npos ) layer0=4;  
+    //if(layer!=layer0) cout<<" big nig error"<<endl;
+    
 
     // all hits 
     if(layer>0 &&layer<5) {
@@ -754,13 +759,14 @@ void HotPixels::printROCs(int fed_id, int cut) {
 
         } else { // bpix 
 
-	  int layer=-1;
+	  int layer = MyConvert::layerFromName(modName);
+	  //int layer0=-1;
 	  //string::size_type id;
-	  if     ( modName.find("_LYR1_") != string::npos ) layer=1;  
-	  else if( modName.find("_LYR2_") != string::npos ) layer=2;  
-	  else if( modName.find("_LYR3_") != string::npos ) layer=3;  
-	  else if( modName.find("_LYR4_") != string::npos ) layer=4;  
-	  
+	  //if     ( modName.find("_LYR1_") != string::npos ) layer0=1;  
+	  //else if( modName.find("_LYR2_") != string::npos ) layer0=2;  
+	  //else if( modName.find("_LYR3_") != string::npos ) layer0=3;  
+	  //else if( modName.find("_LYR4_") != string::npos ) layer0=4;  
+	  //if(layer!=layer0) cout<<" big big error"<<endl;
 	  //cout<<" bpix "<<layer<<" "<<modName<<endl;
 
 	  if( layer==1 ) { // layer  1
@@ -838,7 +844,8 @@ public:
   void endJob() override;
   /// get data, convert to digis attach againe to Event
   void analyze(const edm::Event&, const edm::EventSetup&) override;
-  void analyzeHits(int fed, int channel, int layer, int roc, int dcol, int pix, int adc);
+  void analyzeHits(int fed, int channel, int roc, 
+		   int dcol, int pix, int adc);
   void histogramHits(int fed);
 
 private:
@@ -847,18 +854,26 @@ private:
 
   int countEvents, countAllEvents;
   int countTest;
+  int lumiBlock;
   float sumPixels, sumFedPixels[FEDs];
   HotPixels hotPixels[FEDs];
   double fraction_;
-  int PixelsCount[48][8];
+  int PixelsCount[FEDs][48][8];
   int MAXFED; // last fed
+  int eventId;
 
+  TH1D *hls, *hls1, *hls2;
   TH1D *hsize0, *hsize1, *hsize2, *hsize3;
   TH2F *hchannelRoc, *hchannelRocs, *hchannelPixels, *hchannelPixPerRoc;
   TH1D *hrocs, *hpixels, *hpixPerRoc;
   TH1D *hrow1, *hrow2,*hcol1, *hcol2,*hadc1, *hadc2; 
-  TH1D *hcol11, *hadc11; 
+  //TH1D *hcol11, *hadc11; 
   TH2F *hfedchannelp, *hfedchannel;
+
+  // many pixels 
+  TH2F *hcolRow;
+  TH2F *hfedchannel1, *hfedchannel2, *hfedchannel3;
+  TH2F *hchannelRoc1;
 
 };
 
@@ -943,11 +958,10 @@ void FindHotPixelFromRaw::beginJob() {
   countAllEvents=0;
   countTest=0;
   sumPixels=0.;
-  for(int i=0;i<FEDs;++i) sumFedPixels[i]=0;
-  for(int i=0;i<48;++i) 
-    for(int j=0;j<8;++j)
-      PixelsCount[i][j]=0;
-
+  for(int n=0;n<FEDs;++n) {
+    sumFedPixels[n]=0;
+    for(int i=0;i<48;++i) {for(int j=0;j<8;++j) PixelsCount[n][i][j]=0;}
+  }
   // Define the fraction for noisy pixels
   fraction_ = theConfig.getUntrackedParameter<double>("Fraction",0.001); 
   MAXFED = theConfig.getUntrackedParameter<int>("MAXFED",1293);
@@ -955,9 +969,14 @@ void FindHotPixelFromRaw::beginJob() {
   cout<<" The noise fraction is "<<fraction_<<" FED range until "<<MAXFED<<endl;
 
   edm::Service<TFileService> fs;
+  hls = fs->make<TH1D>( "hls", "lumi sections", 100, 0.0, 100.);
+  hls1 = fs->make<TH1D>( "hls1", "lumi sections with many pxels per event", 100, 0.0, 100.);
+  hls2 = fs->make<TH1D>( "hls2", "lumi sections with many pxels per roc", 100, 0.0, 100.);
+
   hsize0 = fs->make<TH1D>( "hsize0", "Noisy pixel rate", 10000, 0.0, 1.0);
   hsize1 = fs->make<TH1D>( "hsize1", "Noisy pixels per roc", 1000, -0.5, 999.5);
   hsize2 = fs->make<TH1D>( "hsize2", "Noisy pixels per event", 1000, -0.5, 999.5);
+  hsize3 = fs->make<TH1D>( "hsize3", "Pixels per event", 1000, -0.5, 999.5);
 
   hrocs = fs->make<TH1D>( "hrocs", "rocs per channel", 10, -0.5, 9.5);
   hpixels = fs->make<TH1D>( "hpixels", "pixels per channel", 200, -0.5, 199.5);
@@ -987,65 +1006,97 @@ void FindHotPixelFromRaw::beginJob() {
   hadc1 = fs->make<TH1D>( "hadc1", "pixel adc, l1",    300, -0.5, 299.5);
   hadc2 = fs->make<TH1D>( "hadc2", "pixel adc, l2-4",  300, -0.5, 299.5);
 
-  hcol11 = fs->make<TH1D>( "hcol11", "pixel cols, l1",   101, -1.5, 99.5);
-  hadc11 = fs->make<TH1D>( "hadc11", "pixel adc, l1",    300, -0.5, 299.5);
+  //hcol11 = fs->make<TH1D>( "hcol11", "pixel cols, l1",   101, -1.5, 99.5);
+  //hadc11 = fs->make<TH1D>( "hadc11", "pixel adc, l1",    300, -0.5, 299.5);
+
+  // many pixels
+  hfedchannel1  = fs->make<TH2F>("hfedchannel1", "many pixels per roc fed&channel",
+				n_of_FEDs,-0.5,static_cast<float>(n_of_FEDs) - 0.5,
+				n_of_Channels, -0.5,maxChan);  
+  hfedchannel2  = fs->make<TH2F>("hfedchannel2", "many pixels per channel fed&channel",
+				n_of_FEDs,-0.5,static_cast<float>(n_of_FEDs) - 0.5,
+				n_of_Channels, -0.5,maxChan);  
+  hfedchannel3  = fs->make<TH2F>("hfedchannel3", "many rocs per channel fed&channel",
+				n_of_FEDs,-0.5,static_cast<float>(n_of_FEDs) - 0.5,
+				n_of_Channels, -0.5,maxChan);  
+
+  hchannelRoc1 = fs->make<TH2F>("hchannelRoc1", "many pixels per roc roc/chann",48,0.,48.,9, -0.5,8.5);
+  hcolRow = fs->make<TH2F>("hcollRow", "many pixels per roc",52,0.,51.,80, 0.,79.);
+  //hcolRow = fs->make<TH2F>("hcollRow", "many pixels per roc",26,0.,25.,160, 0.,159.);
 
 }
 //-----------------------------------------------------------------------
 void FindHotPixelFromRaw::histogramHits(int fed) {
+  const int cutPixPerRoc=20;
+  const int cutPixPerChan=100;
+  const int cutRocsPerChan=4;
 
-  if(fed!=1200) return;
-
-  int numPixPerChannel=0, numRocsPerChannel=0; // , numPixPerRoc=0;
-
+  int nPixPerChannel=0, nRocsPerChannel=0; // , nPixPerRoc=0;
+  int n = fed-1200; // fed index
   for(int i=0;i<48;++i) {
-    numRocsPerChannel=0;
-    numPixPerChannel=0;
+    nRocsPerChannel=0;
+    nPixPerChannel=0;
 
     for(int j=0;j<8;++j) {
-
-      if(PixelsCount[i][j]>0) {
-	numPixPerChannel += PixelsCount[i][j];	
-	numRocsPerChannel++;
-	hchannelRoc->Fill(float(i),float(j),float(PixelsCount[i][j]));
-      }
-
-      hchannelPixPerRoc->Fill(float(i),float(PixelsCount[i][j]) );
-      hpixPerRoc->Fill(float(PixelsCount[i][j]) );
-
-      PixelsCount[i][j]=0;
-
+      int count = PixelsCount[n][i][j];
+      if(count>0) {
+	nPixPerChannel += count;	
+	nRocsPerChannel++;
+	hchannelRoc->Fill(float(i),float(j),float(count));
+	if(count>cutPixPerRoc) {
+	  cout<<"many pixels per ROC "<<count<<" fed "<<fed<<" chan "<<i
+	      <<" roc "<<j<<" for event "<<eventId<<endl;
+	  hfedchannel1->Fill(float(n),float(i));
+	  hchannelRoc1->Fill(float(i),float(j));
+	  hls2->Fill(float(lumiBlock));
+	}
+      } // if
+      hpixPerRoc->Fill(float(count));
+      hchannelPixPerRoc->Fill(float(i),float(count) );
+      PixelsCount[n][i][j]=0;
     } // roc
 
-    hchannelRocs->Fill(float(i),float(numRocsPerChannel));
-    hchannelPixels->Fill(float(i),float(numPixPerChannel));
-    hrocs->Fill(float(numRocsPerChannel));
-    hpixels->Fill(float(numPixPerChannel));
+    hchannelRocs->Fill(float(i),float(nRocsPerChannel));
+    hchannelPixels->Fill(float(i),float(nPixPerChannel));
+    hrocs->Fill(float(nRocsPerChannel));
+    hpixels->Fill(float(nPixPerChannel));
+    if(nPixPerChannel>cutPixPerChan) {
+      hfedchannel2->Fill(float(n),float(i));
+      cout<<"many pixels per chan "<<nPixPerChannel<<" fed "<<fed<<" chan "<<i
+	  <<" for event "<<eventId<<endl;
+    }
+    if(nRocsPerChannel>cutRocsPerChan) {
+      hfedchannel3->Fill(float(n),float(i));
+      cout<<"many rocs per chan "<<nRocsPerChannel<<" fed "<<fed<<" chan "<<i
+	  <<" for event "<<eventId<<endl;
+    }
 
   } // channel
 
   return;
 }
 //-----------------------------------------------------------------------
-void FindHotPixelFromRaw::analyzeHits(int fed, int channel, int layer, int roc, int dcol, int pix, int adc) {
+void FindHotPixelFromRaw::analyzeHits(int fed, int channel, 
+				      int roc, int dcol, int pix, int adc) {
   //TH2F *hchannelRoc, *hchannelRocs, *hchannelPixels, *hchannelPixPerRoc;
   static int fed0=-1, channel0=-1, roc0=-1;
   static int numPixPerChannel=0, numRocsPerChannel=0, numPixPerRoc=0;
   // for layer-1
   const unsigned int rowmsk = 0x7f00; 
   const unsigned int colmsk = 0x1f8000;
+  //if(fed!=1200) return;
 
-  //cout<<fed<<endl;
+  // count pixels per roc, channels go from 1 to 48
+  PixelsCount[fed-1200][channel-1][roc]++;
 
-  if(fed!=1200) return;
+  // some how I have to get the layer number in an efficient way  
+  string tbm;
+  // this is very inefficient 
+  string  name = MyConvert::rocModuleNameFromFedChan(fed,channel,roc,tbm);
+  int layer = MyConvert::layerFromName(name);
 
-  // channels go from 1 to 48
-  PixelsCount[channel-1][roc]++;
-
-
-  if( (channel>=1&&channel<=8) ||  (channel>=25 && channel<=32) ) { // layer 1 for fed 1200 
+  if(layer==1) { // layer 1
     //cout<<" layer 1: "<<roc<<" "<<dcol<<" "<<pix<<" "<<adc<<endl;
-
     // do a customise computation of col/row from dcol/pix, move to data() later 
     int tmp = (dcol<<16) + (pix<<8);
     int colROC = (tmp&colmsk)>>15;
@@ -1057,10 +1108,10 @@ void FindHotPixelFromRaw::analyzeHits(int fed, int channel, int layer, int roc, 
     hcol1->Fill(float(colROC));
     hadc1->Fill(float(adc));
 
-    if(rowROC==80) {
-      hcol11->Fill(float(colROC));
-      hadc11->Fill(float(adc));
-    }
+    // if(rowROC==80) {
+    //   hcol11->Fill(float(colROC));
+    //   hadc11->Fill(float(adc));
+    // }
 
   } else { // layers 2,3,4
 
@@ -1078,10 +1129,10 @@ void FindHotPixelFromRaw::analyzeHits(int fed, int channel, int layer, int roc, 
 
   }
 
-  return;
+  //if(count>20) hcolRow->Fill(float(col),float(row));
+  //return;
 
   hchannelRoc->Fill(float(channel),float(roc));
-
   
   if(fed!=fed0) { // new fed
     //cout<<" new fed "<<endl;
@@ -1128,6 +1179,15 @@ void FindHotPixelFromRaw::analyzeHits(int fed, int channel, int layer, int roc, 
 }
 //--------------------------------------------------------------------------
 void FindHotPixelFromRaw::analyze(const  edm::Event& ev, const edm::EventSetup& es) {
+  const int maxPixelsPerEvent = 100;
+  // Access event information
+  //run       = ev.id().run();
+  long eventCMSSW  = ev.id().event();  // CMSSW event # , unsigned long long 
+  lumiBlock = ev.luminosityBlock();
+  //bx        = ev.bunchCrossing(); // CMSSW bx
+  //int orbit     = ev.orbitNumber();
+  hls->Fill(float(lumiBlock));
+
   edm::Handle<FEDRawDataCollection> buffers;
   //static std::string label = theConfig.getUntrackedParameter<std::string>("InputLabel","source");
   //static std::string instance = theConfig.getUntrackedParameter<std::string>("InputInstance","");
@@ -1145,24 +1205,22 @@ void FindHotPixelFromRaw::analyze(const  edm::Event& ev, const edm::EventSetup& 
   int status=0;
   int countPixels=0;
   int countErrors=0;
-  int eventId = -1;
+  eventId = -1;
   int channel=-1, roc=-1, dcol=-1, pix=-1, adc=-1;
   
   countAllEvents++;
-  if(printHeaders) cout<<" Event = "<<countEvents<<endl;
-  
+  if(printHeaders) cout<<" Event = "<<countEvents<<" "<<eventCMSSW<<" ls "<<lumiBlock<<endl;  
   //edm::DetSetVector<PixelDigi> collection; // for digis only
-
 
   // Loop over FEDs
   for (int fedId = fedIds.first; fedId <= fedIds.second; fedId++) {
 
-    LogDebug("FindHotPixelFromRaw")<< " GET DATA FOR FED: " <<  fedId ;
     if(printHeaders) cout<<" For FED = "<<fedId<<endl;
 
     if( (fedId-fedId0)>FEDs ) {cout<<" skip fed, id too big "<<fedId<<endl; continue;}
+    //if(fedId != 1263) continue; // select just 1 fed
 
-     PixelDataFormatter::Errors errors;
+    PixelDataFormatter::Errors errors;
     
     //get event data for this fed
     const FEDRawData& rawData = buffers->FEDData( fedId );
@@ -1184,36 +1242,41 @@ void FindHotPixelFromRaw::analyze(const  edm::Event& ev, const edm::EventSetup& 
 
     int countPixelsInFed=0;
     int countErrorsInFed=0;
-    int layer=0;
     // Loop over payload words
     for (const Word64* word = header+1; word != trailer; word++) {
       static const Word64 WORD32_mask  = 0xffffffff;
+      Word32 w = 0;
+      for(int n=0; n<2; ++n) { // 2 words in a long word
+	if(n==0) w = *word         & WORD32_mask;
+	else     w = (*word >> 32) & WORD32_mask;
 
-      Word32 w1 =  *word       & WORD32_mask;
-      status = MyDecode::data(w1, channel, roc, dcol, pix, adc, printData);
-      //if(fedId==1253 && channel==44) cout<<status<<" "<<roc<<" "<<dcol<<" "<<pix<<endl;
-      if(status>0) {
-	//if(fedId==1253 && channel==44) cout<<roc<<" "<<dcol<<" "<<pix<<endl;
-	countPixels++;
-	countPixelsInFed++;
-	if(fedId==1207 && channel==47 && roc==3) countTest++;
-	hfedchannel->Fill(fedId-1200,channel);
-        if(findHot) hotPixels[fedId-fedId0].update(channel,roc,dcol,pix);
-	else        analyzeHits(fedId,channel,layer,roc,dcol,pix,adc);
-      } else if(status<0) countErrorsInFed++;
-
-      Word32 w2 =  (*word >> 32) & WORD32_mask;
-      status = MyDecode::data(w2, channel, roc, dcol, pix, adc,  printData);
-      //if(fedId==1253 && channel==44) cout<<status<<" "<<roc<<" "<<dcol<<" "<<pix<<endl;
-      if(status>0) {
-	//if(fedId==1253 && channel==44) cout<<roc<<" "<<dcol<<" "<<pix<<endl;
-	countPixels++;
-	countPixelsInFed++;
-	if(fedId==1207 && channel==47 && roc==3) countTest++;
-	hfedchannel->Fill(fedId-1200,channel);
-        if(findHot) hotPixels[fedId-fedId0].update(channel,roc,dcol,pix);
-	else        analyzeHits(fedId,channel,layer,roc,dcol,pix,adc);
-      } else if(status<0) countErrorsInFed++;
+	status = MyDecode::data(w, channel, roc, dcol, pix, adc, printData);
+	//if(fedId==1253 && channel==44) cout<<status<<" "<<roc<<" "<<dcol<<" "<<pix<<endl;
+	if(status>0) {
+	  //int rocOrder=0, col=-1, row=-1; 
+	  //string tbm;
+	  //string  name = MyConvert::rocModuleNameFromFedChan(fedId,channel,rocOrder,tbm);
+	  //int layer = MyConvert::layerFromName(name);
+	  //if(fedId==1253 && channel==44) cout<<roc<<" "<<dcol<<" "<<pix<<endl;
+	  //if(fedId==1207 && channel==47 && roc==3) countTest++;  // just testing
+	  countPixels++;
+	  countPixelsInFed++;
+	  hfedchannel->Fill(fedId-fedId0,channel);
+	  if(findHot) {
+	    int count = hotPixels[fedId-fedId0].update(channel,roc,dcol,pix);
+	    // if(count>1) {
+	    //   cout<<fedId<<" "<<channel<<" "<<roc<<" "
+	    // 	  <<dcol<<" "<<pix<<" "<<count<<endl;
+	    //   // assume layers2-4
+	    //   int colROC = (dcol * 2) + (pix%2); // col address, starts from 0
+	    //   int rowROC = abs( int(pix/2) - 80); // row addres, starts from 0
+	    //   hcolRow->Fill(float(colROC),float(rowROC));
+	    // }
+	  } else {
+	    analyzeHits(fedId,channel,roc,dcol,pix,adc);
+	  }
+	} else if(status<0) countErrorsInFed++;
+      } // for 2 words
       //cout<<hex<<w1<<" "<<w2<<dec<<endl;
     } // loop over words
     
@@ -1227,16 +1290,18 @@ void FindHotPixelFromRaw::analyze(const  edm::Event& ev, const edm::EventSetup& 
       sumFedPixels[fedId-fedId0] += countPixelsInFed;
     }
 
+    // if(fedId==1200) histogramHits(fedId); // do for one fed only
     histogramHits(fedId);
  
   } // loop over feds
 
+  hsize2->Fill(float(countPixels));
   if(countPixels>0) {
     //cout<<"EVENT: "<<countEvents<<" "<<eventId<<" pixels "<<countPixels<<" errors "<<countErrors<<endl;
     sumPixels += countPixels;
     countEvents++;
-
     hsize2->Fill(float(countPixels));
+    if(countPixels>maxPixelsPerEvent) hls1->Fill(float(lumiBlock));
 
     //int dummy=0;
     //cout<<" : ";

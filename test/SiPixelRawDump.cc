@@ -1126,7 +1126,7 @@ void SiPixelRawDump::endJob() {
 void SiPixelRawDump::beginJob() {
 
   printVerbosity = theConfig.getUntrackedParameter<int>("Verbosity",1);
-  printThreshold = theConfig.getUntrackedParameter<double>("PrintThreshold",0.001); // threshold per event for printing errors
+  printThreshold = theConfig.getUntrackedParameter<double>("PrintThreshold",0.01); // threshold per event for printing errors
   selectedFED = theConfig.getUntrackedParameter<int>("selectedFED",-1);
   selectedChannel = theConfig.getUntrackedParameter<int>("selectedChannel",-1);
   selectedType = theConfig.getUntrackedParameter<int>("selectedType",-1);  // not used 
