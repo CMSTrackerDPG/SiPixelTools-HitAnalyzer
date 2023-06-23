@@ -1475,7 +1475,7 @@ void SiPixelRawDump::beginJob() {
 
   string name, title;
   static string errorName[30] = {  // FIXME - defined twice
-    " "," ","wrong channel","wrong pix","wrong roc","pix=0",
+    " ","adc0","wrong channel","wrong pix","wrong roc","pix=0",
     " double-pix","wrong dcol","rocReset","NTP","timeout",
     "ENE","NOR","autoreset","overflow",
     "Cal","pkam","masked","automasked","tbmReset",
