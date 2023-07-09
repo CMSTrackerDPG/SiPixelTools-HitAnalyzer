@@ -24,8 +24,13 @@ from Configuration.AlCa.GlobalTag import GlobalTag
 #process.GlobalTag.globaltag = '100X_dataRun2_Express_v2' # 
 #process.GlobalTag.globaltag = '101X_dataRun2_Express_v8' # 
 
+# 2023
+#process.GlobalTag.globaltag = '130X_dataRun3_Express_v2' # 
+process.GlobalTag.globaltag = '130X_dataRun3_Express_v3' # 
+
+
 # 2021-23
-process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:run3_data_express', '')
+#process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:run3_data_express', '')
 #process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:run3_data_prompt', '')
 
 # AUTO conditions 
@@ -101,6 +106,10 @@ process.source = cms.Source("PoolSource",
 
 #process.source.lumisToProcess = cms.untracked.VLuminosityBlockRange('124230:26-124230:9999','124030:2-124030:9999')
 process.source.lumisToProcess = cms.untracked.VLuminosityBlockRange('366:1-366:100')
+
+process.myBXFilter = cms.EDFilter("BunchCrossingFilter",
+        bunches = cms.vuint32( [foo for foo in range(1, 110)] )
+)
 
 process.source.skipBadFiles = cms.untracked.bool( True )
 

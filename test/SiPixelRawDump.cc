@@ -897,11 +897,17 @@ private:
   TH1D *htotPixels,*htotPixels0, *htotPixels1, *htotPixels2, *htotPixels3, *htotPixels4, *htotPixels5, 
     *htotPixels6, *htotPixels7, *htotPixels8;
 
-  TProfile *htotPixelsls,*hbpixPixelsls,*hbpixPixels1ls,*hbpixPixels2ls,*hbpixPixels3ls,*hbpixPixels4ls,
-    *hfpixPixelsls;  
+  // Profiles 
+  TProfile *htotPixelsls,*hbpixPixelsls,*hbpixPixels1ls,*hbpixPixels2ls,
+    *hbpixPixels3ls,*hbpixPixels4ls,*hfpixPixelsls;  
+  TProfile *htotPixelsbx,*hbpixPixelsbx,*hbpixPixels1bx,*hbpixPixels2bx,
+    *hbpixPixels3bx,*hbpixPixels4bx,*hfpixPixelsbx; 
+  //TProfile *hpix1bx,*hpix2bx,*hpix3bx,*hpix4bx,*hpixfbx; 
+  TProfile *herrorType1ls, *herrorType2ls,*herrorType1bx,*herrorType2bx;
+  TProfile *hmaskedL1ls,*hmaskedL2ls,*hmaskedL3ls,*hmaskedL4ls,*hmaskedFls;
+  TProfile *hadc1ls,*hadc2ls,*hadc3ls,*hadc4ls,*hadc0ls; 
+  TProfile *hadc1bx,*hadc2bx,*hadc3bx,*hadc4bx,*hadc0bx; 
 
-  TProfile *htotPixelsbx,*hbpixPixelsbx,*hbpixPixels1bx,*hbpixPixels2bx,*hbpixPixels3bx,*hbpixPixels4bx,
-    *hfpixPixelsbx; 
 
   TProfile2D *hfedchannelsize,*hfedchannelsizeFull,*hfedchannelsizeEff,
     *hfedfibersizediff; //
@@ -916,8 +922,6 @@ private:
   TH1D *hfedfiberdiffb1,*hfedfiberdiffb2,*hfedfiberdiffb3,*hfedfiberdiffb4;
 
   TH1D *hadc1,*hadc2,*hadc3,*hadc4,*hadc0; 
-  TProfile *hadc1ls,*hadc2ls,*hadc3ls,*hadc4ls,*hadc0ls; 
-  TProfile *hadc1bx,*hadc2bx,*hadc3bx,*hadc4bx,*hadc0bx; 
   //TH2F *hchannelRoc, *hchannelRocs, *hchannelPixels, *hchannelPixPerRoc;
   TH2F *hchannelFED;
   TH2F *hfed2d, *hsize2d;
@@ -940,14 +944,13 @@ private:
   TProfile2D *hfedChanLS[94], *hfedChanAutoMaskedLS[94];
 #endif
 
-  TProfile *herrorType1ls, *herrorType2ls,*herrorType1bx,*herrorType2bx;
-  TProfile *hmaskedL1ls,*hmaskedL2ls,*hmaskedL3ls,*hmaskedL4ls,*hmaskedFls;
 
   //per layer 
   TH2F *hfedChannelDefinition;
   TH2F *hpix0Map[4],*hdoubleMap[4],*hdcolLowMap[4],*hpixOrderMap[4],*hadc0Map[4],*hadc0RocMap[4];
   TH1D *htest1, *htest2, *htest3, *htest4, *htest5, *htest6;
  
+
 #ifdef IND_FEDS
   TH2F *hfed2DErrors1ls,*hfed2DErrors2ls,*hfed2DErrors3ls,*hfed2DErrors4ls,*hfed2DErrors5ls,
     *hfed2DErrors6ls,*hfed2DErrors7ls,*hfed2DErrors8ls,*hfed2DErrors9ls,*hfed2DErrors10ls,*hfed2DErrors11ls,*hfed2DErrors12ls,
@@ -1533,6 +1536,12 @@ void SiPixelRawDump::beginJob() {
       else if(j==4) hadc0Map[i]    =fs->make<TH2F>(name.c_str(),title.c_str(),9,-4.5,4.5,sizeH[i],-binH[i],binH[i]);
     }
   }
+
+  //hpix1bx  = fs->make<TProfile>("hpix1bx", "l1 pix vs bx ",4000,-0.5,3999.5,0.0,1000000.);
+  //hpix2bx  = fs->make<TProfile>("hpix2bx", "l2 pix vs bx ",4000,-0.5,3999.5,0.0,1000000.);
+  //hpix3bx  = fs->make<TProfile>("hpix3bx", "l3 pix vs bx ",4000,-0.5,3999.5,0.0,1000000.);
+  //hpix4bx  = fs->make<TProfile>("hpix4bx", "l4 pix vs bx ",4000,-0.5,3999.5,0.0,1000000.);
+  //hpixfbx  = fs->make<TProfile>("hpixfbx", "fpix vs bx ",4000,-0.5,3999.5,0.0,1000000.);
 
 #ifdef IND_FEDS
   hfed2DErrors1ls  = fs->make<TH2F>("hfed2DErrors1ls", "errors type 6 vs lumi",maxLS,0,float(maxLS), n_of_FEDs,-0.5,static_cast<float>(n_of_FEDs) - 0.5); //
@@ -2236,6 +2245,12 @@ void SiPixelRawDump::analyze(const  edm::Event& ev, const edm::EventSetup& es) {
   hmaskedL3ls->Fill(float(lumiBlock),float(maskedPerEvent_[2]));
   hmaskedL4ls->Fill(float(lumiBlock),float(maskedPerEvent_[3]));
   hmaskedFls->Fill(float(lumiBlock),float(maskedPerEvent_[4]));
+
+  //hpix1bx->Fill(float(bx),float(countPixelsBPix1));
+  //hpix2bx->Fill(float(bx),float(countPixelsBPix2));
+  //hpix3bx->Fill(float(bx),float(countPixelsBPix3));
+  //hpix4bx->Fill(float(bx),float(countPixelsBPix4));
+  //hpixfbx->Fill(float(bx),float(countPixelsFPix));
 
 #ifdef CHECK_BX
   if(wrongBX && printBX && !phase1) {

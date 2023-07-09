@@ -225,6 +225,8 @@ private:
   TH1F *hdets, *hdigis, *hdigis0, *hdigis1, *hdigis2,*hdigis3,*hdigis4,*hdigis5; 
   TProfile *hadc1ls,*hadc2ls,*hadc3ls,*hadc4ls,*hadc0ls; 
   TProfile *hadc1bx,*hadc2bx,*hadc3bx,*hadc4bx,*hadc0bx; 
+  TProfile *hpix1bx,*hpix2bx,*hpix3bx,*hpix4bx,*hpixfbx; 
+
   TH1F *hdcolFull1ls,*hdcolFull1bx,*hadc01bx,*helec01bx,*hadc02bx,*helec02bx; 
 
 #ifdef USE_GAINS
@@ -803,6 +805,11 @@ void PixDigisTest::beginJob() {
   hadc4bx = fs->make<TProfile>("hadc4bx","adc4 vs bx",4000,-0.5,3999.5,0.,255.);
   hadc0ls = fs->make<TProfile>("hadc0ls","adc0 vs ls",1000,0,1000,     0.,255.);
   hadc0bx = fs->make<TProfile>("hadc0bx","adc0 vs bx",4000,-0.5,3999.5,0.,255.);
+  hpix1bx = fs->make<TProfile>("hpix1bx","l1 pix vs bx",4000,-0.5,3999.5,0.0,1000000.);
+  hpix2bx = fs->make<TProfile>("hpix2bx","l2 pix vs bx",4000,-0.5,3999.5,0.0,1000000.);
+  hpix3bx = fs->make<TProfile>("hpix3bx","l3 pix vs bx",4000,-0.5,3999.5,0.0,1000000.);
+  hpix4bx = fs->make<TProfile>("hpix4bx","l4 pix vs bx",4000,-0.5,3999.5,0.0,1000000.);
+  hpixfbx = fs->make<TProfile>("hpixfbx","fpix vs bx",4000,-0.5,3999.5,0.0,1000000.);
 
   hdcolFull1ls = fs->make<TH1F>("hdcolFull1ls","dcol-full vs ls",1000,-0.5,999.5);
   hdcolFull1bx = fs->make<TH1F>("hdcolFull1bx","dcol-full vs bx",3600,-0.5,3599.5);
@@ -1852,27 +1859,31 @@ void PixDigisTest::analyze(const edm::Event& iEvent,
     if(totalNumOfDigis>100) hbx4->Fill(float(bx));
     else if(totalNumOfDigis>4) hbx5->Fill(float(bx));
     else hbx6->Fill(float(bx));
-
-
   }
 
   
 #ifdef HISTOS
-  hdigisPerLay1 ->Fill(float(totalNumOfDigis1));
-  hdigisPerLay2 ->Fill(float(totalNumOfDigis2));
-  hdigisPerLay3 ->Fill(float(totalNumOfDigis3));
-  hdigisPerLay4 ->Fill(float(totalNumOfDigis4));
+  hdigisPerLay1->Fill(float(totalNumOfDigis1));
+  hdigisPerLay2->Fill(float(totalNumOfDigis2));
+  hdigisPerLay3->Fill(float(totalNumOfDigis3));
+  hdigisPerLay4->Fill(float(totalNumOfDigis4));
   if(totalNumOfDigis1>0) hdetsPerLay1->Fill(float(numberOfDetUnits1));
   if(totalNumOfDigis2>0) hdetsPerLay2->Fill(float(numberOfDetUnits2));
   if(totalNumOfDigis3>0) hdetsPerLay3->Fill(float(numberOfDetUnits3));
   if(totalNumOfDigis4>0) hdetsPerLay4->Fill(float(numberOfDetUnits4));
 
-  hdigisPerLayF1 ->Fill(float(totalNumOfDigisF1));
-  hdigisPerLayF2 ->Fill(float(totalNumOfDigisF2));
-  hdigisPerLayF3 ->Fill(float(totalNumOfDigisF3));
-  hdetsPerLayF1 ->Fill(float(numberOfDetUnitsF1));
-  hdetsPerLayF2 ->Fill(float(numberOfDetUnitsF2));
-  hdetsPerLayF3 ->Fill(float(numberOfDetUnitsF3));
+  hdigisPerLayF1->Fill(float(totalNumOfDigisF1));
+  hdigisPerLayF2->Fill(float(totalNumOfDigisF2));
+  hdigisPerLayF3->Fill(float(totalNumOfDigisF3));
+  hdetsPerLayF1->Fill(float(numberOfDetUnitsF1));
+  hdetsPerLayF2->Fill(float(numberOfDetUnitsF2));
+  hdetsPerLayF3->Fill(float(numberOfDetUnitsF3));
+
+  hpix1bx->Fill(float(bx),float(totalNumOfDigis1));
+  hpix2bx->Fill(float(bx),float(totalNumOfDigis2));
+  hpix3bx->Fill(float(bx),float(totalNumOfDigis3));
+  hpix4bx->Fill(float(bx),float(totalNumOfDigis4));
+  hpixfbx->Fill(float(bx),float(totalNumOfDigisF1+totalNumOfDigisF2+totalNumOfDigisF3));
 
   hfullDcolsPerEvent->Fill(float(countFullDcolsInEvent));
 

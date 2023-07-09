@@ -24,16 +24,9 @@ process.load("RecoLocalTracker.Configuration.RecoLocalTracker_cff")
 process.load("Configuration.StandardSequences.FrontierConditions_GlobalTag_cff")
 from Configuration.AlCa.GlobalTag import GlobalTag
 # to use no All 
-# 2017
-#process.GlobalTag.globaltag = '92X_dataRun2_Express_v7' # from CMSSW927
-#process.GlobalTag.globaltag = '92X_dataRun2_Prompt_v11' # Promot
-#process.GlobalTag.globaltag = '94X_dataRun2_ReReco_EOY17_v2' # for RERECO
-# 2018 express
-#process.GlobalTag.globaltag = '101X_dataRun2_Express_v8' # 
-# 2018 re-reco 
-#process.GlobalTag.globaltag = '111X_dataRun2_v3' # 
-#process.GlobalTag.globaltag = '106X_dataRun2_v28' # 
-
+# 2023
+#process.GlobalTag.globaltag = '130X_dataRun3_Express_v3' # 
+#process.GlobalTag.globaltag = '130X_dataRun3_Express_v2' # 
 # AUTO conditions 
 process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:run3_data_express', '')
 #process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:run3_data_prompt', '')
@@ -108,6 +101,11 @@ process.source = cms.Source("PoolSource",
 #)
 
 #process.source.lumisToProcess = cms.untracked.VLuminosityBlockRange('325097:1-325097:100') # overview
+
+process.myBXFilter = cms.EDFilter("BunchCrossingFilter",
+                bunches = cms.vuint32( [foo for foo in range(1, 110)] )
+)
+
 process.source.skipBadFiles = cms.untracked.bool( True )
 
 process.MessageLogger = cms.Service("MessageLogger",
@@ -210,8 +208,8 @@ process.siPixelDigis.cpu.UsePhase1 = True
 #process.siPixelClustersPreSplitting.VCaltoElectronOffset = 0
 #process.siPixelClustersPreSplitting.VCaltoElectronGain_L1 = 1  # 
 #process.siPixelClustersPreSplitting.VCaltoElectronOffset_L1 = 0
-#process.siPixelClustersPreSplitting.SeedThreshold = 10 #  def=1000
-#process.siPixelClustersPreSplitting.ChannelThreshold = 10 # must be bigger than 1, def=10
+#process.siPixelClustersPreSplitting.cpu.SeedThreshold = 10 #  def=1000
+#process.siPixelClustersPreSplitting.cpu.ChannelThreshold = 10 # must be bigger than 1, def=10
 #process.siPixelClustersPreSplitting.cpu.ClusterThreshold = 10 # def =4000    # integer?
 #process.siPixelClustersPreSplitting.cpu.ClusterThreshold_L1 = 10 # def=2000 # integer?
 
