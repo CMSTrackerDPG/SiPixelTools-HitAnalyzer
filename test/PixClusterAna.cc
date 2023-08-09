@@ -839,6 +839,7 @@ PixClusterAna::PixClusterAna(edm::ParameterSet const& conf)
     selectLadder *= sign;
     if(selectModule>4) selectModule = -(selectModule-4); // 8 7 6 5 - 1 2 3 4
   }
+  // select1=202 - select a group of modules
 
   cout<<(conf.getParameter<edm::InputTag>("Tracks")).label()<<endl;
   string tracksTag = (conf.getParameter<edm::InputTag>("Tracks")).label();
@@ -2847,6 +2848,7 @@ void PixClusterAna::analyze(const edm::Event& e,
     else if(select1==103) { if(numPVsGood>0) return; } // no pvs
 #endif
     else if(select1== 201) {goto label1;} // select specific module 
+    // select1=202 - a group of modules 
     // select specific event
     else if(select1==9999) { if(event!=select2) return; } 
     else { 
@@ -3150,6 +3152,10 @@ void PixClusterAna::analyze(const edm::Event& e,
 
     if(select1==201) { // select a specific module 
       if( (layer!=selectLayer) || (ladder!=selectLadder) || (module!=selectModule) ) continue; // skip module 
+    } else if(select1==202) {
+      if (layer!=4) continue;  // select layer 4
+      if(ladder<-20||ladder>-17) continue; // select ladders -17 to -20, bm
+      if(module>0) continue; // select -, so bmo
     }
 
     if(PRINT) {

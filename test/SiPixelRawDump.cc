@@ -924,6 +924,7 @@ private:
   TH1D *hadc1,*hadc2,*hadc3,*hadc4,*hadc0; 
   //TH2F *hchannelRoc, *hchannelRocs, *hchannelPixels, *hchannelPixPerRoc;
   TH2F *hchannelFED;
+  TProfile2D *hchannelFEDWords;
   TH2F *hfed2d, *hsize2d;
   TProfile *hsizels,*havsizebx,*hsizep;
 
@@ -1245,6 +1246,9 @@ void SiPixelRawDump::beginJob() {
   hchannelFED = fs->make<TH2F>("hchannelFED", "channel-FED hits",
 			       n_of_FEDs, -0.5, static_cast<float>(n_of_FEDs) - 0.5,
 			       48,0.,48.);
+  hchannelFEDWords = fs->make<TProfile2D>("hchannelFEDWords", "channel-FED words",
+			       n_of_FEDs, -0.5, static_cast<float>(n_of_FEDs) - 0.5,
+					  48,0.,48.,0.,10000.);
   hfedChannelDefinition = fs->make<TH2F>("hfedChannelDefinition", "define channel-FED 1,2,3,4,5",
 			       n_of_FEDs, -0.5, static_cast<float>(n_of_FEDs) - 0.5,
 			       48,0.,48.);
@@ -2024,6 +2028,7 @@ void SiPixelRawDump::analyze(const  edm::Event& ev, const edm::EventSetup& es) {
     int fedChannel = 0;
     int num=0;
     errorFed=-1; errorChan=-1; // cleat the error-hit assocuation 
+    int countPerChannel=0, fedChannelOld=-1;
     // Loop over payload words
     for (const Word64* word = header+1; word != trailer; word++) { // loop ober word8
       static const Word64 WORD32_mask  = 0xffffffff;
@@ -2044,6 +2049,13 @@ void SiPixelRawDump::analyze(const  edm::Event& ev, const edm::EventSetup& es) {
 
 	layer_ = decode.getLayer(fedId,fedChannel); // get layer number, 0 for fpix  
 	//cout<<"getlayer in Analyze "<<layer_<<" "<<status<<endl;
+	if(fedChannel!=fedChannelOld) {
+	  if(countPerChannel>0  && fedChannelOld>-1) 
+	    hchannelFEDWords->Fill((fedId-fedId0),fedChannelOld,float(countPerChannel));
+	  countPerChannel=0;
+	  fedChannelOld=fedChannel;
+	}
+	countPerChannel++;
 
 	htest5->Fill(float((eventId%256)-(eventCMSSW%256)));
 	if(status>0) {  // ok, it is data
