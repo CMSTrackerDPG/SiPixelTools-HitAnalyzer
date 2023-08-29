@@ -48,5 +48,6 @@
 #dasgoclient -query='file dataset=/ExpressPhysics/Run2023C-Express-v1/FEVT run=367127'
 #dasgoclient -query='file dataset=/ExpressPhysics/Run2023C-Express-v2/FEVT run=367836'
 #dasgoclient -query='file dataset=/ExpressPhysics/Run2023C-Express-v4/FEVT run=367883'
-dasgoclient -query='file dataset=/ExpressPhysics/Run2023D-Express-v1/FEVT run=370129'
+#dasgoclient -query='file dataset=/ExpressPhysics/Run2023D-Express-v1/FEVT run=370129'
+dasgoclient -query='file dataset=/ExpressCosmics/Run2023D-Express-v2/FEVT run=371692'
 

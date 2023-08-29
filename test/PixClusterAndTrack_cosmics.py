@@ -159,7 +159,7 @@ process.c_cosm = cms.EDAnalyzer("PixClustersWithTracks",
 #     trajectoryInput = cms.string("TrackRefitterP5")
      trajectoryInput = cms.string('cosmictrackfinderP5')
 # additional selections
-#    Select1 = cms.untracked.int32(14),  # select the cut type, o no cut
+     Select1 = cms.untracked.int32(17),  # no high quality cut
 #    Select2 = cms.untracked.int32(1),  # select the cut value   
 )
 

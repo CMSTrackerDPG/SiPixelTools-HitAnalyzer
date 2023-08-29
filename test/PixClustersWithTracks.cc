@@ -1828,7 +1828,7 @@ void PixClustersWithTracks::analyze(const edm::Event& e,
   using namespace edm;
   using namespace reco;
   static int lumiBlockOld = -9999;
-  const bool TrackCuts = false;
+  bool TrackCuts = false;
 #ifdef PHI_PROFILES
   const float CLU_SIZE_ETA_CUT = 0.5;
 #endif
@@ -2196,11 +2196,13 @@ void PixClustersWithTracks::analyze(const edm::Event& e,
       }
     }
 
-    if(select1!=17) {
+    if(select1!=17) {  // select 17 for e.g. cosmic runs 
       // select only high purity tracks
       if( !(t->quality(Track::highPurity)) ) continue;
       //if( !(track->quality(Track::tight)) ) continue;
       //if( !(track->quality(Track::loose)) ) continue;
+    } else {
+      TrackCuts=false; // no track cuts for select1=17 (e.g. cosmics)
     }
 
     hEta->Fill(eta);
