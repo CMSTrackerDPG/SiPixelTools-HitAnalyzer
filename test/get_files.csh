@@ -10,15 +10,6 @@
 #/cvmfs/cms.cern.ch/common/das_client  --limit=0 --query='file dataset=/ExpressPhysics/Run2017F-Express-v1/FEVT run=305282' 
 #/cvmfs/cms.cern.ch/common/dasgoclient  --limit=0 --query='file dataset=/ZeroBias/Run2017F-*/RECO'  # works
 
-# 2018
-# /store/mc/Run3Summer19DR/TTbar_14TeV_TuneCP5_Pythia8/GEN-SIM-DIGI-RAW/106X_mcRun3_2021_realistic_v3-v2/130000/F37978B0-7657-4845-B84A-918A4C91652E.root
-#"/store/relval/CMSSW_10_6_1_patch3/RelValTTbar_13/GEN-SIM-RECO/PU25ns_106X_upgrade2018_realistic_v6-v1/20000/FF0A1ADF-8ECA-514A-A177-2723BCCABDE0.root",
-#/cvmfs/cms.cern.ch/common/dasgoclient  --limit=0 --query='file dataset=/ExpressCosmics/Commissioning2018-Express-v1/FEVT run=313759'
- 
-# 2018 data 
-#/cvmfs/cms.cern.ch/common/dasgoclient  --limit=0 --query='file dataset=/ExpressPhysics/Run2018D-Express-v1/FEVT run=325097'
-#/cvmfs/cms.cern.ch/common/dasgoclient  --limit=0 --query='file dataset=/ExpressPhysics/Run2018E-Express-v1/FEVT run=325308'
-#/cvmfs/cms.cern.ch/common/dasgoclient  --limit=0 --query='file dataset=/HIExpressPhysics/HIRun2018A-Express-v1/FEVT run=326384'
 
 #dasgoclient -query='dataset dataset=/*/Run2018*/RAW site=T2_CH_CERN'  # all RAW at CERN
 #dasgoclient -query='file dataset=/ZeroBias/Run2018E-v1/RAW site=T2_CH_CERN'  # all RAW at CERN
@@ -49,5 +40,9 @@
 #dasgoclient -query='file dataset=/ExpressPhysics/Run2023C-Express-v2/FEVT run=367836'
 #dasgoclient -query='file dataset=/ExpressPhysics/Run2023C-Express-v4/FEVT run=367883'
 #dasgoclient -query='file dataset=/ExpressPhysics/Run2023D-Express-v1/FEVT run=370129'
-dasgoclient -query='file dataset=/ExpressCosmics/Run2023D-Express-v2/FEVT run=371692'
+#dasgoclient -query='file dataset=/ExpressCosmics/Run2023D-Express-v2/FEVT run=371692'
+#dasgoclient -query='file dataset=/ExpressCosmics/Run2023E-Express-v1/FEVT run=372439'
+#dasgoclient -query='file dataset=/ExpressPhysics/Run2023E-Express-v1/FEVT run=373061'
+#dasgoclient -query='file dataset=/HIExpressPhysics/HIRun2023A-Express-v1/FEVT run=374289'
+dasgoclient -query='file dataset=/HIExpressPhysics/HIRun2023A-Express-v2/FEVT run=375513'
 

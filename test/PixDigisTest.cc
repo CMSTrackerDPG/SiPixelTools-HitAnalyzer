@@ -94,6 +94,7 @@
 #include <TProfile2D.h>
 
 #define HISTOS
+#define HI // histogram sizes for HI
 //#define L1
 #define HLT
 //#define SINGLE_MODULES
@@ -452,19 +453,40 @@ void PixDigisTest::beginJob() {
     hz3id = fs->make<TH1F>( "hz3id", "Z-index id L3", 11, -5.5, 5.5);
     hz4id = fs->make<TH1F>( "hz4id", "Z-index id L4", 11, -5.5, 5.5);
  
+#ifdef HI
+    float maxSize=3999.5;
+#else
+    float maxSize=1999.5;
+#endif
+
     hdigisPerDet1 = fs->make<TH1F>( "hdigisPerDet1", "Digis per det l1", 
-			      1000, -0.5, 999.5);
-    hdigisPerDet2 = fs->make<TH1F>( "hdigisPerDet2", "Digis per det l2", 
-			      600, -0.5, 599.5);
-    hdigisPerDet3 = fs->make<TH1F>( "hdigisPerDet3", "Digis per det l3", 
-			      400, -0.5, 399.5);
-    hdigisPerDet4 = fs->make<TH1F>( "hdigisPerDet4", "Digis per det l4", 
-			      400, -0.5, 399.5);
-    //
-    //const float maxSize=199.5;
-    const float maxSize=39999.5;
-    hdigisPerLay1 = fs->make<TH1F>( "hdigisPerLay1", "Digis per layer l1", 
 			      1000, -0.5, maxSize);
+    hdigisPerDet2 = fs->make<TH1F>( "hdigisPerDet2", "Digis per det l2", 
+			      1000, -0.5, maxSize);
+    hdigisPerDet3 = fs->make<TH1F>( "hdigisPerDet3", "Digis per det l3", 
+			      1000, -0.5, maxSize);
+    hdigisPerDet4 = fs->make<TH1F>( "hdigisPerDet4", "Digis per det l4", 
+			      1000, -0.5, maxSize);
+    hdigisPerDetF11 = fs->make<TH1F>( "hdigisPerDetF11", "Digis per det d1, r1", 
+			      200, -0.5, maxSize);
+    hdigisPerDetF21 = fs->make<TH1F>( "hdigisPerDetF21", "Digis per det d2, r1", 
+			      200, -0.5, maxSize);
+    hdigisPerDetF31 = fs->make<TH1F>( "hdigisPerDetF31", "Digis per det d3, r1", 
+			      200, -0.5, maxSize);
+    hdigisPerDetF12 = fs->make<TH1F>( "hdigisPerDetF12", "Digis per det d1, r2", 
+			      200, -0.5, maxSize);
+    hdigisPerDetF22 = fs->make<TH1F>( "hdigisPerDetF22", "Digis per det d2, r2", 
+			      200, -0.5, maxSize);
+    hdigisPerDetF32 = fs->make<TH1F>( "hdigisPerDetF32", "Digis per det d3, r2", 
+			      200, -0.5, maxSize);
+    //
+#ifdef HI
+    maxSize=99999.5; // HI
+#else
+    maxSize=39999.5; // p-p
+#endif
+    hdigisPerLay1 = fs->make<TH1F>( "hdigisPerLay1", "Digis per layer l1", 
+			      1000, -0.5, maxSize*2);
     hdigisPerLay2 = fs->make<TH1F>( "hdigisPerLay2", "Digis per layer l2", 
 			      1000, -0.5, maxSize);
     hdigisPerLay3 = fs->make<TH1F>( "hdigisPerLay3", "Digis per layer l3", 
@@ -479,25 +501,13 @@ void PixDigisTest::beginJob() {
 			      353, -0.5, 352.5);
     hdetsPerLay4 = fs->make<TH1F>( "hdetsPerLay4", "Full dets per layer l4", 
 			      513, -0.5, 512.5);
-
-    hdigisPerDetF11 = fs->make<TH1F>( "hdigisPerDetF11", "Digis per det d1, r1", 
-			      200, -0.5, 199.5);
-    hdigisPerDetF21 = fs->make<TH1F>( "hdigisPerDetF21", "Digis per det d2, r1", 
-			      200, -0.5, 199.5);
-    hdigisPerDetF31 = fs->make<TH1F>( "hdigisPerDetF31", "Digis per det d3, r1", 
-			      200, -0.5, 199.5);
-    hdigisPerDetF12 = fs->make<TH1F>( "hdigisPerDetF12", "Digis per det d1, r2", 
-			      200, -0.5, 199.5);
-    hdigisPerDetF22 = fs->make<TH1F>( "hdigisPerDetF22", "Digis per det d2, r2", 
-			      200, -0.5, 199.5);
-    hdigisPerDetF32 = fs->make<TH1F>( "hdigisPerDetF32", "Digis per det d3, r2", 
-			      200, -0.5, 199.5);
     hdigisPerLayF1 = fs->make<TH1F>( "hdigisPerLayF1", "Digis per layer d1", 
-			      2000, -0.5, 19999.5);
+				     1000, -0.5, maxSize);
     hdigisPerLayF2 = fs->make<TH1F>( "hdigisPerLayF2", "Digis per layer d2", 
-			      2000, -0.5, 19999.5);
+				     1000, -0.5, maxSize);
     hdigisPerLayF3 = fs->make<TH1F>( "hdigisPerLayF3", "Digis per layer d3", 
-			      2000, -0.5, 19999.5);
+				     1000, -0.5, maxSize);
+
     hdetsPerLayF1 = fs->make<TH1F>( "hdetsPerLayF1", "Full dets per layer d1", 
 			      257, -0.5, 256.5);
     hdetsPerLayF2 = fs->make<TH1F>( "hdetsPerLayF2", "Full dets per layer d2", 
@@ -769,9 +779,13 @@ void PixDigisTest::beginJob() {
   hbx0    = fs->make<TH1F>("hbx0",   "bx",   4000,0,4000.);  
 
   hdets  = fs->make<TH1F>( "hdets",  "Dets with hits", 2000, -0.5, 1999.5);
-  const int sizeH=20000;
+  const int sizeH=1000;
   const float lowH = -0.5;
+#ifdef HI
+  const float highH = 199999.5;
+#else
   const float highH = 99999.5;
+#endif
   hdigis  = fs->make<TH1F>( "hdigis", "All Digis", sizeH, lowH, highH);
   hdigis0 = fs->make<TH1F>( "hdigis0", "All Digis zoomed", 2000, lowH, 1999.5);
   hdigis1 = fs->make<TH1F>( "hdigis1", "All Digis for full events", sizeH, lowH, highH);
@@ -866,37 +880,29 @@ void PixDigisTest::analyze(const edm::Event& iEvent,
 			   const edm::EventSetup& iSetup) {
   const bool MY_DEBUG = false;
   const bool rescaleVcal = false; // to try escaling vcal to account for radiation
-
-  //Retrieve tracker topology from geometry
-  //edm::ESHandle<TrackerTopology> tTopo;
-  //iSetup.get<TrackerTopologyRcd>().get(tTopo);
-  //const TrackerTopology* tt = tTopo.product();
-  // Get event setup (to get global transformation)
-  //edm::ESHandle<TrackerGeometry> geom;
-  //iSetup.get<TrackerDigiGeometryRecord>().get( geom );
-  //const TrackerGeometry& theTracker(*geom);
+  bool bpixOnly = false;
 
   edm::ESHandle<TrackerGeometry> geom = iSetup.getHandle(trackerGeomToken_);
   const TrackerGeometry &theTracker(*geom);
   edm::ESHandle<TrackerTopology> tTopo = iSetup.getHandle(trackerTopoToken_);
   const TrackerTopology *tt=tTopo.product();
 
-
-
 #ifdef USE_GAINS
   //Setup gain calibration service
   theSiPixelGainCalibration_->setESObjects( iSetup );
 #endif
 
-
   using namespace edm;
-  if(PRINT) cout<<" Analyze PixDigisTest for phase "<<phase1_<<endl;
 
   int run       = iEvent.id().run();
   int event     = iEvent.id().event();
   int lumiBlock = iEvent.luminosityBlock();
   int bx        = iEvent.bunchCrossing();
   int orbit     = iEvent.orbitNumber();
+
+  if(PRINT) cout<<endl<<"PixelDigis: run "<<run
+		<<" event "<<event<<" "<<" ls "<<lumiBlock<<" bx "<<bx
+		<<endl;
 
   hbx0->Fill(float(bx));
   hlumi0->Fill(float(lumiBlock));
@@ -910,7 +916,9 @@ void PixDigisTest::analyze(const edm::Event& iEvent,
     else if(select1==4) { if( ( (bx==1)||(bx==39)||(bx==201)||(bx==443)||(bx==499)||(bx==1083)||(bx==1337)||(bx==1492)||(bx==1977)||(bx==2231)||(bx==2287)||(bx==2871)||(bx==3224)||(bx==3280) )   ) return; } 
     // select specific event
     else if(select1==9999) { if(event!=select2) return; } 
-    else { if( !((bx>=select1) && (bx<=select2)) ) return; } // skip bx outside the select1-select2 region 
+    else if(select1==9998) {bpixOnly=true; } // select only bpix
+    // skip bx outside the select1-select2 region 
+    else { if( !((bx>=select1) && (bx<=select2)) ) return; } 
     //....
   }
 
@@ -991,7 +999,8 @@ void PixDigisTest::analyze(const edm::Event& iEvent,
     //const PixelGeomDetUnit * pixDet  = dynamic_cast<const PixelGeomDetUnit*>(geoUnit);
     unsigned int detType=detId.det(); // det type, tracker=1
     unsigned int subid=detId.subdetId(); //subdetector type, barrel=1
-    
+    if(bpixOnly && (subid!=1) ) continue; // skip fpix
+
     if(MY_DEBUG) 
       cout<<"Det: "<<detid<<" "<<detId.rawId()<<" "<<detId.null()<<" "<<detType<<" "<<subid<<endl;
     
@@ -1260,8 +1269,11 @@ void PixDigisTest::analyze(const edm::Event& iEvent,
 	  //electrons = int( vcal * theConversionFactor + theOffset); 
           //}
 #endif
-	if(PRINT || select) cout <<numberOfDigis<< " Col: " << col << " Row: " << row 
-				 << " ADC: " << adc <<" elec "<<electrons<<" channel = "<<channel<<endl;
+	if(PRINT || select) cout <<numberOfDigis<< " Col: " << col 
+				 << " Row: " << row 
+				 << " ADC: " << adc <<" elec "<<electrons
+			      //<<" channel = "<<channel
+				 <<endl;
 
 
 	// Accumuate dcols, do only for bpix
