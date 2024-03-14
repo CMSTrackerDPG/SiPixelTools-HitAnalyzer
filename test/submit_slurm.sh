@@ -28,7 +28,7 @@ mkdir -p /scratch/$USER/${SLURM_JOB_ID}
 sleep 10
 #
 cd /scratch/$USER/${SLURM_JOB_ID}
-cp $MYPWD/translation_pix.dat ./translation.dat
+cp $MYPWD/translation.dat ./translation.dat
 #cmsRun $MYPWD/SimsToClus.py
 #cmsRun $MYPWD/SimsToRec.py
 #cmsRun $MYPWD/RawToRec.py
@@ -36,7 +36,7 @@ cp $MYPWD/translation_pix.dat ./translation.dat
 #cmsRun $MYPWD/digitize.py
 #cmsRun $MYPWD/reco.py
 
-#cmsRun $MYPWD/runRawDumper_360927.py
+#cmsRun $MYPWD/runRawDumper.py
 #cmsRun $MYPWD/runRawDumper_360942.py
 #cmsRun $MYPWD/runRawDumper_360991.py
 #cmsRun $MYPWD/runRawDumper_361045.py
@@ -50,8 +50,11 @@ cp $MYPWD/translation_pix.dat ./translation.dat
 #cmsRun $MYPWD/runRawDumper_361512.py
 #cmsRun $MYPWD/runRawDumper_368546_rnd.py
 #cmsRun $MYPWD/runRawDumper_368546.py
-
-#cmsRun $MYPWD/runHotPixels_347874.py
+#
+#cmsRun $MYPWD/runHotPixels_373608.py
+#cmsRun $MYPWD/runHotPixels.py
+#
+#cmsRun $MYPWD/PixClusterAndTrack_357438.py
 #cmsRun $MYPWD/PixClusterAndTrack_360820.py
 #cmsRun $MYPWD/PixClusterAndTrack_360991.py
 #cmsRun $MYPWD/PixClusterAndTrack_361971.py
@@ -66,13 +69,27 @@ cp $MYPWD/translation_pix.dat ./translation.dat
 #cmsRun $MYPWD/PixClusterAndTrack_362698.py
 #cmsRun $MYPWD/PixClusterAndTrack_362758.py
 #cmsRun $MYPWD/PixClusterAndTrack_ephmeral.py
+#
+#cmsRun $MYPWD/PixClusterAndTrack_367413.py
 #cmsRun $MYPWD/PixClusterAndTrack_369596.py
 #cmsRun $MYPWD/PixClusterAndTrack_369927.py
 #cmsRun $MYPWD/PixClusterAndTrack_369956.py
+#
 #cmsRun $MYPWD/PixClusterAndTrack_370093.py
-cmsRun $MYPWD/PixClusterAndTrack_370129.py
+#cmsRun $MYPWD/PixClusterAndTrack_370093_tree.py
+#cmsRun $MYPWD/PixClusterAndTrack_370129.py
+#cmsRun $MYPWD/PixClusterAndTrack_370169.py
+#
+#cmsRun $MYPWD/PixClusterAndTrack_370093_1mod.py
 #cmsRun $MYPWD/PixClusterAndTrack_370129_1mod.py
-# 
+#
+#cmsRun $MYPWD/PixClusterAndTrack_373608.py   
+#cmsRun $MYPWD/test.py   
+# 2024
+#cmsRun $MYPWD/PixClusterAndTrack_376826.py   
+#cmsRun $MYPWD/PixClusterAndTrack_377298.py   
+cmsRun $MYPWD/PixClusterAndTrack_377676.py   
+ 
 pwd
 ls 
 cd $MYPWD

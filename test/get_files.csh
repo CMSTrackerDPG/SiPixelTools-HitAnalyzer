@@ -39,10 +39,11 @@
 #dasgoclient -query='file dataset=/ExpressPhysics/Run2023C-Express-v1/FEVT run=367127'
 #dasgoclient -query='file dataset=/ExpressPhysics/Run2023C-Express-v2/FEVT run=367836'
 #dasgoclient -query='file dataset=/ExpressPhysics/Run2023C-Express-v4/FEVT run=367883'
-#dasgoclient -query='file dataset=/ExpressPhysics/Run2023D-Express-v1/FEVT run=370129'
+#dasgoclient -query='file dataset=/ExpressPhysics/Run2023D-Express-v1/FEVT run=370093'
 #dasgoclient -query='file dataset=/ExpressCosmics/Run2023D-Express-v2/FEVT run=371692'
 #dasgoclient -query='file dataset=/ExpressCosmics/Run2023E-Express-v1/FEVT run=372439'
 #dasgoclient -query='file dataset=/ExpressPhysics/Run2023E-Express-v1/FEVT run=373061'
 #dasgoclient -query='file dataset=/HIExpressPhysics/HIRun2023A-Express-v1/FEVT run=374289'
-dasgoclient -query='file dataset=/HIExpressPhysics/HIRun2023A-Express-v2/FEVT run=375513'
-
+#dasgoclient -query='file dataset=/HIExpressPhysics/HIRun2023A-Express-v2/FEVT run=375513'
+# 24
+dasgoclient -query='file dataset=/ExpressCosmics/Commissioning2024-Express-v1/FEVT run=376826' 

@@ -93,8 +93,6 @@
 #include "RecoVertex/VertexPrimitives/interface/TransientVertex.h"
 #include <DataFormats/VertexReco/interface/VertexFwd.h>
 
-
-
 // hit pattern 
 #include "DataFormats/TrackReco/interface/HitPattern.h"
 
@@ -137,6 +135,8 @@
 //#define TRAJECTORY // needs a track refit, does not work from RECO
 #define ROC_RATE 
 #define DO_FPIX 
+#define ANA_CLUSTERS  // monitor cluster charge profiles  
+//#define DO_2ND_HIT // test is a track has >1 hits per module
 
 #ifdef TRAJECTORY
 #include "TrackingTools/TransientTrack/interface/TransientTrackBuilder.h"
@@ -188,7 +188,11 @@ class PixClustersWithTracks : public edm::one::EDAnalyzer<edm::one::SharedResour
   float rocZGlobal(int module, int ladder);  // roc z coordinate in global 
   float rocPhiGlobal(int module, int ladder);  // roc phi coordinate in global
   bool isFlipped(int layer, int ladder);
-
+#ifdef ANA_CLUSTERS
+  void analyzeCluster(
+   edm::Ref<edmNew::DetSetVector<SiPixelCluster>, SiPixelCluster> const& clust,
+   int,int,int) const;
+#endif 
   const int maxClus = 100; 
 
  private:
@@ -466,6 +470,10 @@ class PixClustersWithTracks : public edm::one::EDAnalyzer<edm::one::SharedResour
     *hfpixMapD3Mz,*hfpixMapD3Pz; 
 #endif
 
+#ifdef ANA_CLUSTERS
+  TProfile2D *hCluProfile1[4],*hCluProfile2[4],*hCluProfile3[4],
+    *hCluProfile4[4];
+#endif
 
 };
 /////////////////////////////////////////////////////////////////
@@ -516,7 +524,7 @@ PixClustersWithTracks::PixClustersWithTracks(edm::ParameterSet const& conf)
 
 #ifdef USE_TREE
   if(doTree) {
-    fillPixelTree = false; // pixel hits - true, clusters = false
+    fillPixelTree = true; // pixel hits - true, clusters = false
     if(select1==203) fillPixelTree = true;
     treeBpixOnly = true; // fill only bpix 
     cout<<" tree = "<<doTree<<"  pixels = "<<fillPixelTree<<" bpixonly "<<treeBpixOnly<<endl; 
@@ -548,7 +556,58 @@ PixClustersWithTracks::PixClustersWithTracks(edm::ParameterSet const& conf)
 }
 
 // Virtual destructor needed.
-PixClustersWithTracks::~PixClustersWithTracks() { }  
+  PixClustersWithTracks::~PixClustersWithTracks() { }  
+
+#ifdef ANA_CLUSTERS 
+ void PixClustersWithTracks::analyzeCluster(
+  edm::Ref<edmNew::DetSetVector<SiPixelCluster>, SiPixelCluster> const& clustIt,
+  int layer, int ladder, int module) const {
+    const int maxSizeY = 24;
+    //int size = clustIt->size();
+    int sizeX = clustIt->sizeX(); //x=row=rfi, 
+    int sizeY = clustIt->sizeY(); //y=col=z_global
+    if(sizeX>3 || sizeY<3 || sizeY>maxSizeY) return; // skip short of wide clusters 
+    //float ch = float(clustIt->charge())/1000.; // convert ke to electrons
+     // Returns int index of the cluster min/max  
+    //int minPixelRow = clustIt->minPixelRow(); //x
+    //int maxPixelRow = clustIt->maxPixelRow();
+    int minPixelCol = clustIt->minPixelCol(); //y
+    int maxPixelCol = clustIt->maxPixelCol();
+    float cluProfile[maxSizeY]={0};
+    // Get the pixels in the Cluster
+    const vector<SiPixelCluster::Pixel>& pixelsVec = clustIt->pixels();
+    //cout<<" Pixels in this cluster (i/x/y/char) - "
+    //	  <<pixelsVec.size()<<endl;
+    for (unsigned int i = 0;  i < pixelsVec.size(); ++i) { // loop over pixels
+      float pixx = pixelsVec[i].x; // index as float=iteger, row index
+      float pixy = pixelsVec[i].y; // same, col index
+      float electrons = pixelsVec[i].adc;
+      float kelec = (float(electrons)/1000.);
+      int index = int(pixy) - minPixelCol;
+      if(index<maxSizeY) cluProfile[index] += kelec;
+      //bool cluEdge = ( (pixy==minPixelCol) || (pixy==maxPixelCol) );
+      //cout<<i<<" "<<pixx<<" "<<pixy<<" "<<kelec<<" "<<cluEdge<<endl;
+    }
+    //index = 0(inner,z>0) 1(inner,z<0) 2(outer,z>0) 3(outer,z<0)
+    int index = 0;
+    // inner/outer ladders 
+    bool even = (ladder%2==0);  // even ladders
+    bool inner = true; // inner ladders 
+    if( (!even && ladder>0) || (even && ladder<0) ) inner=false;
+    if(!inner) index +=2;
+    if(module<0) index +=1; // add 1 for -z
+    for(int i=0; i<(sizeY); ++i) { //
+      if(i<maxSizeY) {
+	if(layer==1) hCluProfile1[index]->Fill(i,sizeY,cluProfile[i]);
+	else if(layer==2) hCluProfile2[index]->Fill(i,sizeY,cluProfile[i]);
+	else if(layer==3) hCluProfile3[index]->Fill(i,sizeY,cluProfile[i]);
+	else if(layer==4) hCluProfile4[index]->Fill(i,sizeY,cluProfile[i]);
+	//cout<<i<<" "<<cluProfile[i]<<endl;
+      }
+    }
+    return;
+  }
+#endif 
 
 // decode a simplified ROC address
 int PixClustersWithTracks::rocId(int col, int row) {
@@ -642,9 +701,11 @@ void PixClustersWithTracks::beginJob() {
     tree->Branch("size",sizeT,"size[clusPerTrack]/F");
     tree->Branch("sizeX",sizeXT,"sizeX[clusPerTrack]/F");
     tree->Branch("sizeY",sizeYT,"sizeY[clusPerTrack]/F");
-    tree->Branch("globalZ",gZT,"globalZ[clusPerTrack]/F");
-    tree->Branch("globalPhi",gPhiT,"globalPhi[clusPerTrack]/F");
-    tree->Branch("globalR",gRT,"globalR[clusPerTrack]/F");        
+    if(!fillPixelTree) {
+      tree->Branch("globalZ",gZT,"globalZ[clusPerTrack]/F");
+      tree->Branch("globalPhi",gPhiT,"globalPhi[clusPerTrack]/F");
+      tree->Branch("globalR",gRT,"globalR[clusPerTrack]/F");
+    }        
     tree->Branch("col",colT,"col[clusPerTrack]/F");
     tree->Branch("row",rowT,"row[clusPerTrack]/F");
 
@@ -1599,6 +1660,22 @@ void PixClustersWithTracks::beginJob() {
   hfpixMapD3Pz->SetOption("colz");
 #endif
 
+#ifdef ANA_CLUSTERS
+  for(int i=0;i<4;++i) {
+    string name="hCluProfile1_"+std::to_string(i);
+    string title="Cluster Profile LYR1- "+std::to_string(i);
+    hCluProfile1[i] = fs->make<TProfile2D>(name.c_str(),title.c_str(),24,0.,24.,24,0.,24.,0.,1000.);
+    name="hCluProfile2_"+std::to_string(i);
+    title="Cluster Profile LYR2- "+std::to_string(i);
+    hCluProfile2[i] = fs->make<TProfile2D>(name.c_str(),title.c_str(),18,0.,18.,18,0.,18.,0.,1000.);
+    name="hCluProfile3_"+std::to_string(i);
+    title="Cluster Profile LYR3- "+std::to_string(i);
+    hCluProfile3[i] = fs->make<TProfile2D>(name.c_str(),title.c_str(),16,0.,16.,16,0.,16.,0.,1000.);
+    name="hCluProfile4_"+std::to_string(i);
+    title="Cluster Profile LYR4- "+std::to_string(i);
+    hCluProfile4[i] = fs->make<TProfile2D>(name.c_str(),title.c_str(),14,0.,14.,14,3.,14.,0.,1000.);
+  }
+#endif
 
 }
 //-------------------------------------------------------------------------
@@ -2274,6 +2351,11 @@ void PixClustersWithTracks::analyze(const edm::Event& e,
     //if(tscp.isValid() ) {cout<<" trajectory ok"<<endl;}
 #endif
 
+#ifdef DO_2ND_HIT
+    int hitArray[12][8];
+    for(int i=0;i<12;++i) for(int j=0;j<8;++j) {hitArray[i][j]=0;}
+#endif
+
     int clusPerTrack=0, pixPerTrack=0; // number of pixel clusters per track 
     //cout<<"loop over rechits on track "<<trackNumber<<" "<<countNiceTracks<<" "<<clusPerTrack<<endl; //dk
 
@@ -2327,9 +2409,21 @@ void PixClustersWithTracks::analyze(const edm::Event& e,
 	hstatus->Fill(11.);
 
 	layer=tTopo->pxbLayer(hit_detId);
-	ladderIndex=tTopo->pxbLadder(hit_detId);
-	zindex=tTopo->pxbModule(hit_detId);
+	ladderIndex=tTopo->pxbLadder(hit_detId); //1-12?
+	zindex=tTopo->pxbModule(hit_detId); //1-8
 	if(zindex<5) side=1; else side=2;
+#ifdef DO_2ND_HIT
+	if(layer==1) {
+	  if(zindex<1||zindex>8) cout<<"zindex "<<zindex<<endl;
+	  if(ladderIndex<1||ladderIndex>12) cout<<"ladderindex "
+						<<ladderIndex<<endl;
+	  if(hitArray[ladderIndex-1][zindex-1]>0) {
+	    cout<<"2nd hit "<<ladderIndex<<" "<<zindex<<" "<<
+		hitArray[ladderIndex-1][zindex-1]<<endl;
+	  }
+	  hitArray[ladderIndex-1][zindex-1]++;
+	}
+#endif
 	PixelBarrelName pbn(hit_detId,tTopo,phase1_);
 
 	// Shell { mO = 1, mI = 2 , pO =3 , pI =4 };
@@ -2555,6 +2649,11 @@ void PixClustersWithTracks::analyze(const edm::Event& e,
       
 	numberOfClusters++;
 	clusPerTrack++; // count pixel clusters per track
+
+#ifdef ANA_CLUSTERS
+        if(layer>=1 && layer<=4) analyzeCluster(clust,layer,ladderOn,module); // bpix only 
+#endif
+
 	float charge = (clust->charge())/1000.0; // convert electrons to kilo-electrons
 	int size = clust->size();
 	int sizeX = clust->sizeX();
@@ -3144,9 +3243,9 @@ void PixClustersWithTracks::analyze(const edm::Event& e,
 	} // if layer
 
 #ifdef USE_PROFILES
-	double yProfile[20], xProfile[3];
-	for(int i=0;i<20;++i) yProfile[i]=0.;
-	for(int i=0;i<3; ++i) xProfile[i]=0.;
+	// double yProfile[20], xProfile[3];
+	// for(int i=0;i<20;++i) yProfile[i]=0.;
+	// for(int i=0;i<3; ++i) xProfile[i]=0.;
 #endif
 	// Get the pixels in the Cluster
 	const vector<SiPixelCluster::Pixel>& pixelsVec = clust->pixels();
@@ -3157,7 +3256,7 @@ void PixClustersWithTracks::analyze(const edm::Event& e,
 	  float pixy = pixelsVec[i].y; // same, col index
 	  float adc = (float(pixelsVec[i].adc)/1000.);
 	  int ladder = ladderOn;  //to mimic the code from CluAna
-
+	  if(PRINT) cout<<i<<"- "<<pixx<<" "<<pixy<<" "<<adc<<endl;
 #ifdef USE_TREE
 	if(doTree&&fillPixelTree&&(!treeBpixOnly||(treeBpixOnly&&(layer>0)))) {
 	  pixPerTrack++;
@@ -3179,7 +3278,6 @@ void PixClustersWithTracks::analyze(const edm::Event& e,
         }
 #endif // USE_TREE
 
-
 #ifdef ROC_RATE
 	  roc = rocId(int(pixy),int(pixx));  // 0-15, column, row
 	  //link = int(roc/8); // link 0 & 1 unused
@@ -3198,16 +3296,15 @@ void PixClustersWithTracks::analyze(const edm::Event& e,
 #endif
 
 #ifdef USE_PROFILES
-	  int indexY=-1;
-	  if(inner) indexY=pixy-minPixelCol;
-	  else      indexY=maxPixelCol-pixy;
-	  if(indexY>=0 && indexY<=20) yProfile[indexY] += adc;
+	  // int indexY=-1;
+	  // if(inner) indexY=pixy-minPixelCol;
+	  // else      indexY=maxPixelCol-pixy;
+	  // if(indexY>=0 && indexY<=20) yProfile[indexY] += adc;
 
-	  int indexX=-1;
-	  if(inner) indexX=pixx-minPixelRow;
-	  else      indexX=maxPixelRow-pixx;
-	  if(indexX>=0 && indexX<=3) xProfile[indexX] += adc;
-
+	  // int indexX=-1;
+	  // if(inner) indexX=pixx-minPixelRow;
+	  // else      indexX=maxPixelRow-pixx;
+	  // if(indexX>=0 && indexX<=3) xProfile[indexX] += adc;
 #endif
 	  if(layer==1) {  // Layer 1
 	    if(select) cout<<i<<" "<<pixx<<" "<<pixy<<" "<<adc<<endl;
@@ -3524,14 +3621,14 @@ void PixClustersWithTracks::analyze(const edm::Event& e,
       hclusPerTrkVsls->Fill(lumiBlock,clusPerTrk);
 #endif 
 
-      //cout<<"finish clusters per track "<<clusPerTrack<<endl; //dk
+      //cout<<"finish clusters per track "<<clusPerTrack<<" "<<pixPerTrack<<endl; //dk
 #ifdef USE_TREE
       if(fillPixelTree) clusPerTrackT = pixPerTrack;
       else clusPerTrackT = clusPerTrack;
 #endif
     } // numOf clustres
 
-    //cout<<" finish track "<<trackNumber<<" "<<clusPerTrack<<" "<<numberOfClusters<<endl;
+    //cout<<" finish track "<<trackNumber<<" "<<clusPerTrack<<" "<<numberOfClusters<<endl;  //dk
 
 #ifdef USE_TREE
     if(doTree && (clusPerTrackT>0) ) {

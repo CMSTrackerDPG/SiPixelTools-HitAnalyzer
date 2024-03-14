@@ -108,7 +108,7 @@ process.source = cms.Source("PoolSource",
 process.source.skipBadFiles = cms.untracked.bool( True )
 
 process.TFileService = cms.Service("TFileService",
-    fileName = cms.string('clus_ana_cosmics.root')
+    fileName = cms.string('clus_ana.root')
 )
 
 process.d = cms.EDAnalyzer("PixClusterAna",
