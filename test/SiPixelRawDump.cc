@@ -941,7 +941,7 @@ private:
   //TH2F *hchannelRoc, *hchannelRocs, *hchannelPixels, *hchannelPixPerRoc;
   TH2F *hchannelFED;
   TProfile2D *hchannelFEDWords;
-  TH2F *hfed2d, *hsize2d, *hmanyHits;
+  TH2F *hfed2dErrors, *hsize2d, *hmanyHits;
   TProfile *hsizels,*havsizebx,*hsizep;
 
   // errors 
@@ -960,7 +960,7 @@ private:
   //per layer 
   TH2F *hfedChannelDefinition;
   TH2F *hpix0Map[4],*hdoubleMap[4],*hdcolLowMap[4],*hpixOrderMap[4],*hadc0Map[4],*hadc0RocMap[4];
-  TH1D *htest1, *htest2, *htest3, *htest4, *htest5, *htest6;
+  TH1D *htest, *htest1, *htest2, *htest3, *htest4, *htest5, *htest6;
  
   // Per FED
 #ifdef PER_FED
@@ -1392,19 +1392,19 @@ void SiPixelRawDump::beginJob() {
 					     n_of_FEDs,-0.5,static_cast<float>(n_of_FEDs) - 0.5,
 					     maxFiber, -0.5,maxFiberF,0.0,10000.);  
 
-  hfedfibersize1 = fs->make<TProfile2D>("hfedfibersize1", "fed&channel L1",
+  hfedfibersize1 = fs->make<TProfile2D>("hfedfibersize1", "max chan size - fed&fibre L1",
 					n_of_FEDs,-0.5,static_cast<float>(n_of_FEDs) - 0.5,
 					maxFiber, -0.5,maxFiberF,0.0,10000.);  
-  hfedfibersize2 = fs->make<TProfile2D>("hfedfibersize2", "fed&channel L2",
+  hfedfibersize2 = fs->make<TProfile2D>("hfedfibersize2", "max chan size - fed&fibre L2",
 					n_of_FEDs,-0.5,static_cast<float>(n_of_FEDs) - 0.5,
 					maxFiber, -0.5,maxFiberF,0.0,10000.);  
-  hfedfibersize3 = fs->make<TProfile2D>("hfedfibersize3", "fed&channel L3",
+  hfedfibersize3 = fs->make<TProfile2D>("hfedfibersize3", "max chan size - fed&fibre L3",
 					n_of_FEDs,-0.5,static_cast<float>(n_of_FEDs) - 0.5,
 					maxFiber, -0.5,maxFiberF,0.0,10000.);  
-  hfedfibersize4 = fs->make<TProfile2D>("hfedfibersize4", "fed&channel L4",
+  hfedfibersize4 = fs->make<TProfile2D>("hfedfibersize4", "max chan size - fed&fibre L4",
 					n_of_FEDs,-0.5,static_cast<float>(n_of_FEDs) - 0.5,
 					maxFiber, -0.5,maxFiberF,0.0,10000.);  
-  hfedfibersizef = fs->make<TProfile2D>("hfedfibersizef", "fed&channel fpix",
+  hfedfibersizef = fs->make<TProfile2D>("hfedfibersizef", "max chan size - fed&fibre fpix",
 					n_of_FEDs,-0.5,static_cast<float>(n_of_FEDs) - 0.5,
 					maxFiber, -0.5,maxFiberF,0.0,10000.);  
   hfedfibersizeb1  = fs->make<TH1D>("hfedfibersizeb1", "pixels per bpix1 channel max of fiber",int(maxLink),0.0,maxLink);
@@ -1437,7 +1437,7 @@ void SiPixelRawDump::beginJob() {
 
   herrors = fs->make<TH1D>( "herrors", "FED errors per event/fed", 100, -0.5, 99.5);
   htotErrors = fs->make<TH1D>( "htotErrors", "Total errors per event", 1000, -0.5, 999.5);
-  hfed2d = fs->make<TH2F>( "hfed2d", "error type versus fed#", n_of_FEDs,-0.5,static_cast<float>(n_of_FEDs)-0.5,
+  hfed2dErrors = fs->make<TH2F>( "hfed2dErrors", "error type versus fed#", n_of_FEDs,-0.5,static_cast<float>(n_of_FEDs)-0.5,
 			   21, -0.5, 20.5); // ALL
 
   herrorType1     = fs->make<TH1D>( "herrorType1", "fed errors per type", 
@@ -1484,6 +1484,7 @@ void SiPixelRawDump::beginJob() {
   hmaskedFls = fs->make<TProfile>("hmaskedFls","FPix masked chans vs ls"
 				    ,maxLS,0,float(maxLS),0,1000.);
 
+  htest = fs->make<TH1D>("htest", "channel sum per fibre L1",100,0.,500.);
   htest1 = fs->make<TH1D>("htest1", "event diff",255,0.,255);
   htest2 = fs->make<TH1D>("htest2", "event diff",255,0.,255);
   htest3 = fs->make<TH1D>("htest3", "event diff ",512,-255.,255);
@@ -1780,7 +1781,7 @@ void SiPixelRawDump::analyzeErrors(int fedId, int fedChannel, int status, int st
     hfed2DError[status]->Fill(float(fedId-fedId0),float(fedChannel));
   }
 
-  if(status!=17) hfed2d->Fill(float(fedId-fedId0),float(status)); // fed # versus type, skip disabled 
+  if(status!=17) hfed2dErrors->Fill(float(fedId-fedId0),float(status)); // fed # versus type, skip disabled 
   //else cout<<"disabled"<<endl;
 
   if(status>=8) {  // hard errors
@@ -2295,12 +2296,14 @@ void SiPixelRawDump::analyze(const  edm::Event& ev, const edm::EventSetup& es) {
 	  continue; // skip
 	}
 
-	channel1st=false;
 
+	// Find the larger channel size within 1 fiber 
+	channel1st=false;
 	int sizeDiff = -1.0;
+	int sizeSum = sizeEven + chanSize;
+	if(layer==1) htest->Fill(float(sizeSum));
 	if(sizeEven>0. && chanSize>0.) {
 	  sizeDiff=abs(chanSize-sizeEven);
-	  //if(layer==1) htest->Fill(float(chanSize),float(sizeEven));
 	}
 	float f= float(i/2)+1.;
 	if(sizeDiff>=0.) hfedfibersizediff->Fill( float(fedIndex), float(f), float(sizeDiff));

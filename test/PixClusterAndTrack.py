@@ -14,23 +14,14 @@ process.load("Configuration.StandardSequences.FrontierConditions_GlobalTag_cff")
 from Configuration.AlCa.GlobalTag import GlobalTag
 # to use no All 
 # 2017
-#process.GlobalTag.globaltag = '90X_dataRun2_Express_v4' # 
-#process.GlobalTag.globaltag = '92X_dataRun2_Express_v2' # 
-#process.GlobalTag.globaltag = '92X_dataRun2_Express_v4' # for 926
 #process.GlobalTag.globaltag = '92X_dataRun2_Express_v7' # for 927,9
-#process.GlobalTag.globaltag = '94X_dataRun2_ReReco_EOY17_v2' # for 2017 rereco
-
 # 2018
-#process.GlobalTag.globaltag = '100X_dataRun2_Express_v2' # 
-#process.GlobalTag.globaltag = '101X_dataRun2_Express_v8' # 
 
 # 2023
-#process.GlobalTag.globaltag = '130X_dataRun3_Express_v2' # 
-process.GlobalTag.globaltag = '130X_dataRun3_Express_v3' # 
-
+#process.GlobalTag.globaltag = '130X_dataRun3_Express_v3' # 
 
 # 2021-23
-#process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:run3_data_express', '')
+process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:run3_data_express', '')
 #process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:run3_data_prompt', '')
 
 # AUTO conditions 

@@ -60,22 +60,21 @@ process.source = cms.Source("PoolSource",
 #fileNames =  myfilelist )
 
     fileNames = cms.untracked.vstring(
-
-"root://eoscms.cern.ch//eos/cms/store/express/Commissioning2024/ExpressCosmics/FEVT/Express-v1/000/376/826/00000/f6f7484f-ff8c-4a19-b407-8cd6875dfccd.root",
-"root://eoscms.cern.ch//eos/cms/store/express/Commissioning2024/ExpressCosmics/FEVT/Express-v1/000/376/826/00000/c03d9316-8844-4d71-9acd-4a601f16b8e0.root",
-"root://eoscms.cern.ch//eos/cms/store/express/Commissioning2024/ExpressCosmics/FEVT/Express-v1/000/376/826/00000/51146cdf-2957-48a0-8fb4-50b1119dfe8e.root",
-"root://eoscms.cern.ch//eos/cms/store/express/Commissioning2024/ExpressCosmics/FEVT/Express-v1/000/376/826/00000/1bd604f8-6c6f-40c5-a842-2825b7ea706b.root",
-"root://eoscms.cern.ch//eos/cms/store/express/Commissioning2024/ExpressCosmics/FEVT/Express-v1/000/376/826/00000/7e8daa17-6dec-439a-a83f-b068d7965bd7.root",
-"root://eoscms.cern.ch//eos/cms/store/express/Commissioning2024/ExpressCosmics/FEVT/Express-v1/000/376/826/00000/0e10a07b-e8c1-46fe-b726-d1e3034970e6.root",
-"root://eoscms.cern.ch//eos/cms/store/express/Commissioning2024/ExpressCosmics/FEVT/Express-v1/000/376/826/00000/d7168a7e-12ad-455d-bd88-c264d89caf59.root",
-"root://eoscms.cern.ch//eos/cms/store/express/Commissioning2024/ExpressCosmics/FEVT/Express-v1/000/376/826/00000/8ef16e3e-f8a8-480e-b383-5097ae87a238.root",
-"root://eoscms.cern.ch//eos/cms/store/express/Commissioning2024/ExpressCosmics/FEVT/Express-v1/000/376/826/00000/f6293bf5-4a8a-497a-8ebb-a5b3435ebe54.root",
-"root://eoscms.cern.ch//eos/cms/store/express/Commissioning2024/ExpressCosmics/FEVT/Express-v1/000/376/826/00000/161384c8-828e-4390-97b2-0cf8f8d3086d.root",
+"root://eoscms.cern.ch//eos/cms/store/express/Run2024A/ExpressPhysics/FEVT/Express-v1/000/378/750/00000/bc4f70d1-e7ae-449c-8d1a-ee138b5ee7fa.root",
+"root://eoscms.cern.ch//eos/cms/store/express/Run2024A/ExpressPhysics/FEVT/Express-v1/000/378/750/00000/47c936ac-22d4-4f6a-88fc-ed99c9d4bf5b.root",
+"root://eoscms.cern.ch//eos/cms/store/express/Run2024A/ExpressPhysics/FEVT/Express-v1/000/378/750/00000/4c664f11-2bff-4dc8-8afe-9db42351ff40.root",
+"root://eoscms.cern.ch//eos/cms/store/express/Run2024A/ExpressPhysics/FEVT/Express-v1/000/378/750/00000/a534bec3-e2e0-4442-b0f8-bd56349292be.root",
+"root://eoscms.cern.ch//eos/cms/store/express/Run2024A/ExpressPhysics/FEVT/Express-v1/000/378/750/00000/207f4510-7cf0-4581-b708-50ece66a70d6.root",
+"root://eoscms.cern.ch//eos/cms/store/express/Run2024A/ExpressPhysics/FEVT/Express-v1/000/378/750/00000/ad2f61ed-6ab7-426f-862c-71f6a7cdf4d0.root",
+"root://eoscms.cern.ch//eos/cms/store/express/Run2024A/ExpressPhysics/FEVT/Express-v1/000/378/750/00000/1d81b905-c38d-4170-b17e-f45bf0b32323.root",
+"root://eoscms.cern.ch//eos/cms/store/express/Run2024A/ExpressPhysics/FEVT/Express-v1/000/378/750/00000/2ac43a41-682b-44ec-a15c-10ae8ab46209.root",
+"root://eoscms.cern.ch//eos/cms/store/express/Run2024A/ExpressPhysics/FEVT/Express-v1/000/378/750/00000/bc072f37-d77a-48d8-851c-67eaff65d810.root",
+"root://eoscms.cern.ch//eos/cms/store/express/Run2024A/ExpressPhysics/FEVT/Express-v1/000/378/750/00000/64a00bbc-95c4-4dbe-b2ba-b85216768e6d.root",
 
     )
 )
 
-#process.source.lumisToProcess = cms.untracked.VLuminosityBlockRange('323481:38-323481:311')
+process.source.lumisToProcess = cms.untracked.VLuminosityBlockRange('378750:41-378750:9999')
 process.source.skipBadFiles = cms.untracked.bool( True )
 
 process.d = cms.EDAnalyzer("FindHotPixelFromRaw", 
@@ -90,14 +89,14 @@ process.d = cms.EDAnalyzer("FindHotPixelFromRaw",
 #    InputLabel = cms.untracked.string('siPixelRawData'),
     CheckPixelOrder = cms.untracked.bool(False),
 #   Fraction to define  noisy pixels 
-                           Fraction = cms.untracked.double(0.01),
+                           Fraction = cms.untracked.double(0.1),
 #                           Fraction = cms.untracked.double(0.001),
     MAXFED = cms.untracked.int32(1293)  # bpix only 
     #MAXFED = cms.untracked.int32(1338)  # all  
 )
 
-#process.p = cms.Path(process.hltfilter*process.d)
-process.p = cms.Path(process.d)
+process.p = cms.Path(process.hltfilter*process.d)
+#process.p = cms.Path(process.d)
 
 # process.ep = cms.EndPath(process.out)
 
