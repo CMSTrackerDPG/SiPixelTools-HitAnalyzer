@@ -81,7 +81,12 @@ cp $MYPWD/translation.dat ./translation.dat
 #cmsRun $MYPWD/PixClusterAndTrack_380126.py   
 #cmsRun $MYPWD/PixClusterAndTrack_380384.py   
 #cmsRun $MYPWD/PixClusterAndTrack_380624.py   
-cmsRun $MYPWD/PixClusterAndTrack_381190.py   
+#cmsRun $MYPWD/PixClusterAndTrack_381190.py   
+#cmsRun $MYPWD/PixClusterAndTrack_381543.py   
+#cmsRun $MYPWD/PixClusterAndTrack_382580.py   
+#cmsRun $MYPWD/PixClusterAndTrack_382594.py   
+#cmsRun $MYPWD/PixClusterAndTrack_382878.py   
+cmsRun $MYPWD/PixClusterAndTrack_383034.py   
  
 pwd
 ls 
