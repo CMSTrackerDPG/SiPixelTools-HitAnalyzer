@@ -121,6 +121,7 @@ process.d = cms.EDAnalyzer("PixClusterAna",
     Select2 = cms.untracked.int32(0),  # select the cut value   
     doTree = cms.untracked.bool(False), # write the tree, lorge files!
     skipEventsPerLS = cms.untracked.int32(1000), #skip >events per LS
+    lumiHistos = cms.untracked.int32(250), # max LS in lumi histos
 )
 
 process.d1 = cms.EDAnalyzer("PixClusterAna",

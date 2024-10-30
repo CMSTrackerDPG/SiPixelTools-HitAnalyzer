@@ -63,6 +63,14 @@ myfilelist.extend([
 process.source = cms.Source("PoolSource",
 # fileNames =  myfilelist)
     fileNames = cms.untracked.vstring(
+#"root://eoscms.cern.ch//eos/cms/store/express/Run2024I/ExpressPhysics/FEVT/Express-v2/000/386/885/00000/6a4a3afd-81cd-4095-b967-bab82d5ac6a0.root",
+
+#"root://eoscms.cern.ch//eos/cms/store/express/Run2024I/ExpressPhysics/FEVT/Express-v2/000/386/945/00000/cdc9c96f-b722-4bc6-845c-c753e36c7bdc.root",
+
+"root://eoscms.cern.ch//eos/cms/store/express/Run2024I/ExpressPhysics/FEVT/Express-v2/000/386/951/00000/aa9b219d-2832-4f56-b274-2e46d656efc2.root",
+
+
+
 #"root://eoscms.cern.ch//eos/cms/store/express/Run2024A/ExpressPhysics/FEVT/Express-v1/000/378/750/00000/bc4f70d1-e7ae-449c-8d1a-ee138b5ee7fa.root",
    )
 )
@@ -79,7 +87,7 @@ process.source = cms.Source("PoolSource",
 #    )
 # )
 
-process.source.lumisToProcess = cms.untracked.VLuminosityBlockRange('378750:41-378750:9999')
+#process.source.lumisToProcess = cms.untracked.VLuminosityBlockRange('378750:41-378750:9999')
 process.source.skipBadFiles = cms.untracked.bool( True )
 
 process.d = cms.EDAnalyzer("SiPixelRawDump", 

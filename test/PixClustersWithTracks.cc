@@ -134,7 +134,7 @@
 //#define STUDY_ONEMOD
 //#define TRAJECTORY // needs a track refit, does not work from RECO
 #define ROC_RATE 
-#define DO_FPIX 
+//#define DO_FPIX  // strange map of fpix modules, normalised  
 #define ANA_CLUSTERS  // monitor cluster charge profiles  
 //#define DO_2ND_HIT // test is a track has >1 hits per module
 
@@ -203,6 +203,7 @@ class PixClustersWithTracks : public edm::one::EDAnalyzer<edm::one::SharedResour
   bool PRINT;
   bool DEBUG;
   bool Normalise;
+  int lumiHistos_;
   float countTracks, countGoodTracks, countTracksInPix, countPVs, countEvents, countLumi;  
   float count1, count2, count3, count4;
   float countTracks1, countTracks2, countTracks3, countTracks4, countTracks5;
@@ -276,7 +277,7 @@ class PixClustersWithTracks : public edm::one::EDAnalyzer<edm::one::SharedResour
   TH2F *hfpixp11,*hfpixp21,*hfpixp31,*hfpixp12,*hfpixp22,*hfpixp32; 
   TH2F *hfpixm11,*hfpixm21,*hfpixm31,*hfpixm12,*hfpixm22,*hfpixm32; 
   TH2F *hzphi1,*hzphi2,*hzphi3,*hzphi4, *hbpixXY;
-  TH2F *htest,*htest1,*htest2,*htest3, *htest4;
+  //TH2F *htest,*htest1,*htest2,*htest3, *htest4;
 
 #ifdef USE_PROBABILITY
   TH1D *hProbabilityXYBpix, *hProbabilityQBpix,*hProbabilityXYFpix, *hProbabilityQFpix;
@@ -463,6 +464,7 @@ class PixClustersWithTracks : public edm::one::EDAnalyzer<edm::one::SharedResour
 
 #ifdef ROC_RATE
   TH2F *hrocMap1,*hrocMap2,*hrocMap3,*hrocMap4;
+  TH2F *hrocCluMap1,*hrocCluMap2,*hrocCluMap3,*hrocCluMap4;
 #endif
 
 #ifdef DO_FPIX
@@ -489,6 +491,7 @@ PixClustersWithTracks::PixClustersWithTracks(edm::ParameterSet const& conf)
   select1 = conf.getUntrackedParameter<int>("Select1",0);
   select2 = conf.getUntrackedParameter<int>("Select2",0);
   skipEventsPerLS = conf.getUntrackedParameter<int>("skipEventsPerLS",0);
+  lumiHistos_ = conf.getUntrackedParameter<int>("lumiHistos",250);
   cout<<"PixClustersWithTracks::Construct: Normalise = "<<Normalise<<" verbosity "<<PRINT
       <<" select "<<select1<<","<<select2<<endl;
 #ifdef USE_TREE
@@ -572,14 +575,14 @@ PixClustersWithTracks::PixClustersWithTracks(edm::ParameterSet const& conf)
     //int minPixelRow = clustIt->minPixelRow(); //x
     //int maxPixelRow = clustIt->maxPixelRow();
     int minPixelCol = clustIt->minPixelCol(); //y
-    int maxPixelCol = clustIt->maxPixelCol();
+    //int maxPixelCol = clustIt->maxPixelCol();
     float cluProfile[maxSizeY]={0};
     // Get the pixels in the Cluster
     const vector<SiPixelCluster::Pixel>& pixelsVec = clustIt->pixels();
     //cout<<" Pixels in this cluster (i/x/y/char) - "
     //	  <<pixelsVec.size()<<endl;
     for (unsigned int i = 0;  i < pixelsVec.size(); ++i) { // loop over pixels
-      float pixx = pixelsVec[i].x; // index as float=iteger, row index
+      //float pixx = pixelsVec[i].x; // index as float=iteger, row index
       float pixy = pixelsVec[i].y; // same, col index
       float electrons = pixelsVec[i].adc;
       float kelec = (float(electrons)/1000.);
@@ -895,27 +898,26 @@ void PixClustersWithTracks::beginJob() {
 				9,-4.5,4.5,65,-32.5,32.5,0.,1000.);
   hpixchargeDets4->SetOption("colz");
 
-  hladder1id = fs->make<TH1D>( "hladder1id", "Clus in ladder L1", 13, -6.5, 6.5);
-  hladder2id = fs->make<TH1D>( "hladder2id", "Clus in ladder L2", 29, -14.5, 14.5);
-  hladder3id = fs->make<TH1D>( "hladder3id", "Clus in adder L3", 45, -22.5, 22.5);
-  hladder4id = fs->make<TH1D>( "hladder4id", "Clus in ladder L4", 65, -32.5, 32.5);
-  hpladder1id = fs->make<TH1D>( "hpladder1id", "Pix in ladder L1", 13, -6.5, 6.5);
-  hpladder2id = fs->make<TH1D>( "hpladder2id", "Pix in ladder L2", 29, -14.5, 14.5);
-  hpladder3id = fs->make<TH1D>( "hpladder3id", "Pix in adder L3", 45, -22.5, 22.5);
-  hpladder4id = fs->make<TH1D>( "hpladder4id", "Pix in ladder L4", 65, -32.5, 32.5);
+  hladder1id = fs->make<TH1D>( "hladder1id", "Clus/roc in ladder L1", 2*13, -6.5, 6.5);
+  hladder2id = fs->make<TH1D>( "hladder2id", "Clus/roc in ladder L2", 2*29, -14.5, 14.5);
+  hladder3id = fs->make<TH1D>( "hladder3id", "Clus/roc in ladder L3", 2*45, -22.5, 22.5);
+  hladder4id = fs->make<TH1D>( "hladder4id", "Clus/roc in ladder L4", 2*65, -32.5, 32.5);
+  hpladder1id = fs->make<TH1D>( "hpladder1id", "Pix/roc in ladder L1",2*13, -6.5, 6.5);
+  hpladder2id = fs->make<TH1D>( "hpladder2id", "Pix/roc in ladder L2",2*29, -14.5, 14.5);
+  hpladder3id = fs->make<TH1D>( "hpladder3id", "Pix/roc in ladder L3",2*45, -22.5, 22.5);
+  hpladder4id = fs->make<TH1D>( "hpladder4id", "Pix/roc in ladder L4",2*65, -32.5, 32.5);
 
-  hz1id = fs->make<TH1D>( "hz1id", "Clus in ring L1", 11, -5.5, 5.5);
-  hz2id = fs->make<TH1D>( "hz2id", "Clus in ring L2", 11, -5.5, 5.5);
-  hz3id = fs->make<TH1D>( "hz3id", "Clus in ring L3", 11, -5.5, 5.5);
-  hz4id = fs->make<TH1D>( "hz4id", "Clus in ring L4", 11, -5.5, 5.5);
-  hpz1id = fs->make<TH1D>( "hpz1id", "Pix in ring L1", 11, -5.5, 5.5);
-  hpz2id = fs->make<TH1D>( "hpz2id", "Pix in ring L2", 11, -5.5, 5.5);
-  hpz3id = fs->make<TH1D>( "hpz3id", "Pix in ring L3", 11, -5.5, 5.5);
-  hpz4id = fs->make<TH1D>( "hpz4id", "Pix in ring L4", 11, -5.5, 5.5);
+  hz1id = fs->make<TH1D>( "hz1id", "Clus/roc in ring L1", 8*9, -4.5, 4.5);
+  hz2id = fs->make<TH1D>( "hz2id", "Clus/roc in ring L2", 8*9, -4.5, 4.5);
+  hz3id = fs->make<TH1D>( "hz3id", "Clus/roc in ring L3", 8*9, -4.5, 4.5);
+  hz4id = fs->make<TH1D>( "hz4id", "Clus/roc in ring L4", 8*9, -4.5, 4.5);
+  hpz1id = fs->make<TH1D>( "hpz1id", "Pix/roc in ring L1",8*9, -4.5, 4.5);
+  hpz2id = fs->make<TH1D>( "hpz2id", "Pix/roc in ring L2",8*9, -4.5, 4.5);
+  hpz3id = fs->make<TH1D>( "hpz3id", "Pix/roc in ring L3",8*9, -4.5, 4.5);
+  hpz4id = fs->make<TH1D>( "hpz4id", "Pix/roc in ring L4",8*9, -4.5, 4.5);
 
   hcols11 = fs->make<TH1D>( "hcols11", "Layer 1 clus per cols", 8000,-4.,4.);
   hrows11 = fs->make<TH1D>( "hrows11", "Layer 1 clus per rows", 2000,-1.,1.);
-
   hcols1 = fs->make<TH1D>( "hcols1", "Layer 1 clus per cols", 500,0.,500.);
   hcols2 = fs->make<TH1D>( "hcols2", "Layer 2 clus per cols", 500,0.,500.);
   hcols3 = fs->make<TH1D>( "hcols3", "Layer 3 clus per cols", 500,0.,500.);
@@ -1326,8 +1328,8 @@ void PixClustersWithTracks::beginJob() {
    hbeam2  = fs->make<TProfile>("hbeam2", "beam2 vs ls ",1000,0.,3000.,0.0,1000.);
 #endif
 
-   hls0  = fs->make<TH1D>("hls0","LS", 2000,0,2000.);
-   hls   = fs->make<TH1D>("hls", "LS with pixel hits", 2000,0,2000.);
+   hls0  = fs->make<TH1D>("hls0","LS", lumiHistos_,0,float(lumiHistos_));
+   hls   = fs->make<TH1D>("hls", "LS with pixel hits", lumiHistos_,0,float(lumiHistos_));
    hbx0    = fs->make<TH1D>("hbx0","bx",4000,0,4000.);  
    hbx    = fs->make<TH1D>("hbx","bx with pixel hits",4000,0,4000.);  
 
@@ -1358,11 +1360,11 @@ void PixClustersWithTracks::beginJob() {
    hzphi3 = fs->make<TH2F>("hzphi3","bpix z phi 3",208,-26.,26.,140,-3.5,3.5);
    hzphi4 = fs->make<TH2F>("hzphi4","bpix z phi 4",208,-26.,26.,140,-3.5,3.5);
 
-   htest  = fs->make<TH2F>("htest", "bpix eta-hit size-y",60,-3.,3.,20,0.5,20.5);
-   htest1 = fs->make<TH2F>("htest1","sizey vs clu charge",50,0.,800.,15,0.5,15.5);
-   htest2 = fs->make<TH2F>("htest2","sizey vs pix charge",50,0.,25.,15,0.5,15.5);
-   htest3 = fs->make<TH2F>("htest3","sizey vs clu charge",50,0.,800.,10,0.5,10.5);
-   htest4 = fs->make<TH2F>("htest4","sizey vs pix charge",50,0.,100.,10,0.5,10.5);
+   //htest  = fs->make<TH2F>("htest", "bpix eta-hit size-y",60,-3.,3.,20,0.5,20.5);
+   //htest1 = fs->make<TH2F>("htest1","sizey vs clu charge",50,0.,800.,15,0.5,15.5);
+   //htest2 = fs->make<TH2F>("htest2","sizey vs pix charge",50,0.,25.,15,0.5,15.5);
+   //htest3 = fs->make<TH2F>("htest3","sizey vs clu charge",50,0.,800.,10,0.5,10.5);
+   //htest4 = fs->make<TH2F>("htest4","sizey vs pix charge",50,0.,100.,10,0.5,10.5);
 
 
 #ifdef SINGLE_MODULES
@@ -1629,14 +1631,23 @@ void PixClustersWithTracks::beginJob() {
 #endif
 
 #ifdef ROC_RATE
-   hrocMap1 = fs->make<TH2F>("hrocMap1"," ",8*9,-4.5,4.5,2*13,-6.5,6.5);
+   hrocMap1 = fs->make<TH2F>("hrocMap1","Pixels/ROC",8*9,-4.5,4.5,2*13,-6.5,6.5);
    hrocMap1->SetOption("colz");
-   hrocMap2 = fs->make<TH2F>("hrocMap2"," ",8*9,-4.5,4.5,2*29,-14.5,14.5);
+   hrocMap2 = fs->make<TH2F>("hrocMap2","Pixels/ROC",8*9,-4.5,4.5,2*29,-14.5,14.5);
    hrocMap2->SetOption("colz");
-   hrocMap3 = fs->make<TH2F>("hrocMap3"," ",8*9,-4.5,4.5,2*45,-22.5,22.5);
+   hrocMap3 = fs->make<TH2F>("hrocMap3","Pixels/ROC",8*9,-4.5,4.5,2*45,-22.5,22.5);
    hrocMap3->SetOption("colz");
-   hrocMap4 = fs->make<TH2F>("hrocMap4"," ",8*9,-4.5,4.5,2*65,-32.5,32.5);
+   hrocMap4 = fs->make<TH2F>("hrocMap4","Pixels/ROC",8*9,-4.5,4.5,2*65,-32.5,32.5);
    hrocMap4->SetOption("colz");
+
+   hrocCluMap1 = fs->make<TH2F>("hrocCluMap1","Clus/ROC",8*9,-4.5,4.5,2*13,-6.5,6.5);
+   hrocCluMap1->SetOption("colz");
+   hrocCluMap2 = fs->make<TH2F>("hrocCluMap2","Clus/ROC",8*9,-4.5,4.5,2*29,-14.5,14.5);
+   hrocCluMap2->SetOption("colz");
+   hrocCluMap3 = fs->make<TH2F>("hrocCluMap3","Clus/ROC",8*9,-4.5,4.5,2*45,-22.5,22.5);
+   hrocCluMap3->SetOption("colz");
+   hrocCluMap4 = fs->make<TH2F>("hrocCluMap4","Clus/ROC",8*9,-4.5,4.5,2*65,-32.5,32.5);
+   hrocCluMap4->SetOption("colz");
 #endif 
 
 #ifdef DO_FPIX
@@ -1663,16 +1674,25 @@ void PixClustersWithTracks::beginJob() {
 #ifdef ANA_CLUSTERS
   for(int i=0;i<4;++i) {
     string name="hCluProfile1_"+std::to_string(i);
-    string title="Cluster Profile LYR1- "+std::to_string(i);
+    string location;
+    switch(i) {
+    case 0: {location="z>0, inner"; break;}
+    case 1: {location="z<0, inner"; break;}
+    case 2: {location="z>0, outer"; break;}
+    case 3: {location="z<0, outer"; break;}
+    }
+
+    string title="Cluster Profile LYR1- "+location;
+    
     hCluProfile1[i] = fs->make<TProfile2D>(name.c_str(),title.c_str(),24,0.,24.,24,0.,24.,0.,1000.);
     name="hCluProfile2_"+std::to_string(i);
-    title="Cluster Profile LYR2- "+std::to_string(i);
+    title="Cluster Profile LYR2- "+location;
     hCluProfile2[i] = fs->make<TProfile2D>(name.c_str(),title.c_str(),18,0.,18.,18,0.,18.,0.,1000.);
     name="hCluProfile3_"+std::to_string(i);
-    title="Cluster Profile LYR3- "+std::to_string(i);
+    title="Cluster Profile LYR3- "+location;
     hCluProfile3[i] = fs->make<TProfile2D>(name.c_str(),title.c_str(),16,0.,16.,16,0.,16.,0.,1000.);
     name="hCluProfile4_"+std::to_string(i);
-    title="Cluster Profile LYR4- "+std::to_string(i);
+    title="Cluster Profile LYR4- "+location;
     hCluProfile4[i] = fs->make<TProfile2D>(name.c_str(),title.c_str(),14,0.,14.,14,3.,14.,0.,1000.);
   }
 #endif
@@ -1800,7 +1820,7 @@ void PixClustersWithTracks::endJob(){
        << " in pix "<< countTracksInPix 
        <<endl;
 
-  double norm = 1;
+  double norm = 1, norm1=1., norm2=1., norm3=1., norm4=1.;
 
   if(countEvents>0.) {
     countTracks /= countEvents;
@@ -1820,27 +1840,31 @@ void PixClustersWithTracks::endJob(){
 
     norm = 1./float(countEvents);
     cout<<" plots are rescaled by the number of full events "<<countEvents<<endl;
+    norm1 = norm/12.; // normalisation for module per ring
+    norm2 = norm/28.;
+    norm3 = norm/44.;
+    norm4 = norm/64.;
 
     // rescale if histos 
-    hladder1id->Scale(norm);
-    hladder2id->Scale(norm);
-    hladder3id->Scale(norm);
-    hladder4id->Scale(norm);
+    hladder1id->Scale(norm/64.);
+    hladder2id->Scale(norm/64.);
+    hladder3id->Scale(norm/64.);
+    hladder4id->Scale(norm/64.);
     
-    hz1id->Scale(norm);
-    hz2id->Scale(norm);
-    hz3id->Scale(norm);
-    hz4id->Scale(norm);
+    hz1id->Scale(norm1/2.);
+    hz2id->Scale(norm2/2.);
+    hz3id->Scale(norm3/2.);
+    hz4id->Scale(norm4/2.);
     
-    hpladder1id->Scale(norm);
-    hpladder2id->Scale(norm);
-    hpladder3id->Scale(norm);
-    hpladder4id->Scale(norm);
+    hpladder1id->Scale(norm/64.);
+    hpladder2id->Scale(norm/64.);
+    hpladder3id->Scale(norm/64.);
+    hpladder4id->Scale(norm/64.);
     
-    hpz1id->Scale(norm);
-    hpz2id->Scale(norm);
-    hpz3id->Scale(norm);
-    hpz4id->Scale(norm);
+    hpz1id->Scale(norm1/2.);
+    hpz2id->Scale(norm2/2.);
+    hpz3id->Scale(norm3/2.);
+    hpz4id->Scale(norm4/2.);
     
     hpcols1->Scale(norm);
     hpcols2->Scale(norm);
@@ -1884,6 +1908,10 @@ void PixClustersWithTracks::endJob(){
   hrocMap2->Scale(norm);
   hrocMap3->Scale(norm);
   hrocMap4->Scale(norm);
+  hrocCluMap1->Scale(norm);
+  hrocCluMap2->Scale(norm);
+  hrocCluMap3->Scale(norm);
+  hrocCluMap4->Scale(norm);
 #endif
 
 #ifdef DO_FPIX
@@ -2658,20 +2686,18 @@ void PixClustersWithTracks::analyze(const edm::Event& e,
 	int size = clust->size();
 	int sizeX = clust->sizeX();
 	int sizeY = clust->sizeY();
-	float row = clust->x(); //x
-	float col = clust->y(); // y
+	float row = clust->x(); //x in pixel units
+	float col = clust->y(); // y in pixel units
 	numberOfPixels += size;
 
-	//cout<<"clus "<<clusPerTrack<<" "<<numberOfClusters<<" "<<numberOfPixels<<endl;	// dk
-	//<<" clus loc "<<row<<" "<<col<<endl;
-	
+	//cout<<"clu row/col "<<row<<" "<<col<<endl;
 	//select = (abs(eta)>2.)&&(abs(module)==4); 
 	if(PRINT) cout<<" cluster "<<numberOfClusters<<" charge = "<<charge<<" size = "<<size<<endl;
 	
 	LocalPoint lp = topol->localPosition( MeasurementPoint( clust->x(), clust->y() ) );
-	float lx = lp.x();
-	float ly = lp.y();
-	//cout<<" clu loc "<<x<<" "<<y<<endl;
+	float lx = lp.x(); //local x in cm
+	float ly = lp.y(); //local y in cm 
+	//cout<<" clu loc "<<lx<<" "<<ly<<endl;
 	
 	GlobalPoint clustgp = theGeomDet->surface().toGlobal( lp );
 	float gX = clustgp.x();
@@ -2683,6 +2709,16 @@ void PixClustersWithTracks::analyze(const edm::Event& e,
 	float gR = v.Perp(); // r of the hit
 	
 	if(PRINT) cout<<" CLU GLOBAL "<<gX<<" "<<gY<<" "<<gZ<<" "<<gR<<" "<<gPhi<<endl;
+
+
+#ifdef ROC_RATE
+	roc = rocId(int(col),int(row));  // 0-15, column, row
+	bool flipped = isFlipped(layer,ladderOn);
+	int rocZLoc = rocZLocal(roc,flipped);
+	int rocPhiLoc = rocPhiLocal(roc,flipped);
+	rocZ = rocZGlobal(module,rocZLoc);
+	rocPhi = rocPhiGlobal(ladderOn, rocPhiLoc);
+#endif
 
 #ifdef USE_TREE
 	if(doTree&&!fillPixelTree&&(!treeBpixOnly||(treeBpixOnly&&(layer>0)))) {
@@ -2708,11 +2744,11 @@ void PixClustersWithTracks::analyze(const edm::Event& e,
 
 
 #ifdef USE_PROFILES 
+#if defined(CLU_SHAPE) || defined(CLU_SHAPE_L2)
 	int maxPixelCol = clust->maxPixelCol();
 	int maxPixelRow = clust->maxPixelRow();
 	int minPixelCol = clust->minPixelCol();
 	int minPixelRow = clust->minPixelRow();
-#if defined(CLU_SHAPE) || defined(CLU_SHAPE_L2)
 	bool same = false;
 	int corner=0;
 #endif
@@ -2775,9 +2811,11 @@ void PixClustersWithTracks::analyze(const edm::Event& e,
 	  hrows1->Fill(row);
 	  hcols11->Fill(ly);
 	  hrows11->Fill(lx);
-	  hladder1id->Fill(float(ladderOn));
-	  hz1id->Fill(float(module));
-	  
+#ifdef ROC_RATE
+	  hladder1id->Fill(float(rocPhi));
+	  hz1id->Fill(float(rocZ));
+	  hrocCluMap1->Fill(rocZ,rocPhi);  // clus
+#endif	  
 	  //if(newL1Modules) hcharge1n->Fill(charge);
 	  //else             
 	  hcharge1->Fill(charge);
@@ -2785,8 +2823,8 @@ void PixClustersWithTracks::analyze(const edm::Event& e,
 	  //hbpixXY->Fill(gX,gY);
 	  hzphi1->Fill(gZ,gPhi);  // hit phi
 	  
-	  htest->Fill(eta,float(sizeY));
-	  htest1->Fill(charge,float(sizeY));
+	  //htest->Fill(eta,float(sizeY));
+	  //htest1->Fill(charge,float(sizeY));
 	  
 	  hsizeyz1->Fill(eta,float(sizeY));
 	  
@@ -2935,10 +2973,11 @@ void PixClustersWithTracks::analyze(const edm::Event& e,
 	  hDetMap2->Fill(float(module),float(ladderOn));
 	  hsizeDets2->Fill(float(module),float(ladderOn),float(size));
 	  hchargeDets2->Fill(float(module),float(ladderOn),charge);
-	  
-	  hladder2id->Fill(float(ladderOn));
-	  hz2id->Fill(float(module));
-	  
+#ifdef ROC_RATE	  
+	  hladder2id->Fill(float(rocPhi));
+	  hz2id->Fill(float(rocZ));
+	  hrocCluMap2->Fill(rocZ,rocPhi);  // clus
+#endif	  
 	  //hPhi2->Fill(phi);
 	  //hbpixXY->Fill(gX,gY);
 	  hzphi2->Fill(gZ,gPhi);
@@ -2972,7 +3011,7 @@ void PixClustersWithTracks::analyze(const edm::Event& e,
 	    hProbabilityQBpix->Fill(hit->clusterProbability(2));
 #endif	    
 	    hsizeyz2->Fill(eta,float(sizeY));
-	    htest3->Fill(charge,float(sizeY));
+	    //htest3->Fill(charge,float(sizeY));
 	    
 	    if( pt>CLU_SIZE_PT_CUT_MULT ) {
 	    
@@ -3048,8 +3087,11 @@ void PixClustersWithTracks::analyze(const edm::Event& e,
 	  hcharge3->Fill(charge);
 	  hcols3->Fill(col);
 	  hrows3->Fill(row);
-	  hladder3id->Fill(float(ladderOn));
-	  hz3id->Fill(float(module));
+#ifdef ROC_RATE
+	  hladder3id->Fill(float(rocPhi));
+	  hz3id->Fill(float(rocZ));
+	  hrocCluMap3->Fill(rocZ,rocPhi);  // clus
+#endif
 	  //hPhi3->Fill(phi);
 	  //hbpixXY->Fill(gX,gY);
 	  hzphi3->Fill(gZ,gPhi);
@@ -3122,8 +3164,11 @@ void PixClustersWithTracks::analyze(const edm::Event& e,
 	  hsizeDets4->Fill(float(module),float(ladderOn),float(size));
 	  hchargeDets4->Fill(float(module),float(ladderOn),charge);
 	  hcharge4->Fill(charge);
-	  hladder4id->Fill(float(ladderOn));
-	  hz4id->Fill(float(module));
+#ifdef ROC_RATE
+	  hladder4id->Fill(float(rocPhi));
+	  hz4id->Fill(float(rocZ));
+	  hrocCluMap4->Fill(rocZ,rocPhi);  // clus
+#endif 
 	  hcols4->Fill(col);
 	  hrows4->Fill(row);
 	  //hPhi4->Fill(phi);
@@ -3185,12 +3230,12 @@ void PixClustersWithTracks::analyze(const edm::Event& e,
 	  hsizey5->Fill(float(sizeY));
 	  
 	  //hfpixXY1->Fill(gX,gY);
-	  
+#ifdef DO_FPIX	  
 	  if(side==1)      {
 	    numOfClustersPerDisk3++;hfpixMapD1Mz->Fill(blade,ring); hstatus->Fill(23.);if(panel==1) hfpixm11->Fill(gX,gY); else hfpixm12->Fill(gX,gY);}  //-z
 	  else if(side==2) {
 	    numOfClustersPerDisk4++;hfpixMapD1Pz->Fill(blade,ring); hstatus->Fill(24.);if(panel==1) hfpixp11->Fill(gX,gY); else hfpixp12->Fill(gX,gY);}  //+z
-
+#endif // DO_FPIX
 #ifdef USE_PROBABILITY	  
 	  hProbabilityXYFpix->Fill(hit->clusterProbability(0));
 	  hProbabilityQFpix->Fill(hit->clusterProbability(2));
@@ -3210,9 +3255,11 @@ void PixClustersWithTracks::analyze(const edm::Event& e,
 	  hsizey6->Fill(float(sizeY));
 	  
 	  //hfpixXY2->Fill(gX,gY);
-	  
+#ifdef DO_FPIX	  
 	  if(side==1)      {numOfClustersPerDisk2++;hfpixMapD2Mz->Fill(blade,ring); hstatus->Fill(26.);if(panel==1) hfpixm21->Fill(gX,gY); else hfpixm22->Fill(gX,gY);} //-z
 	  else if(side==2) {numOfClustersPerDisk5++;hfpixMapD2Pz->Fill(blade,ring); hstatus->Fill(27.);if(panel==1) hfpixp21->Fill(gX,gY); else hfpixp22->Fill(gX,gY);} //+z
+#endif // DO_FPIX
+
 #ifdef USE_PROBABILITY	  
 	  hProbabilityXYFpix->Fill(hit->clusterProbability(0));
 	  hProbabilityQFpix->Fill(hit->clusterProbability(2));
@@ -3231,9 +3278,11 @@ void PixClustersWithTracks::analyze(const edm::Event& e,
 	  hsizey7->Fill(float(sizeY));
 	  
 	  //hfpixXY3->Fill(gX,gY);
-	  
+#ifdef DO_FPIX	  
 	  if(side==1)      {numOfClustersPerDisk1++;hfpixMapD3Mz->Fill(blade,ring); hstatus->Fill(29.);if(panel==1) hfpixm31->Fill(gX,gY); else hfpixm32->Fill(gX,gY);} //-z
 	  else if(side==2) {numOfClustersPerDisk6++;hfpixMapD3Pz->Fill(blade,ring); hstatus->Fill(30.);if(panel==1) hfpixp31->Fill(gX,gY); else hfpixp32->Fill(gX,gY);} //+z
+#endif // DO_FPIX
+
 #ifdef USE_PROBABILITY	  
 	  hProbabilityXYFpix->Fill(hit->clusterProbability(0));
 	  hProbabilityQFpix->Fill(hit->clusterProbability(2));
@@ -3278,23 +3327,6 @@ void PixClustersWithTracks::analyze(const edm::Event& e,
         }
 #endif // USE_TREE
 
-#ifdef ROC_RATE
-	  roc = rocId(int(pixy),int(pixx));  // 0-15, column, row
-	  //link = int(roc/8); // link 0 & 1 unused
-
-	  //rocInCol = roc%8; // 0-7
-	  //if(module>0) rocZ=float(module)-(0.125/2.)-(float(rocInCol)*0.125);//z
-	  //else         rocZ=float(module)+1.0-(0.125/2.)-(float(rocInCol)*0.125); //z
-	  //rocPhi = float(ladder) - 0.5 + (0.5/2.)   + (float(link) * 0.5); 
-
-	  bool flipped = isFlipped(layer,ladder);
-	  int rocZLoc = rocZLocal(roc,flipped);
-	  int rocPhiLoc = rocPhiLocal(roc,flipped);
-	  float rocZ = rocZGlobal(module,rocZLoc);
-	  float rocPhi = rocPhiGlobal(ladder, rocPhiLoc);
-
-#endif
-
 #ifdef USE_PROFILES
 	  // int indexY=-1;
 	  // if(inner) indexY=pixy-minPixelCol;
@@ -3314,14 +3346,14 @@ void PixClustersWithTracks::analyze(const edm::Event& e,
 	    hpixcharge1->Fill(adc);
 	    hpixDetMap1->Fill(pixy,pixx);
 	    hpixchargeDets1->Fill(float(module),float(ladder),adc);
- 	    htest2->Fill(adc,float(sizeY));
-	    hpladder1id->Fill(float(ladder));
-	    hpz1id->Fill(float(module));
+ 	    //htest2->Fill(adc,float(sizeY));
 	    hpcols1->Fill(pixy);
 	    hprows1->Fill(pixx);
 	  
 #ifdef ROC_RATE
-	    hrocMap1->Fill(rocZ,rocPhi);
+	    hpladder1id->Fill(float(rocPhi));
+	    hpz1id->Fill(float(rocZ));
+	    hrocMap1->Fill(rocZ,rocPhi);  // pixels
 #endif
   
 #ifdef PHI_PROFILES
@@ -3359,9 +3391,7 @@ void PixClustersWithTracks::analyze(const edm::Event& e,
 	    //cout<<ladderOn<<" "<<module<<" "<<pixx<<" "<<pixy<<endl;
 
 	    hpixchargeDets2->Fill(float(module),float(ladderOn),adc);
-	    htest4->Fill(adc,float(sizeY));
-	    hpladder2id->Fill(float(ladderOn));
-	    hpz2id->Fill(float(module));
+	    //htest4->Fill(adc,float(sizeY));
 	    
 #ifdef SINGLE_MODULES
 	    //cout<<ladderOn<<" "<<module<<" "<<pixx<<" "<<pixy<<endl;
@@ -3392,6 +3422,8 @@ void PixClustersWithTracks::analyze(const edm::Event& e,
 	    hprows2->Fill(pixx);
 
 #ifdef ROC_RATE
+	    hpladder2id->Fill(float(rocPhi));
+	    hpz2id->Fill(float(rocZ));
 	    hrocMap2->Fill(rocZ,rocPhi);
 #endif
   
@@ -3412,13 +3444,13 @@ void PixClustersWithTracks::analyze(const edm::Event& e,
 	    hpixcharge3->Fill(adc);
 	    hpixDetMap3->Fill(pixy,pixx);
 	    hpixchargeDets3->Fill(float(module),float(ladderOn),adc);
- 	    htest4->Fill(adc,float(sizeY));
-	    hpladder3id->Fill(float(ladderOn));
-	    hpz3id->Fill(float(module));
-	    hpcols3->Fill(pixy);
-	    hprows3->Fill(pixx);
+ 	    //htest4->Fill(adc,float(sizeY));
+	    hpladder3id->Fill(float(rocPhi));
+	    hpz3id->Fill(float(rocZ));
 
 #ifdef ROC_RATE
+	    hpcols3->Fill(pixy);
+	    hprows3->Fill(pixx);
 	    hrocMap3->Fill(rocZ,rocPhi);
 #endif
   
@@ -3436,13 +3468,13 @@ void PixClustersWithTracks::analyze(const edm::Event& e,
 	    hpixcharge4->Fill(adc);
 	    hpixDetMap4->Fill(pixy,pixx);
 	    hpixchargeDets4->Fill(float(module),float(ladderOn),adc);
- 	    htest4->Fill(adc,float(sizeY));
-	    hpladder4id->Fill(float(ladderOn));
-	    hpz4id->Fill(float(module));
+ 	    //htest4->Fill(adc,float(sizeY));
 	    hpcols4->Fill(pixy);
 	    hprows4->Fill(pixx);
 
 #ifdef ROC_RATE
+	    hpladder4id->Fill(float(rocPhi));
+	    hpz4id->Fill(float(rocZ));
 	    hrocMap4->Fill(rocZ,rocPhi);
 #endif
   

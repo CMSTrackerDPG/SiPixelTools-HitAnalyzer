@@ -517,6 +517,7 @@ class PixClusterAna : public edm::one::EDAnalyzer<edm::one::WatchRuns, edm::one:
   int skipEventsPerLS;
   int lumiBlock0;
   int countEventsPerLS;
+  int lumiHistos_;
 #ifdef SINGLE_MODULES
   bool eventFlag[40];
 #endif
@@ -668,7 +669,7 @@ edm::EDGetTokenT<HFRecHitCollection> HFHitsToken_;
 
 #ifdef Lumi
   TH1D *hinst;
-  TProfile *hinstls, *hinstlsbx;
+  //TProfile *hinstls, *hinstlsbx;
   TProfile *hinstbx;
 #endif
 		  
@@ -835,6 +836,7 @@ PixClusterAna::PixClusterAna(edm::ParameterSet const& conf)
   select1 = conf.getUntrackedParameter<int>("Select1",0);
   select2 = conf.getUntrackedParameter<int>("Select2",0);
   skipEventsPerLS = conf.getUntrackedParameter<int>("skipEventsPerLS",0);
+  lumiHistos_ = conf.getUntrackedParameter<int>("lumiHistos",250);
   //src_ =  conf.getParameter<edm::InputTag>( "src" );
 
   cout<<" Construct, Normalise = "<<Normalise<<" Select "<<select1<<"/"<<select2
@@ -1385,10 +1387,11 @@ void PixClusterAna::beginJob() {
   hevent = fs->make<TH1D>("hevent","event",100,0,10000000.);
   //horbit = fs->make<TH1D>("horbit","orbit",100, 0,100000000.);
 
-  const float hlumiH=2000.;
-  hlumi1  = fs->make<TH1D>("hlumi1","LS", 2000,0,hlumiH);
-  hlumi0  = fs->make<TH1D>("hlumi0","LS", 2000,0,hlumiH);
-  hlumi   = fs->make<TH1D>("hlumi", "LS", 2000,0,hlumiH);
+  //const int hlumiH=2500;
+  int hlumiH = lumiHistos_; 
+  hlumi1  = fs->make<TH1D>("hlumi1","LS", hlumiH,0,float(hlumiH));
+  hlumi0  = fs->make<TH1D>("hlumi0","LS", hlumiH,0,float(hlumiH));
+  hlumi   = fs->make<TH1D>("hlumi", "LS", hlumiH,0,float(hlumiH));
 
   hbx0   = fs->make<TH1D>("hbx0",  "bx",   4000,0,4000.);  
   hbx    = fs->make<TH1D>("hbx",   "bx",   4000,0,4000.);  
@@ -1745,8 +1748,8 @@ void PixClusterAna::beginJob() {
    //hcluRocRate4 = fs->make<TH1D>("hcluRocRate4"," ",8*9,-4.5,4.5);
 #endif
 
-   sizeH = 1000;
-   highH = hlumiH; 
+   sizeH = hlumiH;
+   highH = float(hlumiH); 
    hclusls = fs->make<TProfile>("hclusls","clus vs ls",sizeH,0.,highH,0.0,50000.);
    hpixls  = fs->make<TProfile>("hpixls", "pix vs ls ",sizeH,0.,highH,0.0,200000.);
 
@@ -1784,6 +1787,7 @@ void PixClusterAna::beginJob() {
 #endif
 
 #ifdef NEW_MODULES
+   sizeH=1000; highH=1000.;
   hsize11 = fs->make<TH1D>( "hsize11", "layer 1 clu size new",sizeH,-0.5,highH);
   hsize12 = fs->make<TH1D>( "hsize12", "layer 2 clu size new",sizeH,-0.5,highH);
   hsize13 = fs->make<TH1D>( "hsize13", "layer 3 clu size new",sizeH,-0.5,highH);
@@ -1829,24 +1833,24 @@ void PixClusterAna::beginJob() {
   // Special test hitos for inefficiency effects
   hpixDetMap10 = fs->make<TH2F>( "hpixDetMap10", "pix det layer 1",
 				 416,0.,416.,160,0.,160.);
-  //hpixDetMap11 = fs->make<TH2F>( "hpixDetMap11", "pix det layer 1",
-  //				 416,0.,416.,160,0.,160.);
-  // hpixDetMap12 = fs->make<TH2F>( "hpixDetMap12", "pix det layer 1",
-  // 				 416,0.,416.,160,0.,160.);
-  // hpixDetMap13 = fs->make<TH2F>( "hpixDetMap13", "pix det layer 1",
-  // 				 416,0.,416.,160,0.,160.);
-  // hpixDetMap14 = fs->make<TH2F>( "hpixDetMap14", "pix det layer 1",
-  // 				  416,0.,416.,160,0.,160.);
-  // hpixDetMap15 = fs->make<TH2F>( "hpixDetMap15", "pix det layer 1",
-  // 				  416,0.,416.,160,0.,160.);
-  // hpixDetMap16 = fs->make<TH2F>( "hpixDetMap16", "pix det layer 1",
-  // 				  416,0.,416.,160,0.,160.);
-  // hpixDetMap17 = fs->make<TH2F>( "hpixDetMap17", "pix det layer 1",
-  // 				  416,0.,416.,160,0.,160.);
-  // hpixDetMap18 = fs->make<TH2F>( "hpixDetMap18", "pix det layer 1",
-  // 				  416,0.,416.,160,0.,160.);
-  // hpixDetMap19 = fs->make<TH2F>( "hpixDetMap19", "pix det layer 1",
-  // 				  416,0.,416.,160,0.,160.);
+  hpixDetMap11 = fs->make<TH2F>( "hpixDetMap11", "pix det layer 1",
+  				 416,0.,416.,160,0.,160.);
+  hpixDetMap12 = fs->make<TH2F>( "hpixDetMap12", "pix det layer 1",
+  				 416,0.,416.,160,0.,160.);
+  hpixDetMap13 = fs->make<TH2F>( "hpixDetMap13", "pix det layer 1",
+  				 416,0.,416.,160,0.,160.);
+  hpixDetMap14 = fs->make<TH2F>( "hpixDetMap14", "pix det layer 1",
+  				  416,0.,416.,160,0.,160.);
+  hpixDetMap15 = fs->make<TH2F>( "hpixDetMap15", "pix det layer 1",
+  				  416,0.,416.,160,0.,160.);
+  hpixDetMap16 = fs->make<TH2F>( "hpixDetMap16", "pix det layer 1",
+  				  416,0.,416.,160,0.,160.);
+  hpixDetMap17 = fs->make<TH2F>( "hpixDetMap17", "pix det layer 1",
+  				  416,0.,416.,160,0.,160.);
+  hpixDetMap18 = fs->make<TH2F>( "hpixDetMap18", "pix det layer 1",
+  				  416,0.,416.,160,0.,160.);
+  hpixDetMap19 = fs->make<TH2F>( "hpixDetMap19", "pix det layer 1",
+  				  416,0.,416.,160,0.,160.);
 
   //hpixDetMap20 = fs->make<TH2F>( "hpixDetMap20", "pix det layer 2",
   //				 416,0.,416.,160,0.,160.);
@@ -1913,7 +1917,8 @@ void PixClusterAna::beginJob() {
 #endif 
 
 #ifdef ANA_CLUSTERS
-  hCluProfile = fs->make<TProfile2D>("hCluProfile","cluster profile",24,0.,24.,24,0.,24.,0.,1000.);
+  hCluProfile = fs->make<TProfile2D>("hCluProfile","L1 clu profiles vs sizey, +z,up",
+				     24,0.,24.,24,0.,24.,0.,1000.);
 #endif
 
 #ifdef STUDY_LAY1
@@ -1932,8 +1937,9 @@ void PixClusterAna::beginJob() {
 #endif
 
 #ifdef LS_TESTS
-   sizeH = 250;
-   highH =  hlumiH; 
+   highH =  float(hlumiH);
+   if(hlumiH>1000) sizeH = int(hlumiH/4);
+   else sizeH = hlumiH;
    hcharClu1ls = fs->make<TProfile>("hcharClu1ls","clu char 1 vs ls",sizeH,0.,highH,0.0,400.);
    hcharPix1ls = fs->make<TProfile>("hcharPix1ls","pix char 1 vs ls",sizeH,0.,highH,0.0,400.);
    hsizeClu1ls = fs->make<TProfile>("hsizeClu1ls","clu size 1 vs ls",sizeH,0.,highH,0.0,400.);
@@ -1965,12 +1971,10 @@ void PixClusterAna::beginJob() {
 
 
 #ifdef Lumi
-   sizeH = 250;
-   highH =  hlumiH; 
+   //sizeH = 250;
+   //highH =  hlumiH; 
    hinstbx = fs->make<TProfile>("hinstbx", "inst lumi vs bx ",4000,-0.5,3999.5,0.0,100.);
    hinst  = fs->make<TH1D>("hinst", "inst lumi",100,0.0,10.);
-   hinstls  = fs->make<TProfile>("hinstls", "inst bx lumi vs ls ",sizeH,0.,highH,0.0,1000.);
-   hinstlsbx= fs->make<TProfile>("hinstlsbx","inst bx lumi vs ls ",sizeH,0.,highH,0.0,1000.);
 #endif 
 
 #if defined(BX) || defined(BX_NEW)
@@ -2730,8 +2734,8 @@ void PixClusterAna::analyze(const edm::Event& e,
 
   hinst->Fill(float(instlumiBx));
   //hintg->Fill(float(intlumi));
-  hinstls->Fill(float(lumiBlock),float(instlumiAv));
-  hinstlsbx->Fill(float(lumiBlock),float(instlumiBx));
+  //hinstls->Fill(float(lumiBlock),float(instlumiAv));
+  //hinstlsbx->Fill(float(lumiBlock),float(instlumiBx));
   hinstbx->Fill(float(bx),float(instlumiBx));
   //hbeam1->Fill(float(lumiBlock),float(beamint1));
   //hbeam2->Fill(float(lumiBlock),float(beamint2));
@@ -3565,19 +3569,19 @@ void PixClusterAna::analyze(const edm::Event& e,
 
 #ifdef SINGLE_MODULES
 	    float weight = 1.; // adc
-	    if     ( ladder== 1 && module== 4) hpixDetMap10->Fill(pixy,pixx,weight); // threshold test module 
-	    //else if( ladder== -5 && module== -3) hpixDetMap11->Fill(pixy,pixx,weight); // 
-	    //else if( ladder== 3 && module== 4) hpixDetMap12->Fill(pixy,pixx,weight); // 
+	    if     ( ladder== 2 && module== -4) hpixDetMap10->Fill(pixy,pixx,weight); // threshold test module 
+	    else if( ladder== 4 && module== 3) hpixDetMap11->Fill(pixy,pixx,weight); // 
+	    else if( ladder== -1 && module== -2) hpixDetMap12->Fill(pixy,pixx,weight); // 
 
-	    // else if( ladder==-1 && module== 2) hpixDetMap13->Fill(pixy,pixx,weight); // 
-	    // else if( ladder==-4 && module== 2) hpixDetMap14->Fill(pixy,pixx,weight); // 
-	    // else if( ladder==-4 && module== 3) hpixDetMap15->Fill(pixy,pixx,weight); // 
+	    else if( ladder== -3 && module== -2) hpixDetMap13->Fill(pixy,pixx,weight); // 
+	    else if( ladder==-3 && module==-3) hpixDetMap14->Fill(pixy,pixx,weight); // 
+	    else if( ladder== 6 && module== -1) hpixDetMap15->Fill(pixy,pixx,weight); // 
 
-	    // else if( ladder== 6 && module==-3) hpixDetMap16->Fill(pixy,pixx,weight); //
-	    // else if( ladder== 6 && module==-4) hpixDetMap17->Fill(pixy,pixx,weight); // 
+	    else if( ladder== 6 && module==-2) hpixDetMap16->Fill(pixy,pixx,weight); //
+	    else if( ladder== 6 && module==-3) hpixDetMap17->Fill(pixy,pixx,weight); // 
 
-	    // else if( ladder==-4 && module==-4) hpixDetMap18->Fill(pixy,pixx,weight); // 
-	    // else if( ladder==-5 && module==-2) hpixDetMap19->Fill(pixy,pixx,weight); // 
+	    else if( ladder==-5 && module==-2) hpixDetMap18->Fill(pixy,pixx,weight); // 
+	    else if( ladder==-2 && module==-1) hpixDetMap19->Fill(pixy,pixx,weight); // 
 
 #endif
 

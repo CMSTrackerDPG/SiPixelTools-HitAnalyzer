@@ -1365,16 +1365,16 @@ void SiPixelRawDump::beginJob() {
   hfedchannelsizeEff = fs->make<TProfile2D>("hfedchannelsizeEff", ">0packets fed&channel",
 					  n_of_FEDs,-0.5,static_cast<float>(n_of_FEDs) - 0.5,
 					  n_of_Channels, 0.5,maxChan,0.0,10000.);  
-  hfedchannelsize1 = fs->make<TProfile2D>("hfedchannelsize1", "fed&channel L1",
+  hfedchannelsize1 = fs->make<TProfile2D>("hfedchannelsize1", "pixels per fed&channel L1",
 					  n_of_FEDs,-0.5,static_cast<float>(n_of_FEDs) - 0.5,
 					  n_of_Channels, 0.5,maxChan,0.0,10000.);  
-  hfedchannelsize2 = fs->make<TProfile2D>("hfedchannelsize2", "fed&channel L2",
+  hfedchannelsize2 = fs->make<TProfile2D>("hfedchannelsize2", "pixels per fed&channel L2",
 					  n_of_FEDs,-0.5,static_cast<float>(n_of_FEDs) - 0.5,
 					  n_of_Channels, 0.5,maxChan,0.0,10000.);  
-  hfedchannelsize3 = fs->make<TProfile2D>("hfedchannelsize3", "fed&channel L3",
+  hfedchannelsize3 = fs->make<TProfile2D>("hfedchannelsize3", "pixels per fed&channel L3",
 					  n_of_FEDs,-0.5,static_cast<float>(n_of_FEDs) - 0.5,
 					  n_of_Channels, 0.5,maxChan,0.0,10000.);  
-  hfedchannelsize4 = fs->make<TProfile2D>("hfedchannelsize4", "fed&channel L4",
+  hfedchannelsize4 = fs->make<TProfile2D>("hfedchannelsize4", "pixels per fed&channel L4",
 					  n_of_FEDs,-0.5,static_cast<float>(n_of_FEDs) - 0.5,
 					  n_of_Channels, 0.5,maxChan,0.0,10000.);  
   hfedchannelsizeb   = fs->make<TH1D>("hfedchannelsizeb", "pixels per bpix channel",  int(maxLink),0.0,maxLink);
