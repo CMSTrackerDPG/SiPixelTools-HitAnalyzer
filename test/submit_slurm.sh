@@ -78,7 +78,7 @@ cp $MYPWD/translation.dat ./translation.dat
 #cmsRun $MYPWD/PixClusterAndTrack_379765.py   
 #cmsRun $MYPWD/PixClusterAndTrack_380001.py   
 #cmsRun $MYPWD/PixClusterAndTrack_380049.py   
-#cmsRun $MYPWD/PixClusterAndTrack_380126.py   
+cmsRun $MYPWD/PixClusterAndTrack_380126.py   
 #cmsRun $MYPWD/PixClusterAndTrack_380384.py   
 #cmsRun $MYPWD/PixClusterAndTrack_380624.py   
 #cmsRun $MYPWD/PixClusterAndTrack_381190.py   
@@ -107,6 +107,7 @@ cp $MYPWD/translation.dat ./translation.dat
 #cmsRun $MYPWD/PixClusterAndTrack_386661.py   
 #cmsRun $MYPWD/PixClusterAndTrack_386753.py   
 #cmsRun $MYPWD/PixClusterAndTrack_386764.py   
+#cmsRun $MYPWD/PixClusterAndTrack_386811.py   
 #cmsRun $MYPWD/PixClusterAndTrack_386814.py   
 #cmsRun $MYPWD/PixClusterAndTrack_386851.py      
 #cmsRun $MYPWD/PixClusterAndTrack_386863.py   
@@ -114,9 +115,15 @@ cp $MYPWD/translation.dat ./translation.dat
 #cmsRun $MYPWD/PixClusterAndTrack_386917.py   
 #cmsRun $MYPWD/PixClusterAndTrack_386945.py   
 #cmsRun $MYPWD/PixClusterAndTrack_386951.py   
-cmsRun $MYPWD/PixClusterAndTrack_387474.py   
+#cmsRun $MYPWD/PixClusterAndTrack_386951_ls30_70.py   
+#cmsRun $MYPWD/PixClusterAndTrack_387474.py   
 #cmsRun $MYPWD/PixClusterAndTrack_387528.py   
 #cmsRun $MYPWD/PixClusterAndTrack_387530.py   
+#cmsRun $MYPWD/PixClusterAndTrack_387607.py   
+#cmsRun $MYPWD/PixClusterAndTrack_387716.py   
+#cmsRun $MYPWD/PixClusterAndTrack_388056.py   
+#cmsRun $MYPWD/PixClusterAndTrack_388088.py   
+#cmsRun $MYPWD/PixClusterAndTrack_388089.py   
  
 pwd
 ls 

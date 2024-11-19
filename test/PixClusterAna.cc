@@ -96,7 +96,7 @@
 
 using namespace std;
 
-#define HISTOS
+//#define HISTOS
 //#define L1
 #define HLT
 #define PV
@@ -108,7 +108,7 @@ using namespace std;
 //#define TEST_DCOLS
 #define ANA_CLUSTERS 
 
-//#define HI  // HI limits for histograms
+#define HI  // HI limits for histograms
 //#define ROC_EFF
 //#define Lumi
 //#define USE_RESYNCS  // get theinfo about recyncs 
@@ -560,10 +560,11 @@ edm::EDGetTokenT<HFRecHitCollection> HFHitsToken_;
     *hsizey1,*hsizey2,*hsizey3,*hsizey4;
   // new L1 modules 
   //TH1D *hcharge1n, *hpixcharge1n, *hsize1n, *hsizex1n, *hsizey1n; 
+#ifdef DO_1PIXELCLUS
   TH1D *hcharge1g, *hcharge1b,*hcharge2g, *hcharge2b,*hcharge3g, *hcharge3b,
     *hcharge4g, *hcharge4b; 
   //TH1D *hpixcharge2g,*hpixcharge2b, *hsize2g, *hsize2b
-
+#endif
 #ifdef LAY1_SPLIT
   TH1D *hcharge11, *hcharge12, *hpixcharge11, *hpixcharge12;
 #endif
@@ -593,9 +594,15 @@ edm::EDGetTokenT<HFRecHitCollection> HFHitsToken_;
   TProfile2D *hpixchargeDets1, *hpixchargeDets2, *hpixchargeDets3, *hpixchargeDets4;
 
   TH2F *hpixDetMap1, *hpixDetMap2, *hpixDetMap3, *hpixDetMap4;  //in a  modules
+#ifdef NO
   TH2F *hcluDetMap1, *hcluDetMap2, *hcluDetMap3, *hcluDetMap4;  //in a  modules 
-  TH2F *hpixDetMap5, *hpixDetMap6; // in fpix  modules
   TH2F *hcluDetMap5, *hcluDetMap6; //in fpix  modules 
+#endif // NO 
+  TH2F *hpixDetMap5, *hpixDetMap6; // in fpix  modules
+
+  //const int nlayers=4; // number of layer histos, usualy 4
+  TH1D *hpixMin[4],*hpixMax[4],*hpixOne[4],*hrocEdgePerDet[4],*hmoduleEdgePerDet[4];
+  TH2F *hrocEdgePerDet2D[4], *hmoduleEdgePerDet2D[4];
 
 #ifdef TESTING_ADC
   TH2F *hpixDetsT1, *hpixDetsT2, *hpixDetsT3,*hpixDetsT4;    // all modules
@@ -1313,14 +1320,17 @@ void PixClusterAna::beginJob() {
   hcharge6 = fs->make<TH1D>( "hcharge6", "Clu charge d2", sizeH, 0.,highH);
   hcharge7 = fs->make<TH1D>( "hcharge7", "Clu charge d3", sizeH, 0.,highH);
   //hcharge8 = fs->make<TH1D>( "hcharge8", "Clu charge test", sizeH, 0.,highH);
+#ifdef DO_1PIXELCLUS
+  // 1 pix clus 
   hcharge1b = fs->make<TH1D>( "hcharge1b", "Clu charge1", sizeH, 0.,highH); 
-  hcharge1g = fs->make<TH1D>( "hcharge1g", "Clu charge1", sizeH, 0.,highH); 
   hcharge2b = fs->make<TH1D>( "hcharge2b", "Clu charge2", sizeH, 0.,highH); 
-  hcharge2g = fs->make<TH1D>( "hcharge2g", "Clu charge2", sizeH, 0.,highH); 
   hcharge3b = fs->make<TH1D>( "hcharge3b", "Clu charge3", sizeH, 0.,highH); 
-  hcharge3g = fs->make<TH1D>( "hcharge3g", "Clu charge3", sizeH, 0.,highH); 
   hcharge4b = fs->make<TH1D>( "hcharge4b", "Clu charge4", sizeH, 0.,highH); 
+  hcharge1g = fs->make<TH1D>( "hcharge1g", "Clu charge1", sizeH, 0.,highH); 
+  hcharge2g = fs->make<TH1D>( "hcharge2g", "Clu charge2", sizeH, 0.,highH); 
+  hcharge3g = fs->make<TH1D>( "hcharge3g", "Clu charge3", sizeH, 0.,highH); 
   hcharge4g = fs->make<TH1D>( "hcharge4g", "Clu charge4", sizeH, 0.,highH); 
+#endif
 #ifdef LAY1_SPLIT
   hcharge1n = fs->make<TH1D>( "hcharge1n", "Clu charge l1", sizeH, 0.,highH); //in ke
   hcharge11 = fs->make<TH1D>( "hcharge11", "Clu charge l1-inner", sizeH, 0.,highH); //in ke
@@ -1521,6 +1531,7 @@ void PixClusterAna::beginJob() {
 		      416,0.,416.,160,0.,160.);
   hpixDetMap6->SetOption("colz");
 
+#ifdef NO
   // clus in all dets (superimposed)
   hcluDetMap1 = fs->make<TH2F>( "hcluDetMap1", "clu in det layer 1",
 				416,0.,416.,160,0.,160.);
@@ -1540,7 +1551,7 @@ void PixClusterAna::beginJob() {
   hcluDetMap6 = fs->make<TH2F>( "hcluDetMap6", "clu in det ring2",
 				416,0.,416.,160,0.,160.);
   hcluDetMap6->SetOption("colz");
-
+#endif //NO
   hsizeyz1 = fs->make<TH2F>( "hsizeyz1", "sizy vs z for layer 1",
 			     56,-28.,28.,20,0.5,20.5);
   hsizeyz2 = fs->make<TH2F>( "hsizeyz2", "sizy vs z for layer 2",
@@ -1752,6 +1763,40 @@ void PixClusterAna::beginJob() {
    highH = float(hlumiH); 
    hclusls = fs->make<TProfile>("hclusls","clus vs ls",sizeH,0.,highH,0.0,50000.);
    hpixls  = fs->make<TProfile>("hpixls", "pix vs ls ",sizeH,0.,highH,0.0,200000.);
+
+   const int nlayers=4;
+   const int nLadBins[nlayers] = {13,29,45,65};
+   const float ladBinMin[nlayers] = {6.5,14.5,22.5,32.5};
+   for(int i=0; i<nlayers; ++i) {
+    string name="hpixMin"+std::to_string(i+1);
+    string title="Minmimum pixel in Lay"+std::to_string(i+1);
+    //cout<<i<<" "<<name<<" "<<title<<endl;
+    hpixMin[i] = fs->make<TH1D>(name.c_str(),title.c_str(),1000,0.,100.);
+    name="hpixMax"+std::to_string(i+1);
+    title="Maximum pixel in Lay"+std::to_string(i+1);
+    hpixMax[i] = fs->make<TH1D>(name.c_str(),title.c_str(),1000,0.,100.);
+    name="hpixOne"+std::to_string(i+1);
+    title="1 pixel clus in Lay"+std::to_string(i+1);
+    hpixOne[i] = fs->make<TH1D>(name.c_str(),title.c_str(),1000,0.,100.);
+    name="hrocEdgePerDet"+std::to_string(i+1);
+    title="Num of ROC edge pixels in Lay"+std::to_string(i+1);
+    hrocEdgePerDet[i] = fs->make<TH1D>(name.c_str(),title.c_str(),1000,0.,1000.);    
+    name="hmoduleEdgePerDet"+std::to_string(i+1);
+    title="Num of sensor edge pixels in Lay"+std::to_string(i+1);
+    hmoduleEdgePerDet[i] = fs->make<TH1D>(name.c_str(),title.c_str(),1000,0.,1000.);
+    //2d
+    name="hrocEdgePerDet2D"+std::to_string(i+1);
+    title="ROC edge pixels in Lay"+std::to_string(i+1);
+    hrocEdgePerDet2D[i] = fs->make<TH2F>(name.c_str(),title.c_str(), 
+			  9,-4.5,4.5,nLadBins[i],-ladBinMin[i],ladBinMin[i]);    
+    hrocEdgePerDet2D[i]->SetOption("colz");
+
+    name="hmoduleEdgePerDet2D"+std::to_string(i+1);
+    title="Sensor edge pixels in Lay"+std::to_string(i+1);
+    hmoduleEdgePerDet2D[i] = fs->make<TH2F>(name.c_str(),title.c_str(),
+			     9,-4.5,4.5,nLadBins[i],-ladBinMin[i],ladBinMin[i]);    
+    hmoduleEdgePerDet2D[i]->SetOption("colz");
+   }
 
 #ifdef PV
    hpvls = fs->make<TProfile>("hpvls","pvs vs ls",sizeH,0.,highH,0.0,10000.);
@@ -2406,12 +2451,15 @@ void PixClusterAna::endJob(){
   hpixDetMap4->Scale(norm);
   hpixDetMap5->Scale(norm);
   hpixDetMap6->Scale(norm);
+
+#ifdef NO
   hcluDetMap1->Scale(norm);
   hcluDetMap2->Scale(norm);
   hcluDetMap3->Scale(norm);
   hcluDetMap4->Scale(norm);
   hcluDetMap5->Scale(norm);
   hcluDetMap6->Scale(norm);
+#endif // NO
 
   hgz1->Scale(norm1); // normalize to modules in a ring
   hgz2->Scale(norm2);
@@ -2423,6 +2471,10 @@ void PixClusterAna::endJob(){
   hpixz3->Scale(norm3);
   hpixz4->Scale(norm4);
 
+  for(int i=0;i<4;++i) {
+    hrocEdgePerDet2D[i]->Scale(norm);
+    hmoduleEdgePerDet2D[i]->Scale(norm);
+  }
 #ifdef ROC_RATE
   hrocMap1->Scale(norm);
   hrocMap2->Scale(norm);
@@ -3119,11 +3171,11 @@ void PixClusterAna::analyze(const edm::Event& e,
 
 
 
-#ifdef HISTOS
+    //#ifdef HISTOS
     //hdetunit->Fill(float(detid));
     //hpixid->Fill(float(detType));
     //hpixsubid->Fill(float(subid));
-#endif // HISTOS
+    //#endif // HISTOS
 
     if(detType!=1) continue; // look only at pixels
     ++numberOfDetUnits;
@@ -3301,6 +3353,7 @@ void PixClusterAna::analyze(const edm::Event& e,
 	  <<endl;
     }
 
+    int rocEdgePerDet=0, moduleEdgePerDet=0;
     // Loop over clusters
     for (clustIt = DSViter->begin(); clustIt != DSViter->end(); clustIt++) {
       sumClusters++;
@@ -3328,8 +3381,8 @@ void PixClusterAna::analyze(const edm::Event& e,
       bool edgeHitY = (topol->isItEdgePixelInY(minPixelCol)) || 
 	(topol->isItEdgePixelInY(maxPixelCol)); 
 
-      bool edgeHitX2 = false; // edge method moved 
-      bool edgeHitY2 = false; // to topologu class
+      //bool edgeHitX2 = false; // edge method moved 
+      //bool edgeHitY2 = false; // to topologu class
 #ifdef TESTING_ADC            
       bool cluWithNegativeADC = false;
 #endif
@@ -3392,8 +3445,7 @@ void PixClusterAna::analyze(const edm::Event& e,
       //int noisy = 0;
 
 #ifdef ROC_RATE
-      roc = -1; //  link = -1;
-      //rocZ=-1.; rocPhi=-1.;
+      roc = -1; //  link = -1; rocZ=-1.; rocPhi=-1.;
 #endif
 
       if(pixelsVec.size()>maxPixPerClu) maxPixPerClu = pixelsVec.size();
@@ -3410,11 +3462,19 @@ void PixClusterAna::analyze(const edm::Event& e,
 	// Find if this cluster includes an edge pixel
 	bool edgeInX = topol->isItEdgePixelInX(int(pixx));
 	bool edgeInY = topol->isItEdgePixelInY(int(pixy));
-	if(edgeInX) edgeHitX2=true;
-	if(edgeInY) edgeHitY2=true; 
+	//if(edgeInX) edgeHitX2=true;
+	//if(edgeInY) edgeHitY2=true; 
 	//if(bigInX) cluBigInX=true;
 	//if(bigInY) cluBigInY=true;
 	
+	// find lowest and highest pixel in the cluster
+	if(adc>adcMax) adcMax=adc; 
+	if(adc<adcMin) adcMin=adc;
+	if(edgeInX && !(pixx==0. || pixx==159.)) cout<<"wrong "<<pixx<<endl; 
+	if(edgeInX) moduleEdgePerDet++; // count sensor edge
+	if((pixx==79.) || (pixx==80.)) rocEdgePerDet++; // count roc edge
+	if((int(pixy)%52==0) || (int(pixy)%52==51)) {rocEdgePerDet++;}// count roc edge
+
 	if(PRINT || select ) cout<<i<<" "<<pixx<<" "<<pixy<<" "<<adc<<endl;
 	//" "<<bigInX<<" "<<bigInY<<" "<<edgeInX<<" "<<edgeInY<<" "<<isBig<<endl;	
 #ifdef USE_TREE
@@ -3457,8 +3517,6 @@ void PixClusterAna::analyze(const edm::Event& e,
 	bool negativeADC = (intADC<=100); // signals that there was negative charge 
 	if(negativeADC) {cluWithNegativeADC= true; detWithNegativeADC= true;}
 #endif
-	if(adc<adcMin) adcMin=adc;
-	if(adc>adcMax) adcMax=adc;
 
 #ifdef ROC_RATE
 	roc = rocId(int(pixy),int(pixx));  // 0-15, column, row
@@ -3475,7 +3533,7 @@ void PixClusterAna::analyze(const edm::Event& e,
 	if( !(bigInX || bigInY) ) {numberOfNoneEdgePixels++;}
 	//else {isBig=true;}
 
-#ifdef HISTOS
+	//#ifdef HISTOS
 	// Pixel histos
 	if (subid==1 && (selectEvent==-1 || countEvents==selectEvent)) {  // barrel
 #ifdef TEST_DCOLS
@@ -3945,11 +4003,11 @@ void PixClusterAna::analyze(const edm::Event& e,
 
 	} // end if subdet (pixel loop)
 
-#endif // HISTOS
+	//#endif // HISTOS
 	
       } // pixel loop
       
-#ifdef HISTOS
+      //#ifdef HISTOS
       // Cluster histos
       if (subid==1 && (selectEvent==-1 || countEvents==selectEvent) ) {  // barrel
 #ifdef ROC_RATE
@@ -3960,6 +4018,12 @@ void PixClusterAna::analyze(const edm::Event& e,
         float rocZ = rocZGlobal(module,rocZLoc);
         float rocPhi = rocPhiGlobal(ladder, rocPhiLoc);
 #endif
+
+	// comon hisos for bpix
+	if(layer>=1 && layer<=4) {
+	  if(size==1) {hpixOne[layer-1]->Fill(adcMax);}
+	  else {hpixMax[layer-1]->Fill(adcMax); hpixMin[layer-1]->Fill(adcMin);}
+	}
 
 	//if (subid==1) {  // barrel
 	if(layer==1) {  // layer 1
@@ -3975,7 +4039,7 @@ void PixClusterAna::analyze(const edm::Event& e,
 	  hcols11->Fill(ly);
 	  hrows11->Fill(lx);
 
-	  hcluDetMap1->Fill(y,x);
+	  //hcluDetMap1->Fill(y,x);
 
 
 	  if(newL1Modules) {
@@ -4004,7 +4068,6 @@ void PixClusterAna::analyze(const edm::Event& e,
 	  }
 #endif
 	  htest5->Fill((size),(ch/size));
-
 	  numOfClustersPerDet1++;
 	  numOfClustersPerLay1++;
 	  avCharge1 += ch;
@@ -4012,26 +4075,23 @@ void PixClusterAna::analyze(const edm::Event& e,
 	  htest1->Fill(ch,float(size));
 #endif
 #ifdef STUDY_ONEMOD
-	    hsizeMap1->Fill(y,x,size);
-	    hsizeXMap1->Fill(y,x,sizeX);
-	    hsizeYMap1->Fill(y,x,sizeY);
-	    hclucharMap1->Fill(y,x,ch);
+	  hsizeMap1->Fill(y,x,size);
+	  hsizeXMap1->Fill(y,x,sizeX);
+	  hsizeYMap1->Fill(y,x,sizeY);
+	  hclucharMap1->Fill(y,x,ch);
 #endif
-
 #ifdef MINMAX
 	  if(size>1) {
 	    hcharMin1->Fill(adcMin);
 	    hcharMax1->Fill(adcMax);
 	  }
 #endif
-
 #ifdef ROC_RATE
 	  hrocCluMap1->Fill(rocZ,rocPhi);
 	  hrocClucharMap1->Fill(rocZ,rocPhi,ch);
 	  hrocSizeXMap1->Fill(rocZ,rocPhi,sizeX);
 	  hrocSizeYMap1->Fill(rocZ,rocPhi,sizeY);
 #endif
-
 #ifdef LAY1_SPLIT
 	  if(flipped) { // inner
 	    hcharge11->Fill(ch);
@@ -4061,7 +4121,6 @@ void PixClusterAna::analyze(const edm::Event& e,
 	    }  
 	  }  
 #endif
-
 #ifdef TESTING_ADC
 	  if(cluWithNegativeADC) {
 	    hcluDetT1->Fill(float(module),float(ladder),ch);
@@ -4098,7 +4157,6 @@ void PixClusterAna::analyze(const edm::Event& e,
 	      }
 	    } // size=1/2
 #endif
-
 #ifdef NEW_MODULES
 	  // if(newModule) { // new from 2014
 	  //   hcharge11->Fill(ch);
@@ -4209,7 +4267,7 @@ void PixClusterAna::analyze(const edm::Event& e,
 	  hcluchar2->Fill(zPos,ch);
 	  hsizeyz2->Fill(zPos,sizeY);
 	  
-	  hcluDetMap2->Fill(y,x);
+	  //hcluDetMap2->Fill(y,x);
 	  //htest3->Fill(ch,float(size));
 #ifdef DO_1PIXELCLUS
 	  if(size==1) {hcharge2b->Fill(ch); count2++;}
@@ -4278,7 +4336,7 @@ void PixClusterAna::analyze(const edm::Event& e,
 	  hcols3->Fill(y);
 	  hrows3->Fill(x);
 
-	  hcluDetMap3->Fill(y,x);
+	  //hcluDetMap3->Fill(y,x);
 
 	  hcharge3->Fill(ch);
 	  hsize3->Fill(float(size));
@@ -4359,7 +4417,6 @@ void PixClusterAna::analyze(const edm::Event& e,
 
 	} else if(layer==4) {
 
-
 	  numOfClustersPerDet4++;
 	  numOfClustersPerLay4++;
 
@@ -4397,13 +4454,11 @@ void PixClusterAna::analyze(const edm::Event& e,
 	  hcols4->Fill(y);
 	  hrows4->Fill(x);
 
-	  hcluDetMap4->Fill(y,x);
-
+	  //hcluDetMap4->Fill(y,x);
 
 	  //hcharClubx->Fill(bx,ch);
 	  //hsizeClubx->Fill(bx,size);
 	  //hsizeYClubx->Fill(bx,sizeY);
-
 	  //hcharCluls->Fill(lumiBlock,ch);
 	  //hsizeCluls->Fill(lumiBlock,size);
 	  //hsizeXCluls->Fill(lumiBlock,sizeX);
@@ -4433,14 +4488,13 @@ void PixClusterAna::analyze(const edm::Event& e,
 	  hsizeClu4ls->Fill(lumiBlock,size);
 #endif
 
-
 	} // end if layer
 
       } else if (subid==2 && (selectEvent==-1 || countEvents==selectEvent) ) {  // endcap
 
 #ifdef DO_FPIX
-	if(ring==1) hcluDetMap5->Fill(y,x);
-	else if(ring==2) hcluDetMap6->Fill(y,x);
+	//if(ring==1) hcluDetMap5->Fill(y,x);
+	//else if(ring==2) hcluDetMap6->Fill(y,x);
 #endif
 #ifdef FPIX_SPECIAL
 	int index=(disk-1)*8 + (side-1)*4 + (panel-1)*2 + ring-1;
@@ -4486,15 +4540,14 @@ void PixClusterAna::analyze(const edm::Event& e,
 
       } // end barrel/forward cluster loop
       
-#endif // HISTOS
+      //#endif // HISTOS
 
-      if( (edgeHitX != edgeHitX2) && sizeX<64) 
-	cout<<" wrong egdeX "<<edgeHitX<<" "<<edgeHitX2<<endl;
-      if( (edgeHitY != edgeHitY2) && sizeY<64)  
-	cout<<" wrong egdeY "<<edgeHitY<<" "<<edgeHitY2<<endl;
+	//if( (edgeHitX != edgeHitX2) && sizeX<64) 
+	//cout<<" wrong egdeX "<<edgeHitX<<" "<<edgeHitX2<<endl;
+	//if( (edgeHitY != edgeHitY2) && sizeY<64)  
+	//cout<<" wrong egdeY "<<edgeHitY<<" "<<edgeHitY2<<endl;
 
     } // clusters 
-
     
     if(numOfClustersPerDet1>maxClusPerDet) maxClusPerDet = numOfClustersPerDet1;
     if(numOfClustersPerDet2>maxClusPerDet) maxClusPerDet = numOfClustersPerDet2;
@@ -4516,18 +4569,26 @@ void PixClusterAna::analyze(const edm::Event& e,
 	    <<numOfClustersPerDet4<<" "<<numOfPixPerDet4<<endl;
     } // end if PRINT
 
-#ifdef HISTOS
-    if (subid==1 && (selectEvent==-1 || countEvents==selectEvent) ) {  // barrel
-      //if (subid==1 && countEvents==selectEvent) {  // barrel
+    //#ifdef HISTOS
 
-      //hlayerid->Fill(float(layer));
+    // Det histos
+    if (subid==1 && (selectEvent==-1 || countEvents==selectEvent) ) {  // barrel
+      // common histos
+      if(layer>=1&&layer<=4) {
+	hrocEdgePerDet[layer-1]->Fill(float(rocEdgePerDet));
+	hmoduleEdgePerDet[layer-1]->Fill(float(moduleEdgePerDet));
+	hrocEdgePerDet2D[layer-1]->Fill(module,ladder,rocEdgePerDet);
+	hmoduleEdgePerDet2D[layer-1]->Fill(module,ladder,moduleEdgePerDet);
+	if( (layer==1) && (rocEdgePerDet>79 || moduleEdgePerDet>79)) 
+	  cout<<"edge pixels in lay/lad/mod "<<layer<<"/"<<ladder<<"/"<<module
+	      <<" event "<<event<<"/"<<countAllEvents<<"/"<<countEvents
+	      <<" - roc "<<rocEdgePerDet<<" sens "<<moduleEdgePerDet<<endl;
+      }
 
 #ifdef TEST_DCOLS
       histogramDcols(layer,ladder,module);
 #endif
-      // Det histos
-      if(layer==1) {
-	
+      if(layer==1) {	
 	++numberOfDetUnits1;
 	hclusPerDet1->Fill(float(numOfClustersPerDet1));
 	hpixPerDet1->Fill(float(numOfPixPerDet1));
@@ -4595,7 +4656,7 @@ void PixClusterAna::analyze(const edm::Event& e,
       
     } // end barrel/forward
 
-#endif // HISTOS
+    //#endif // HISTOS
 
 // #ifdef SINGLE_MODULES
 //     if     (ladder==1 && module==4) eventFlag[0]=false; // 
@@ -4650,7 +4711,7 @@ if(doTree) {
    cout<<"D6 clus "<<numOfClustersPerDisk6<<" pix "<<numOfPixPerDisk6<<endl;
  }
     
-#ifdef HISTOS
+ //#ifdef HISTOS
 
   //if(numberOfClusters<=3) continue; // skip events
   if ( (selectEvent==-1 || countEvents==selectEvent) ) { 
@@ -4874,7 +4935,7 @@ if(doTree) {
 
   } // if select event
 
-#endif // HISTOS
+  //#endif // HISTOS
       
 } // end 
 

@@ -137,6 +137,7 @@
 //#define DO_FPIX  // strange map of fpix modules, normalised  
 #define ANA_CLUSTERS  // monitor cluster charge profiles  
 //#define DO_2ND_HIT // test is a track has >1 hits per module
+//#define BAD_L2 // split bad L2 modules 
 
 #ifdef TRAJECTORY
 #include "TrackingTools/TransientTrack/interface/TransientTrackBuilder.h"
@@ -235,8 +236,11 @@ class PixClustersWithTracks : public edm::one::EDAnalyzer<edm::one::SharedResour
        *hsizex5,*hsizex6,*hsizex7,
        *hsizey5,*hsizey6,*hsizey7;
   //TH1D *hcharge1n, *hsize1n, *hsizex1n, *hsizey1n; 
+#ifdef BAD_L2
   TH1D *hcharge2b, *hsize2b, *hsizex2b, *hsizey2b; 
   TH1D *hcharge2g, *hsize2g, *hsizex2g, *hsizey2g; 
+#endif
+  TH1D *hpixMin[4],*hpixMax[4],*hpixOne[4];
 
   TH1D *hclusPerTrk1,*hclusPerTrk2,*hclusPerTrk3,*hclusPerTrk4,
     *hclusPerTrk5,*hclusPerTrk6,*hclusPerTrk7;
@@ -285,7 +289,9 @@ class PixClustersWithTracks : public edm::one::EDAnalyzer<edm::one::SharedResour
 
   // pixel histos 
   TH1D *hpixcharge1,*hpixcharge2, *hpixcharge3, *hpixcharge4, *hpixcharge5;
+#ifdef BAD_L2
   TH1D *hpixcharge2b,*hpixcharge2g;
+#endif
   TH2F *hpixDetMap1, *hpixDetMap2, *hpixDetMap3, *hpixDetMap4;  // in a  modules
 
 #ifdef USE_TREE
@@ -766,8 +772,6 @@ void PixClustersWithTracks::beginJob() {
   hcharge6 = fs->make<TH1D>( "hcharge6", "Clu charge d2", 400, 0.,400.);
   hcharge7 = fs->make<TH1D>( "hcharge7", "Clu charge d3", 400, 0.,400.);
   //hcharge1n= fs->make<TH1D>( "hcharge1n","Clu charge l1", 800, 0.,800.); //in ke
-  hcharge2b= fs->make<TH1D>( "hcharge2b", "Clu charge l2", 400, 0.,400.);
-  hcharge2g= fs->make<TH1D>( "hcharge2g", "Clu charge l2", 400, 0.,400.);
 
   hsize1 = fs->make<TH1D>( "hsize1", "layer 1 clu size",300,-0.5,299.5);
   hsize2 = fs->make<TH1D>( "hsize2", "layer 2 clu size",300,-0.5,299.5);
@@ -777,8 +781,6 @@ void PixClustersWithTracks::beginJob() {
   hsize6 = fs->make<TH1D>( "hsize6", "disk 2 clu size",100,-0.5,99.5);
   hsize7 = fs->make<TH1D>( "hsize7", "disk 3 clu size",100,-0.5,99.5);
   //hsize1n= fs->make<TH1D>( "hsize1n","layer 1 clu size",300,-0.5,299.5);
-  hsize2b= fs->make<TH1D>( "hsize2b","layer 2 clu size",300,-0.5,299.5);
-  hsize2g= fs->make<TH1D>( "hsize2g","layer 2 clu size",300,-0.5,299.5);
 
   hsizex1 = fs->make<TH1D>( "hsizex1", "lay1 clu size in x",
 		      20,-0.5,19.5);
@@ -796,8 +798,6 @@ void PixClustersWithTracks::beginJob() {
 		      20,-0.5,19.5);
   //hsizex1n= fs->make<TH1D>( "hsizex1n","lay1 clu size in x",
   //		      20,-0.5,19.5);
-  hsizex2b= fs->make<TH1D>( "hsizex2b","layer 2 clu size x",20,-0.5,19.5);
-  hsizex2g= fs->make<TH1D>( "hsizex2g","layer 2 clu size x",20,-0.5,19.5);
 
   hsizey1 = fs->make<TH1D>( "hsizey1", "lay1 clu size in y",
 		      30,-0.5,29.5);
@@ -815,10 +815,37 @@ void PixClustersWithTracks::beginJob() {
 		      30,-0.5,29.5);
   //hsizey1n= fs->make<TH1D>( "hsizey1n", "lay1 clu size in y",
   //		      30,-0.5,29.5);
+
+#ifdef BAD_L2
+  hcharge2b= fs->make<TH1D>( "hcharge2b", "Clu charge l2", 400, 0.,400.);
+  hcharge2g= fs->make<TH1D>( "hcharge2g", "Clu charge l2", 400, 0.,400.);
+  hsize2b= fs->make<TH1D>( "hsize2b","layer 2 clu size",300,-0.5,299.5);
+  hsize2g= fs->make<TH1D>( "hsize2g","layer 2 clu size",300,-0.5,299.5);
+  hsizex2b= fs->make<TH1D>( "hsizex2b","layer 2 clu size x",20,-0.5,19.5);
+  hsizex2g= fs->make<TH1D>( "hsizex2g","layer 2 clu size x",20,-0.5,19.5);
   hsizey2b = fs->make<TH1D>( "hsizey2b", "lay2 clu size in y",
 		      30,-0.5,29.5);
   hsizey2g = fs->make<TH1D>( "hsizey2g", "lay2 clu size in y",
 		      30,-0.5,29.5);
+#endif
+
+  
+  const int nlayers=4;
+  const int nLadBins[nlayers] = {13,29,45,65};
+  const float ladBinMin[nlayers] = {6.5,14.5,22.5,32.5};
+  for(int i=0; i<nlayers; ++i) {
+    string name="hpixMin"+std::to_string(i+1);
+    string title="Minmimum pixel in Lay"+std::to_string(i+1);
+    //cout<<i<<" "<<name<<" "<<title<<endl;
+    hpixMin[i] = fs->make<TH1D>(name.c_str(),title.c_str(),1000,0.,100.);
+    name="hpixMax"+std::to_string(i+1);
+    title="Maximum pixel in Lay"+std::to_string(i+1);
+    hpixMax[i] = fs->make<TH1D>(name.c_str(),title.c_str(),1000,0.,100.);
+    name="hpixOne"+std::to_string(i+1);
+    title="1 pixel clus in Lay"+std::to_string(i+1);
+    hpixOne[i] = fs->make<TH1D>(name.c_str(),title.c_str(),1000,0.,100.);
+  }
+  
   
   // // dets hit per event
   // hDetsMap1 = fs->make<TH2F>("hDetsMap1"," hit modules per event",
@@ -1567,9 +1594,10 @@ void PixClustersWithTracks::beginJob() {
   hpixcharge4 = fs->make<TH1D>( "hpixcharge4", "Pix charge l4",sizeH, 0.,highH);
   hpixcharge5 = fs->make<TH1D>( "hpixcharge5", "Pix charge d",sizeH, 0.,highH);
   //hpixcharge1n= fs->make<TH1D>( "hpixcharge1n","Pix charge l1",sizeH, 0.,highH);
+#ifdef BAD_L2
   hpixcharge2b= fs->make<TH1D>( "hpixcharge2b","Pix charge l2",sizeH, 0.,highH);
   hpixcharge2g= fs->make<TH1D>( "hpixcharge2g","Pix charge l2",sizeH, 0.,highH);
-
+#endif
 #ifdef STUDY_LAY1
   hpixcharge11 = fs->make<TH1D>( "hpixcharge11", "Pix charge l11",sizeH, 0.,highH);
   hpixcharge14 = fs->make<TH1D>( "hpixcharge14", "Pix charge l14",sizeH, 0.,highH);
@@ -2412,10 +2440,11 @@ void PixClustersWithTracks::analyze(const edm::Event& e,
 #endif
 
       int layer=0, ladderIndex=0, zindex=0, ladderOn=0, module=0, shell=0;
+#ifdef BAD_L2
       bool badL2Modules = false;
       bool goodL2Modules = false;
       //bool newL1Modules = false;
-
+#endif
       unsigned int disk=0; //1,2,3
       unsigned int bladeC=0; //1-56
       //unsigned int zindexF=0; //
@@ -2476,6 +2505,7 @@ void PixClustersWithTracks::analyze(const edm::Event& e,
 	  else inner=false; // even
 	}
 
+#ifdef BAD_L2
 	//if( (ladderOn==2) || (ladderOn==4) || (ladderOn==6) ||
 	//    (ladderOn==-1) || (ladderOn==-3) || (ladderOn==-5) ) inner=true;
 	// if( layer==2 && select1!=9998) {
@@ -2502,6 +2532,7 @@ void PixClustersWithTracks::analyze(const edm::Event& e,
 	//     else if( (ladderOn ==-5) && (module ==-1) ) newL1Modules=true;
 	//   }
 	// }
+#endif // BAD_L2
       
 	if(PRINT) cout<<"barrel layer/ladder/module: "<<layer<<"/"<<ladderIndex<<"/"<<zindex<<endl;
 	
@@ -2987,7 +3018,8 @@ void PixClustersWithTracks::analyze(const edm::Event& e,
 	  
 	  hetaphiMap2->Fill(eta,phi);
 	  hstatus->Fill(13.);
-	  
+
+#ifdef BAD_L2	  
 	  if(badL2Modules) {  // behind dcdc, bad 
 	      hcharge2b->Fill(charge);
 	      hsize2b->Fill(float(size));
@@ -2997,6 +3029,7 @@ void PixClustersWithTracks::analyze(const edm::Event& e,
 	      hsize2g->Fill(float(size));
 
 	  } else { // really good
+#endif // BAD_L2
 
 	    hcharge2->Fill(charge);
 	    hsize2->Fill(float(size));
@@ -3016,41 +3049,42 @@ void PixClustersWithTracks::analyze(const edm::Event& e,
 	    if( pt>CLU_SIZE_PT_CUT_MULT ) {
 	    
 #ifdef PHI_PROFILES
-	    hclumultxPhi2->Fill(phi,float(sizeX));
-	    hclumultyPhi2->Fill(phi,float(sizeY));
-	    hclucharPhi2->Fill(phi,float(charge));
+	      hclumultxPhi2->Fill(phi,float(sizeX));
+	      hclumultyPhi2->Fill(phi,float(sizeY));
+	      hclucharPhi2->Fill(phi,float(charge));
 #ifdef TRAJECTORY
-	    if(abs(eta)<CLU_SIZE_ETA_CUT) {
-	    hclumultxX2->Fill(llx,float(sizeX));
-	    hclumultyX2->Fill(llx,float(sizeY));
-	    hclucharX2->Fill(llx,float(charge));
-	    }
+	      if(abs(eta)<CLU_SIZE_ETA_CUT) {
+		hclumultxX2->Fill(llx,float(sizeX));
+		hclumultyX2->Fill(llx,float(sizeY));
+		hclucharX2->Fill(llx,float(charge));
+	      } // eta
 #endif
 #endif
 	    
 #ifdef USE_PROFILES
-	    hmult2->Fill(zindex,float(size));
-	    hclumult2->Fill(eta,float(size));
-	    hclumultx2->Fill(eta,float(sizeX));
-	    hclumulty2->Fill(eta,float(sizeY));
-	    hcluchar2->Fill(eta,float(charge));
-	    //hclumultld2->Fill(float(ladderOn),size);
-	    //hclumultxld2->Fill(float(ladderOn),sizeX);
-	    //hclumultyld2->Fill(float(ladderOn),sizeY);
-	    //hclucharld2->Fill(float(ladderOn),charge);
+	      hmult2->Fill(zindex,float(size));
+	      hclumult2->Fill(eta,float(size));
+	      hclumultx2->Fill(eta,float(sizeX));
+	      hclumulty2->Fill(eta,float(sizeY));
+	      hcluchar2->Fill(eta,float(charge));
+	      //hclumultld2->Fill(float(ladderOn),size);
+	      //hclumultxld2->Fill(float(ladderOn),sizeX);
+	      //hclumultyld2->Fill(float(ladderOn),sizeY);
+	      //hclucharld2->Fill(float(ladderOn),charge);
 #endif
-	  }
+	    }  // pt
 #ifdef LS_STUDIES
-	  hcharCluls->Fill(lumiBlock,charge);
-	  hsizeCluls->Fill(lumiBlock,size);
-	  hsizeXCluls->Fill(lumiBlock,sizeX);
-	  hcharCluls2->Fill(lumiBlock,charge);
-	  hsizeCluls2->Fill(lumiBlock,size);
-	  hsizeXCluls2->Fill(lumiBlock,sizeX);
+	    hcharCluls->Fill(lumiBlock,charge);
+	    hsizeCluls->Fill(lumiBlock,size);
+	    hsizeXCluls->Fill(lumiBlock,sizeX);
+	    hcharCluls2->Fill(lumiBlock,charge);
+	    hsizeCluls2->Fill(lumiBlock,size);
+	    hsizeXCluls2->Fill(lumiBlock,sizeX);
 #endif
 
+#ifdef BAD_L2
 	  } // if badL2
-
+#endif
 	      
 #ifdef CLU_SHAPE_L2
 	  if( (minPixelCol%2)==0 ) { // event col
@@ -3296,6 +3330,8 @@ void PixClustersWithTracks::analyze(const edm::Event& e,
 	// for(int i=0;i<20;++i) yProfile[i]=0.;
 	// for(int i=0;i<3; ++i) xProfile[i]=0.;
 #endif
+
+	float adcMin=9999., adcMax=0.;
 	// Get the pixels in the Cluster
 	const vector<SiPixelCluster::Pixel>& pixelsVec = clust->pixels();
 	if(PRINT) cout<<" Pixels in this cluster (i/x/y/char)"<<endl;
@@ -3305,6 +3341,10 @@ void PixClustersWithTracks::analyze(const edm::Event& e,
 	  float pixy = pixelsVec[i].y; // same, col index
 	  float adc = (float(pixelsVec[i].adc)/1000.);
 	  int ladder = ladderOn;  //to mimic the code from CluAna
+	  // find lowest and highest pixel in the cluster
+	  if(adc>adcMax) adcMax=adc; 
+	  if(adc<adcMin) adcMin=adc;
+
 	  if(PRINT) cout<<i<<"- "<<pixx<<" "<<pixy<<" "<<adc<<endl;
 #ifdef USE_TREE
 	if(doTree&&fillPixelTree&&(!treeBpixOnly||(treeBpixOnly&&(layer>0)))) {
@@ -3413,9 +3453,10 @@ void PixClustersWithTracks::analyze(const edm::Event& e,
 	   // else if(ladderOn== 1 && module== 3) hpixDetMap33->Fill(pixy,pixx); // "	    
 #endif	    
 
+#ifdef BAD_L2
 	    if( badL2Modules)      {hpixcharge2b->Fill(adc); continue;}  // skip 
 	    else if(goodL2Modules) {hpixcharge2g->Fill(adc); continue;}  // skip 
-	    
+#endif
 	    hpixcharge2->Fill(adc);
 	    hpixDetMap2->Fill(pixy,pixx);
 	    hpcols2->Fill(pixy);
@@ -3489,6 +3530,12 @@ void PixClustersWithTracks::analyze(const edm::Event& e,
 	  } // if layer 
 	  	  
 	} // pixels, for loop 
+
+	// hiatogram min&max adc
+        if(layer>=1 && layer<=4) {
+          if(size==1) {hpixOne[layer-1]->Fill(adcMax);}
+          else {hpixMax[layer-1]->Fill(adcMax); hpixMin[layer-1]->Fill(adcMin);}
+        }
 
 #ifdef USE_PROFILES
 	// Do the charge cluster profiles 

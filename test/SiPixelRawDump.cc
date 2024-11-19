@@ -59,7 +59,7 @@ namespace {
   bool printErrors  = false;
   bool printData    = false;
   bool printHeaders = false;
-  //bool printDebug = false;
+  bool printDebug = false; // special printouts 
   const bool printBX = false;
   const bool CHECK_PIXELS = true;
   const bool PRINT_BASELINE = false;
@@ -556,7 +556,7 @@ int MyDecode::error(int word, int & fedChannel, int fed, int & stat1, int & stat
       status=-10;
       errorStatuses.push_back(10);
     } else { // 2nd word, useless, nothing interesting  
-      unsigned int index=(word & tbmStackMask); // TBM chan, same as channel
+      //unsigned int index=(word & tbmStackMask); // TBM chan, same as channel
       //if(print) { cout << ", 2nd word:index = " << index; }
       return 0;
     }
@@ -588,8 +588,8 @@ int MyDecode::error(int word, int & fedChannel, int fed, int & stat1, int & stat
     unsigned int tbm_status   =  (word & tbmStatusMask);
     unsigned int decode_status=  (word & decodeMask);
     
-    if(print) cout<<"Trailer Error- "<<"channel: "<<channel<<", TBM status:0x"
-		  <<hex<<tbm_status<<" ErrBits:0x"<<decode_status<<dec<<","; // <<endl;
+    if(print) cout<<"Trailer Error-TBM status:0x"<<hex<<tbm_status
+		  <<" ErrBits:0x"<<decode_status<<dec<<","; // <<endl;
 
     if(tbm_status!=0) { // trailer errors
       status = -15;  // catch others (Cal?)
@@ -626,6 +626,7 @@ int MyDecode::error(int word, int & fedChannel, int fed, int & stat1, int & stat
 	status = -14;
 	errorStatuses.push_back(14);
       } else if(word &PKAMMask) { // bit 9 PKAM
+	if(printDebug) print=true; // enable for this error
 	if(print) cout<<" PKAM, ";
 	status = -16;
 	errorStatuses.push_back(16);
@@ -635,7 +636,8 @@ int MyDecode::error(int word, int & fedChannel, int fed, int & stat1, int & stat
 
   } // trailer&decode errors
 
-  if(print && status <0) cout<<" FED "<<fed<<" status "<<status
+  if(print && status <0) cout<<" FED "<<fed<<" channel "<<channel
+			     <<" status "<<status
 			     <<" "<<errorStatuses.size()<<endl;
   return status;
 }
@@ -851,13 +853,15 @@ public:
   void analyze(const edm::Event&, const edm::EventSetup&) override;
   void analyzeHits(int fed, int channel);
   void analyzeErrors(int fed, int channel, int errorType, int status1, int status2);
+  void analyzeFinal(int fed);
 
 private:
   edm::ParameterSet theConfig;
   edm::EDGetTokenT<FEDRawDataCollection> rawData;
 
   int printVerbosity;
-  int selectedFED, selectedChannel, selectedType;
+  int selectedFED, selectedChannel;
+  unsigned long long selectedEvent;
   bool bpixOnly;
   double printThreshold;
   int makeTree;
@@ -898,6 +902,11 @@ private:
   int maskedPerEvent_[5]; // count masked channels per event, layer5=fpix
   int eventId, stat1, stat2;
   int hitsCut, hitsCut2;
+  int fedchannelsize[n_of_Channels];
+  //int pixelsPerChannel[n_of_Channels];
+  bool errorInChannel[30][n_of_Channels];
+  bool forcePrint;
+
 #ifdef OUTFILE
   ofstream outfile;
 #endif
@@ -961,7 +970,10 @@ private:
   TH2F *hfedChannelDefinition;
   TH2F *hpix0Map[4],*hdoubleMap[4],*hdcolLowMap[4],*hpixOrderMap[4],*hadc0Map[4],*hadc0RocMap[4];
   TH1D *htest, *htest1, *htest2, *htest3, *htest4, *htest5, *htest6;
- 
+
+  // pixels in events with errors
+  TH1D *hpixelsInErrorChannel[30];
+
   // Per FED
 #ifdef PER_FED
   TProfile2D *hfedChanLS[94], *hfedChanAutoMaskedLS[94];
@@ -988,6 +1000,7 @@ SiPixelRawDump::SiPixelRawDump( const edm::ParameterSet& cfg) : theConfig(cfg) {
   // For the ByToken method
   rawData = consumes<FEDRawDataCollection>(label);
   makeTree=0; // no trees
+  forcePrint=false;
 } 
 //----------------------------------------------------------------------------------------
 void SiPixelRawDump::endJob() {
@@ -1051,7 +1064,7 @@ void SiPixelRawDump::endJob() {
   cout<<endl;
 
   int errorThreshold = int(countEvents*printThreshold);
-  if(errorThreshold<100) errorThreshold=100;
+  //if(errorThreshold<100) errorThreshold=100;
 
   cout<<" Total number of errors "<<countTotErrors<<" print threshold "<< errorThreshold << " total errors per fed channel"<<endl;
 
@@ -1088,7 +1101,7 @@ void SiPixelRawDump::endJob() {
 
   cout<<" Decode errors "<<endl<<"Fed Channel ADC0  Pix_000 Double_Pix Row-order Dcol-order"<<endl;
   errorThreshold = int(countEvents*printThreshold);
-  if(errorThreshold<10) errorThreshold=10;
+  //if(errorThreshold<10) errorThreshold=10;
   for(int i = 0; i < n_of_FEDs; ++i) {
     for(int j=0;j<n_of_Channels;++j) {
       int tmp=0;
@@ -1148,7 +1161,7 @@ void SiPixelRawDump::beginJob() {
   printThreshold = theConfig.getUntrackedParameter<double>("PrintThreshold",0.01); // threshold per event for printing errors
   selectedFED = theConfig.getUntrackedParameter<int>("selectedFED",-1);
   selectedChannel = theConfig.getUntrackedParameter<int>("selectedChannel",-1);
-  selectedType = theConfig.getUntrackedParameter<int>("selectedType",-1);  // not used 
+  selectedEvent = theConfig.getUntrackedParameter<long long>("selectedEvent",0); 
   // cut on number of hits per roc for warning  
   hitsCut = theConfig.getUntrackedParameter<int>("hitsCut",1000);  
   hitsCut2 = theConfig.getUntrackedParameter<int>("hitsCut2",1000);  
@@ -1158,7 +1171,7 @@ void SiPixelRawDump::beginJob() {
 #endif 
   
   cout<<" beginjob "<<printVerbosity<<" "<<printThreshold<<" select FED "<<selectedFED
-      <<" select Type "<<selectedType<<" tree "<<makeTree<<endl;  
+      <<" select Event "<<selectedEvent<<" tree "<<makeTree<<endl;  
 
   if(printVerbosity>0) printErrors  = true;
   else printErrors = false;
@@ -1528,6 +1541,8 @@ void SiPixelRawDump::beginJob() {
     name="hchanErrorPerLS"+num; title="errors per chan, type "+errorName[i];        
     if((i==16)||(i==18)||(i>=9&&i<=12))
       hchanErrorPerLS[i] = fs->make<TH2F>(name.c_str(),title.c_str(),100,0.,100., n_of_Channels, 0.5,maxChan);
+    name="hpixelsInErrorChannel"+num; title="Pixel hits in channel, for error type: "+errorName[i];        
+    hpixelsInErrorChannel[i]=fs->make<TH1D>(name.c_str(),title.c_str(),600,0.,600.);
   }
 
 #ifdef PER_FED
@@ -1656,6 +1671,9 @@ void SiPixelRawDump::analyzeHits(int fedId, int fedChannel) {
   else if(layer==4 && roc>8) cout<<"wrong roc number "<<roc<<" "<<layer<<endl;
   else if(layer==5 && roc>8) cout<<"wrong roc number "<<roc<<" "<<layer<<endl;
   }
+
+  // update channel count 
+  //pixelsPerChannel[fedChannel-1]++;
 
   if( (fedId!=fed0) || (fedChannel!=chan0) || (roc!=roc0) ) { // new roc
     //cout<<"new roc "<<fedId<<" "<<fedChannel<<" "<<roc<<" "<<layer<<" "<<hitsPerRoc<<endl;
@@ -1798,10 +1816,11 @@ void SiPixelRawDump::analyzeErrors(int fedId, int fedChannel, int status, int st
       }
     }
 
-    if(status<30) {
+    if(status>=0 && status<30) {
       herrorls[status]->Fill(float(lumiBlock)); // 1D
       fedErrorsPerType[status][fedId-fedId0][(fedChannel-1)]++;
-    }
+      errorInChannel[status][fedChannel-1]=true; 
+   }
 
     switch(status) {
 
@@ -1850,6 +1869,7 @@ void SiPixelRawDump::analyzeErrors(int fedId, int fedChannel, int status, int st
       
     case(16) : { // pkam
       hchanErrorPerLS[16]->Fill(float(lumiBlock),float(fedChannel));
+      //pkamInChannel[fedChannel-1]=true;
       //herrorPkamls->Fill(float(lumiBlock));
       //hpkamFed->Fill(float(fedId-fedId0));
       //fedErrorsPKAM[fedId-fedId0][(fedChannel-1)]++;
@@ -1947,6 +1967,145 @@ void SiPixelRawDump::analyzeErrors(int fedId, int fedChannel, int status, int st
   } // end if
 
 }
+//-----------------------------------------------------------------------
+void SiPixelRawDump::analyzeFinal(int fedId) {
+   int sizeEven=0; int layer1st=-1; bool channel1st=false;
+   for(int i=0;i<n_of_Channels;++i) {  // loop over channels
+     int fedIndex=fedId-fedId0;
+     int chanSize = fedchannelsize[i];
+     int chanIndex=i+1;
+     // here layer_ is not valid anymore, we are out of the error loop, have to get it again
+     //int layer1 = layerIndex[(fedIndex)][i]; // fedChannel=i+1
+     int layer = decode.getLayer(fedId,chanIndex);
+     //if(layer>1 && (layer!=layer1)) cout<<"something wrong "<<layer<<" "<<layer1<<" "<<fedId<<" "<<i<<endl;
+
+
+     // look at hits in channels with errors
+     for(int j=0; j<30; ++j) {
+       if( errorInChannel[j][i] ) {
+	 //if(pixelsPerChannel[i]!=chanSize) cout<<"error in count"<<endl;
+	 if(j==16 && chanSize>400) {
+	   cout<<"real pkam in fed/chan: "<<fedId<<"/"<<(i+1)
+	       <<" pixels "<<chanSize<<endl;
+	   forcePrint=true;
+	 }
+	 hpixelsInErrorChannel[j]->Fill(float(chanSize));
+       }
+     }
+
+     if(chanSize>0) {
+       hfedchannelsizeFull->Fill( float(fedIndex), float(chanIndex), float(chanSize) );
+#ifdef PER_FED
+       if(fedIndex<94) hfedChanLS[fedIndex]->Fill(float(lumiBlock),float(chanIndex),float(chanSize));
+#endif
+     }
+     if(fedErrorsAutoMaskInEvent[fedIndex][i] ) { // auto-masked, skip
+       hfedchannelsizeEff->Fill( float(fedIndex), float(chanIndex), 0. ); //eff  , this measres the masked fraction 
+#ifdef PER_FED
+       if(fedIndex<94) hfedChanAutoMaskedLS[fedIndex]->Fill(float(lumiBlock),float(chanIndex),1.);
+#endif
+     } else if(fedErrorsMaskedInEvent[fedIndex][i] ) { // permanently masked, skip
+       hfedchannelsizeEff->Fill( float(fedIndex), float(chanIndex), 0. ); //eff  , this measres the masked fraction 
+#ifdef PER_FED
+       if(fedIndex<94) hfedChanAutoMaskedLS[fedIndex]->Fill(float(lumiBlock),float(chanIndex),2.);
+#endif
+       
+     } else {  // not masked, OK, histogram
+       
+#ifdef PER_FED
+       if(fedIndex<94) hfedChanAutoMaskedLS[fedIndex]->Fill(float(lumiBlock),float(chanIndex),0.);
+#endif
+       // do only for not-masked channels
+       hfedchannelsize->Fill( float(fedIndex), float(chanIndex), float(chanSize) );
+       hfedchannelsizeEff->Fill( float(fedIndex), float(chanIndex), 1. );
+       
+	if((fedIndex)<fedIdBpixMax) {
+	  hfedchannelsizeb->Fill( float(chanSize) );
+	  if(layer==4)      {
+	    if(chanSize>0)hfedchannelsize4->Fill( float(fedIndex), float(chanIndex), float(chanSize) );
+	    hfedchannelsizeb4->Fill( float(chanSize) );  // layer 4
+	    if(chanSize> max4) {max4=chanSize;maxfed4=fedIndex; maxchan4=chanIndex;}
+	  } else if(layer==3) {
+	    if(chanSize>0)hfedchannelsize3->Fill( float(fedIndex), float(chanIndex), float(chanSize) );
+	    hfedchannelsizeb3->Fill( float(chanSize) );  // layer 3
+	    if(chanSize> max3) {max3=chanSize;maxfed3=fedIndex; maxchan3=chanIndex;}
+	  } else if(layer==2) {
+	    if(chanSize>0)hfedchannelsize2->Fill( float(fedIndex), float(chanIndex), float(chanSize) );
+	    hfedchannelsizeb2->Fill( float(chanSize) );  // layer 2
+	    if(chanSize> max2) {max2=chanSize;maxfed2=fedIndex; maxchan2=chanIndex;}
+	  } else if(layer==1) {
+	    if(chanSize>0)hfedchannelsize1->Fill( float(fedIndex), float(chanIndex), float(chanSize) );
+	    hfedchannelsizeb1->Fill( float(chanSize) );  // layer 1
+	    if(chanSize> max1) {max1=chanSize; maxfed1=fedIndex; maxchan1=chanIndex;}
+	  } else if(layer==-1) { continue;  // empty channel
+	  } else cout<<" Cannot be "<<layer<<" "<<fedId<<" "<<(chanIndex)<<endl;
+	} else  { // fpix
+	  hfedchannelsizef->Fill( float(chanSize) );  // fpix
+	  if(chanSize> max0) max0=chanSize;
+	}    
+      } // if automasked 
+
+      // get the higher channel count per fiber
+      if(i%2==0) {  // 1st channel in a fiber 
+	sizeEven=chanSize;
+	layer1st = layer;
+	channel1st=true;
+
+      } else { // 2nd channel of the same fiber 
+
+	if(layer != layer1st) {
+	  cout<<"something wrong with fiber-channel "
+	      <<layer<<" "<<layer1st<<" "<<fedIndex<<" "<<i<<endl;
+	  continue; // skip
+	}
+	if(!channel1st) {
+	  cout<<"something wrong, no first  fiber-channel "
+	      <<layer<<" "<<layer1st<<" "<<fedIndex<<" "<<i<<endl;
+	  continue; // skip
+	}
+
+
+	// Find the larger channel size within 1 fiber 
+	channel1st=false;
+	int sizeDiff = -1.0;
+	int sizeSum = sizeEven + chanSize;
+	if(layer==1) htest->Fill(float(sizeSum));
+	if(sizeEven>0. && chanSize>0.) {
+	  sizeDiff=abs(chanSize-sizeEven);
+	}
+	float f= float(i/2)+1.;
+	if(sizeDiff>=0.) hfedfibersizediff->Fill( float(fedIndex), float(f), float(sizeDiff));
+	sizeEven=max(sizeEven,chanSize);
+	if(sizeEven>0) {
+	  if(layer==4)      {
+	    hfedfibersize4->Fill( float(fedIndex), float(f), float(sizeEven) );
+	    hfedfibersizeb4->Fill( float(sizeEven) );  // layer 4
+	    if(sizeDiff>=0.) hfedfiberdiffb4->Fill( float(sizeDiff) );  // layer 4
+	  } else if(layer==3) {
+	    hfedfibersize3->Fill( float(fedIndex), float(f), float(sizeEven) );
+	    hfedfibersizeb3->Fill( float(sizeEven) );  // layer 3
+	    if(sizeDiff>=0.) hfedfiberdiffb3->Fill( float(sizeDiff) );  // layer 3
+	  } else if(layer==2) {
+	    hfedfibersize2->Fill( float(fedIndex), float(f), float(sizeEven) );
+	    hfedfibersizeb2->Fill( float(sizeEven) );  // layer 2
+	    if(sizeDiff>=0.) hfedfiberdiffb2->Fill( float(sizeDiff) );  // layer 2
+	  } else if(layer==1) {
+	    hfedfibersize1->Fill( float(fedIndex), float(f), float(sizeEven) );
+	    hfedfibersizeb1->Fill( float(sizeEven) );  // layer 1
+	    if(sizeDiff>=0.) hfedfiberdiffb1->Fill( float(sizeDiff) );  // layer 1
+	  } else  {  // fpix
+	    hfedfibersizef->Fill( float(fedIndex), float(f), float(sizeEven) );
+	    hfedfibersizefpix->Fill(float(sizeEven) );  // fpix
+	  } // end layer
+	} // size>0 
+
+      } // per fiber
+
+    }  // channel
+
+}
+
+
 //----------------------------------------------------------------------------
 // This is called for each event
 // Loops ober raw data in every pixel FED
@@ -1974,7 +2133,8 @@ void SiPixelRawDump::analyze(const  edm::Event& ev, const edm::EventSetup& es) {
   hbx0->Fill(float(bx));
   //horbit->Fill(float(orbit));
 
-
+  if(selectedEvent>0 && eventCMSSW!=selectedEvent) return; //skip 
+ 
 #ifdef USE_TREE
   if(makeTree>0) {
     eventT=eventCMSSW;
@@ -2044,12 +2204,13 @@ void SiPixelRawDump::analyze(const  edm::Event& ev, const edm::EventSetup& es) {
   double aveFedSize = 0.;
   float countBpixFeds=0;
   stat1=-1; stat2=-1;
-  int fedchannelsize[n_of_Channels];
+  //int fedchannelsize[n_of_Channels];
   bool wrongBX=false;
   for(int i=0;i<30;++i) countErrors[i] = 0;
   countPixelsFPix=0; countPixelsBPix=0; countPixelsBPix1=0; countPixelsBPix2=0; countPixelsBPix3=0;countPixelsBPix4=0;
   for(int i=0;i<5;++i) {maskedPerEvent_[i]=0;} // per layer (with fpix)
 
+  forcePrint=false;
   // clear auto-mask array for each event
   for(int i = 0; i < n_of_FEDs; ++i) {
     for(int j=0;j<n_of_Channels;++j) {
@@ -2071,7 +2232,10 @@ void SiPixelRawDump::analyze(const  edm::Event& ev, const edm::EventSetup& es) {
     if(printHeaders) cout<<"Get data For FED = "<<fedId<<" size in bytes "<<rawData.size()<<endl;
     if(rawData.size()==0) continue;  // skip if not data for this fed
 
-    for(int i=0;i<n_of_Channels;++i) fedchannelsize[i]=0;
+    for(int i=0;i<n_of_Channels;++i){
+      fedchannelsize[i]=0; //pixelsPerChannel[i]=0; 
+      for(int j=0;j<30;++j) errorInChannel[j][i]=false;
+    }
 
     int nWords = rawData.size()/sizeof(Word64);
     //cout<<" size "<<nWords<<endl;
@@ -2147,6 +2311,13 @@ void SiPixelRawDump::analyze(const  edm::Event& ev, const edm::EventSetup& es) {
 	if(layer_==0) {ring_ = decode.getFpixRing(fedId,fedChannel);
 	} else {ring_=0;}
 
+	if(printDebug) {
+	  if(status==-16) { // pkams
+	    cout<<fedId<<" "<<fedChannel<<" "<<layer_
+		<<" event "<<eventCMSSW<<"/"<<eventId<<endl;
+	  }
+	}
+
 	//cout<<"getlayer in Analyze "<<layer_<<" "<<status<<endl;
 	if(fedChannel!=fedChannelOld) {
 	  if(countPerChannel>0  && fedChannelOld>-1) 
@@ -2214,6 +2385,10 @@ void SiPixelRawDump::analyze(const  edm::Event& ev, const edm::EventSetup& es) {
     }
     herrors->Fill(float(countErrorsInFed));
 
+    // final analysis 
+    analyzeFinal(fedId);
+
+    if(0) {
     int sizeEven=0; int layer1st=-1; bool channel1st=false;
     for(int i=0;i<n_of_Channels;++i) {  // loop over channels
 
@@ -2334,7 +2509,7 @@ void SiPixelRawDump::analyze(const  edm::Event& ev, const edm::EventSetup& es) {
       } // per fiber
 
     }  // channel
-
+    } // if(0) 
 #ifdef OUTFILE
     // print number of bytes per fed, CSV
     if(fedId == fedIds.second) outfile<<(nWords*8)<<endl;
@@ -2345,7 +2520,6 @@ void SiPixelRawDump::analyze(const  edm::Event& ev, const edm::EventSetup& es) {
 
   htotPixels->Fill(float(countPixels));
   htotPixels0->Fill(float(countPixels));
-
   htotPixels3->Fill(float(countPixelsBPix));
   htotPixels4->Fill(float(countPixelsFPix));
   htotPixels5->Fill(float(countPixelsBPix1));
@@ -2404,9 +2578,10 @@ void SiPixelRawDump::analyze(const  edm::Event& ev, const edm::EventSetup& es) {
   hsize3->Fill(aveFedSize); // bpix 
   havsizebx->Fill(float(bx),aveFedSize); //bpix 
 
-  if(printErrors && countErrorsPerEvent>0) {
+  if(forcePrint || (printErrors && countErrorsPerEvent>0)) {
     cout<<"EVENT cmssw/fed: "<<eventCMSSW<<"/"<<eventId<<" count events with hits= "<<countEvents
-	<<" pixels= "<<countPixels<<" errors= "<<countErrorsPerEvent<<endl;
+	<<", pixels in event = "<<countPixels<<" errors = "<<countErrorsPerEvent<<endl;
+    forcePrint=false;
   }
 
   if(countPixels>0) {
