@@ -56,5 +56,6 @@
 #dasgoclient -query='file dataset=/ExpressPhysics/Run2024G-Express-v1/FEVT run=383996' 
 #dasgoclient -query='file dataset=/ExpressPhysics/Run2024H-Express-v1/FEVT run=386319' 
 #dasgoclient -query='file dataset=/ExpressPhysics/Run2024I-Express-v1/FEVT run=386509' 
-dasgoclient -query='file dataset=/HIExpressPhysics/HIRun2024A-Express-v1/FEVT run=388056' 
+#dasgoclient -query='file dataset=/HIExpressPhysics/HIRun2024A-Express-v1/FEVT run=388056' 
 #dasgoclient -query='file dataset=/ExpressCosmics/HIRun2024A-Express-v1/FEVT run=388089' 
+dasgoclient -query='file dataset=/HIExpressPhysics/HIRun2024B-Express-v2/FEVT run=388769' 

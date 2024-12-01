@@ -53,6 +53,7 @@ using namespace std;
 #define CHECK_BX
 //#define USE_TREE
 //#define PER_FED
+#define DO_CHANNEL_ORDER
 
 namespace {
   //const bool FULL_DECODE = true;
@@ -1696,12 +1697,13 @@ void SiPixelRawDump::analyzeHits(int fedId, int fedChannel) {
       //cout<<"Hits in ROC fed"<<fed0<<" chan "<<chan0<<" roc "<<roc0<<" lay "<<layer0<<" hits "<<hitsPerRoc<<endl;
       if(hitsPerRoc>hitsCut) cout<<"WARNING: Many hits in one roc: fed "<<fed0
 				 <<" chan "<<chan0<<" roc-order "<<roc0
-				 <<" hits "<<hitsPerRoc<<" layer "<<layer0<<endl;
+				 <<" hits "<<hitsPerRoc<<" layer "<<layer0
+				 <<" event "<<countAllEvents<<"/"<<eventCMSSW<<" LS "<<lumiBlock
+				 <<endl;
     } // not 1st 
     hitsPerRoc=0;
 
-    if(fedChannel!=chan0 ) {
-      
+    if(fedChannel!=chan0 ) {  
       if(chan0>-1) { // not 1st time 
 	if(layer0<1 || layer0>6) {cout<<"error in layer numeber "<<layer0<<endl;
 	} else {
@@ -1711,7 +1713,9 @@ void SiPixelRawDump::analyzeHits(int fedId, int fedChannel) {
 	  hmanyHits->Fill(float(fedId-fedId0),float(fedChannel-1));
 	  cout<<"WARNING: Many hits per channel: fed "<<fed0
 	      <<" chan "<<chan0<<" roc-order "<<roc0
-	      <<" hits "<<hitsPerChannel<<" layer "<<layer0<<endl;
+	      <<" hits "<<hitsPerChannel<<" layer "<<layer0
+	      <<" event "<<countAllEvents<<"/"<<eventCMSSW<<" LS "<<lumiBlock
+	      <<endl;
 	} // many hits
       } // not 1st 
       hitsPerChannel=0;
@@ -2218,11 +2222,23 @@ void SiPixelRawDump::analyze(const  edm::Event& ev, const edm::EventSetup& es) {
     }
   }
 
+#ifdef DO_CHANNEL_ORDER
+  int fedIdOld=-1;
+#endif
   // Loop over FEDs
   for (int fedId = fedIds.first; fedId <= fedIds.second; fedId++) {
 
     if(bpixOnly && fedId>1293) continue;  // skip fpix feds if required
     if(selectedFED>-1 && fedId!=selectedFED) continue; // skip if not selected 
+
+#ifdef DO_CHANNEL_ORDER
+    if (fedId!=fedIdOld) {
+      if(fedId<fedIdOld) cout<<"ERROR: FED Id wrong order "<<fedId<<" "<<fedIdOld
+			     <<" event "<<countAllEvents<<"/"<<eventCMSSW<<" LS "<<lumiBlock
+			     <<endl;
+      fedIdOld=fedId;
+    }
+#endif
 
     //edm::DetSetVector<PixelDigi> collection;
     //PixelDataFormatter::Errors errors;
@@ -2322,6 +2338,14 @@ void SiPixelRawDump::analyze(const  edm::Event& ev, const edm::EventSetup& es) {
 	if(fedChannel!=fedChannelOld) {
 	  if(countPerChannel>0  && fedChannelOld>-1) 
 	    hchannelFEDWords->Fill((fedId-fedId0),fedChannelOld,float(countPerChannel));
+
+#ifdef DO_CHANNEL_ORDER
+	  if(fedChannel<fedChannelOld) 
+	    cout<<"ERROR: Channel out of order "<<fedChannel<<" "<<fedChannelOld
+		<<" for fed "<<fedId
+		<<" event "<<countAllEvents<<"/"<<eventCMSSW<<" LS "<<lumiBlock
+		<<endl;
+#endif
 	  countPerChannel=0;
 	  fedChannelOld=fedChannel;
 	}

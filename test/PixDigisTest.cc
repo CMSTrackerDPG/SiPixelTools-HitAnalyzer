@@ -100,7 +100,7 @@
 //#define SINGLE_MODULES
 #define DCOLS
 #define DO_THR // use the threshold histo
-
+#define MONITOR_L1
 #define USE_GAINS 
 #ifdef USE_GAINS
 // Database payloads
@@ -987,6 +987,10 @@ void PixDigisTest::analyze(const edm::Event& iEvent,
   int numOfDigisPerDetF3 = 0;
   int countFullDcolsInEvent = 0;
 
+#ifdef MONITOR_L1
+  int hitsLayer1[12][8] = {};
+#endif 
+
   count0++; // count events 
 
   // Iterate on detector units
@@ -1237,7 +1241,7 @@ void PixDigisTest::analyze(const edm::Event& iEvent,
 	//int tof = di->time();    // tof always 0, method deleted
 	
 	// channel index needed to look for the simlink to simtracks
-	int channel = PixelChannelIdentifier::pixelToChannel(row,col);
+	//int channel = PixelChannelIdentifier::pixelToChannel(row,col); //unused
         int roc = rocId(col,row);  // 0-15, column, row
         //int link = int(roc/8); // link 0 & 1 not used in digis 
 
@@ -1647,7 +1651,13 @@ void PixDigisTest::analyze(const edm::Event& iEvent,
 	    hdigisPerDet1->Fill(float(numOfDigisPerDet1));
 	    numOfDigisPerDet1=0;
 	    hphiz1->Fill(detZ,detPhi);
-	    
+#ifdef MONITOR_L1
+	    if(hitsLayer1[ladderC-1][zindex-1] == 0 ) 
+	      {hitsLayer1[ladderC-1][zindex-1]=numOfDigisPerDet1;}
+	    else {cout<<"ERROR: same module again? "<<ladder<<" "<<module
+		      <<" event "<<event<<" LS "<<lumiBlock
+		      <<endl;}
+#endif 	    
 	  } else if(layer==2 && !badL2Modules) {
 	    hladder2id->Fill(float(ladder));
 	    hz2id->Fill(float(module));
