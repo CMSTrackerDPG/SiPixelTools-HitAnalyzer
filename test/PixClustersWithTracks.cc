@@ -235,7 +235,7 @@ class PixClustersWithTracks : public edm::one::EDAnalyzer<edm::one::SharedResour
   TH1D *hsize5,*hsize6,*hsize7,  // ADD FPIX
        *hsizex5,*hsizex6,*hsizex7,
        *hsizey5,*hsizey6,*hsizey7;
-  TH1D *hcharge1_1,*hcharge2_1,*hcharge3_1,*hcharge4_1; 
+  //TH1D *hcharge1_1,*hcharge2_1,*hcharge3_1,*hcharge4_1; 
 #ifdef BAD_L2
   TH1D *hcharge2b, *hsize2b, *hsizex2b, *hsizey2b; 
   TH1D *hcharge2g, *hsize2g, *hsizex2g, *hsizey2g; 
@@ -771,10 +771,10 @@ void PixClustersWithTracks::beginJob() {
   hcharge5 = fs->make<TH1D>( "hcharge5", "Clu charge d1", 400, 0.,400.);
   hcharge6 = fs->make<TH1D>( "hcharge6", "Clu charge d2", 400, 0.,400.);
   hcharge7 = fs->make<TH1D>( "hcharge7", "Clu charge d3", 400, 0.,400.);
-  hcharge1_1= fs->make<TH1D>( "hcharge1_1","1Pix Clu charge l1", 800, 0.,800.); //in ke
-  hcharge2_1= fs->make<TH1D>( "hcharge2_1","1Pix Clu charge l2", 400, 0.,400.); //in ke
-  hcharge3_1= fs->make<TH1D>( "hcharge3_1","1Pix Clu charge l3", 400, 0.,400.); //in ke
-  hcharge4_1= fs->make<TH1D>( "hcharge4_1","1Pix Clu charge l4", 400, 0.,400.); //in ke
+  //hcharge1_1= fs->make<TH1D>( "hcharge1_1","1Pix Clu charge l1", 800, 0.,800.); //in ke
+  //hcharge2_1= fs->make<TH1D>( "hcharge2_1","1Pix Clu charge l2", 400, 0.,400.); //in ke
+  //hcharge3_1= fs->make<TH1D>( "hcharge3_1","1Pix Clu charge l3", 400, 0.,400.); //in ke
+  //hcharge4_1= fs->make<TH1D>( "hcharge4_1","1Pix Clu charge l4", 400, 0.,400.); //in ke
 
   hsize1 = fs->make<TH1D>( "hsize1", "layer 1 clu size",300,-0.5,299.5);
   hsize2 = fs->make<TH1D>( "hsize2", "layer 2 clu size",300,-0.5,299.5);
@@ -2853,7 +2853,7 @@ void PixClustersWithTracks::analyze(const edm::Event& e,
 	  //if(newL1Modules) hcharge1n->Fill(charge);
 	  //else             
 	  hcharge1->Fill(charge);
-	  if(size==1) hcharge1_1->Fill(charge);
+	  //if(size==1) hcharge1_1->Fill(charge);
 	  
 	  //hbpixXY->Fill(gX,gY);
 	  hzphi1->Fill(gZ,gPhi);  // hit phi
@@ -3036,7 +3036,7 @@ void PixClustersWithTracks::analyze(const edm::Event& e,
 #endif // BAD_L2
 
 	    hcharge2->Fill(charge);
-	    if(size==1) hcharge2_1->Fill(charge);
+	    //if(size==1) hcharge2_1->Fill(charge);
 	    hsize2->Fill(float(size));
 	    hsizex2->Fill(float(sizeX));
 	    hsizey2->Fill(float(sizeY));
@@ -3124,7 +3124,7 @@ void PixClustersWithTracks::analyze(const edm::Event& e,
 	  hsizeDets3->Fill(float(module),float(ladderOn),float(size));
 	  hchargeDets3->Fill(float(module),float(ladderOn),charge);
 	  hcharge3->Fill(charge);
-	  if(size==1) hcharge3_1->Fill(charge);
+	  //if(size==1) hcharge3_1->Fill(charge);
 	  hcols3->Fill(col);
 	  hrows3->Fill(row);
 #ifdef ROC_RATE
@@ -3204,7 +3204,7 @@ void PixClustersWithTracks::analyze(const edm::Event& e,
 	  hsizeDets4->Fill(float(module),float(ladderOn),float(size));
 	  hchargeDets4->Fill(float(module),float(ladderOn),charge);
 	  hcharge4->Fill(charge);
-	  if(size==1) hcharge4_1->Fill(charge);
+	  //if(size==1) hcharge4_1->Fill(charge);
 #ifdef ROC_RATE
 	  hladder4id->Fill(float(rocPhi));
 	  hz4id->Fill(float(rocZ));
