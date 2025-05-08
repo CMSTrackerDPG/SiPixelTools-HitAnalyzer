@@ -4581,7 +4581,7 @@ void PixClusterAna::analyze(const edm::Event& e,
 	hmoduleEdgePerDet[layer-1]->Fill(float(moduleEdgePerDet));
 	hrocEdgePerDet2D[layer-1]->Fill(module,ladder,rocEdgePerDet);
 	hmoduleEdgePerDet2D[layer-1]->Fill(module,ladder,moduleEdgePerDet);
-	if( (layer==1) && (rocEdgePerDet>79 || moduleEdgePerDet>79)) 
+	if( 0 && (layer==1) && (rocEdgePerDet>79 || moduleEdgePerDet>79) ) 
 	  cout<<"edge pixels in lay/lad/mod "<<layer<<"/"<<ladder<<"/"<<module
 	      <<" event "<<event<<"/"<<countAllEvents<<"/"<<countEvents
 	      <<" - roc "<<rocEdgePerDet<<" sens "<<moduleEdgePerDet<<endl;
