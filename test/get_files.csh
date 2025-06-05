@@ -62,4 +62,5 @@
 # 25 
 #dasgoclient -query='file dataset=/ExpressCosmics/Commissioning2025-Express-v1/FEVT run=389356'  
 #dasgoclient -query='file dataset=/ExpressCosmics/Commissioning2025-Express-v2/FEVT run=389832'  
-dasgoclient -query='file dataset=/ExpressPhysics/Run2025A-Express-v1/FEVT run=390960'  
+#dasgoclient -query='file dataset=/ExpressPhysics/Run2025A-Express-v1/FEVT run=390960'  
+dasgoclient -query='file dataset=/ExpressPhysics/Run2025B-Express-v1/FEVT run=391910'  

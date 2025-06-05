@@ -96,7 +96,7 @@ process.source = cms.Source("PoolSource",
 #)
 
 #process.source.lumisToProcess = cms.untracked.VLuminosityBlockRange('124230:26-124230:9999','124030:2-124030:9999')
-process.source.lumisToProcess = cms.untracked.VLuminosityBlockRange('366:1-366:100')
+#process.source.lumisToProcess = cms.untracked.VLuminosityBlockRange('366:1-366:100')
 
 process.myBXFilter = cms.EDFilter("BunchCrossingFilter",
         bunches = cms.vuint32( [foo for foo in range(1, 110)] )
