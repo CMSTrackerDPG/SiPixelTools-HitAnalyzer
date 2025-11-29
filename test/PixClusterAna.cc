@@ -74,7 +74,6 @@
 #include "DataFormats/VertexReco/interface/Vertex.h"
 #include "DataFormats/VertexReco/interface/VertexFwd.h"
 
-
 // To use root histos
 #include "FWCore/ServiceRegistry/interface/Service.h"
 #include "CommonTools/UtilAlgos/interface/TFileService.h"
@@ -128,8 +127,9 @@ using namespace std;
 //#define MONITOR_COLS
 #define DO_1PIXELCLUS
 //#define FPIX_SPECIAL
-//#define DO_MINMAX // get min and max pixel charge
+#define DO_MINMAX // get min and max pixel charge
 //#define DO_EDGE // monitor edge pixels 
+//#define DO_TEST
 
 #ifdef HF
 #include "DataFormats/HcalRecHit/interface/HcalRecHitCollections.h"
@@ -571,10 +571,9 @@ edm::EDGetTokenT<HFRecHitCollection> HFHitsToken_;
   TH1D *hcharge11, *hcharge12, *hpixcharge11, *hpixcharge12;
 #endif
   TH1D *hcharge1_zoom, *hpixcharge1_zoom;
-
-  TH1D *hcols11,*hcols12,*hrows11; 
-  TH1D *hcols21,*hrows21; 
-
+#ifdef DO_TEST
+  TH1D *hcols11,*hcols12,*hrows11, *hcols21,*hrows21; 
+#endif
   TH1D *hclusPerDet1,*hclusPerDet2,*hclusPerDet3,*hclusPerDet4;
   TH1D *hpixPerDet1,*hpixPerDet2,*hpixPerDet3,*hpixPerDet4;
   //TH1D *hpixPerLink1,*hpixPerLink2,*hpixPerLink3,*hpixPerLink4;
@@ -604,7 +603,7 @@ edm::EDGetTokenT<HFRecHitCollection> HFHitsToken_;
 
   //const int nlayers=4; // number of layer histos, usualy 4
 #ifdef DO_MINMAX
-  TH1D *hpixMin[4],*hpixMax[4],*hpixOne[4];
+  TH1D *hpixMin[4],*hpixMax[4],*hpixOne[4],*hpixInside[4];
 #endif
   #ifdef DO_EDGE
   TH1D *hrocEdgePerDet[4],*hmoduleEdgePerDet[4];
@@ -982,7 +981,6 @@ PixClusterAna::~PixClusterAna() { }
       int index = int(pixy) - minPixelCol;
       if(index<maxSizeY) cluProfile[index] += kelec;
       //bool cluEdge = ( (pixy==minPixelCol) || (pixy==maxPixelCol) );
-      //cout<<i<<" "<<pixx<<" "<<pixy<<" "<<kelec<<" "<<cluEdge<<endl;
     }
     for(int i=1; i<(sizeY-1); ++i) { // skip first and last pixel
       if(i<maxSizeY) {
@@ -1109,13 +1107,13 @@ void PixClusterAna::beginJob() {
   hpz2id = fs->make<TH1D>( "hpz2id", "Pix/roc in ring L2",8*9, -4.5, 4.5);
   hpz3id = fs->make<TH1D>( "hpz3id", "Pix/roc in ring L3",8*9, -4.5, 4.5);
   hpz4id = fs->make<TH1D>( "hpz4id", "Pix/roc in ring L4",8*9, -4.5, 4.5);
-
-  hcols12 = fs->make<TH1D>( "hcols11", "Layer 1 clus per cols", 500,-0.5,499.5); // test 
-  hcols11 = fs->make<TH1D>( "hcols12", "Layer 1 clus per cols", 8000,-4.,4.);
+#ifdef DO_TEST
+  hcols12 = fs->make<TH1D>( "hcols21", "Layer 1 clus per cols", 500,-0.5,499.5); // test 
+  hcols11 = fs->make<TH1D>( "hcols11", "Layer 1 clus per cols", 8000,-4.,4.);
   hrows11 = fs->make<TH1D>( "hrows11", "Layer 1 clus per rows", 2000,-1.,1.);
   hcols21 = fs->make<TH1D>( "hcols21", "Layer 2 clus per cols", 8000,-4.,4.);
   hrows21 = fs->make<TH1D>( "hrows21", "Layer 2 clus per rows", 2000,-1.,1.);
-
+#endif // DO_TEST
   hcols1 = fs->make<TH1D>( "hcols1", "Layer 1 clus per cols", 500,0.,500.);
   hcols2 = fs->make<TH1D>( "hcols2", "Layer 2 clus per cols", 500,0.,500.);
   hcols3 = fs->make<TH1D>( "hcols3", "Layer 3 clus per cols", 500,0.,500.);
@@ -1123,7 +1121,7 @@ void PixClusterAna::beginJob() {
   hpcols1 = fs->make<TH1D>( "hpcols1", "Layer 1 pix per cols", 500,-0.5,499.5);
   hpcols2 = fs->make<TH1D>( "hpcols2", "Layer 2 pix per cols", 500,-0.5,499.5);
   hpcols3 = fs->make<TH1D>( "hpcols3", "Layer 3 pix per cols", 500,-0.5,499.5);
-  hpcols4 = fs->make<TH1D>( "hpcols4", "Layer 4 pix percols", 500,-0.5,499.5);
+  hpcols4 = fs->make<TH1D>( "hpcols4", "Layer 4 pix per cols", 500,-0.5,499.5);
   
   hrows1 = fs->make<TH1D>( "hrows1", "Layer 1 clus per rows", 200,-0.5,199.5);
   hrows2 = fs->make<TH1D>( "hrows2", "Layer 2 clus per rows", 200,-0.5,199.5);
@@ -1786,6 +1784,9 @@ void PixClusterAna::beginJob() {
     name="hpixOne"+std::to_string(i+1);
     title="1 pixel clus in Lay"+std::to_string(i+1);
     hpixOne[i] = fs->make<TH1D>(name.c_str(),title.c_str(),1000,0.,100.);
+    name="hpixInside"+std::to_string(i+1);
+    title="Inside pixels in Lay"+std::to_string(i+1);
+    hpixInside[i] = fs->make<TH1D>(name.c_str(),title.c_str(),1000,0.,100.);
 #endif  // DO_MINMAX
 #ifdef DO_EDGE
     name="hrocEdgePerDet"+std::to_string(i+1);
@@ -2008,14 +2009,14 @@ void PixClusterAna::beginJob() {
    hcharPix4ls = fs->make<TProfile>("hcharPix4ls","pix char 4 vs ls",sizeH,0.,highH,0.0,400.);
    hsizeClu4ls = fs->make<TProfile>("hsizeClu4ls","clu size 4 vs ls",sizeH,0.,highH,0.0,400.);
    sizeH = 1000;
-   hpixb4l  = fs->make<TProfile>("hpixb4l", "pixb4 vs ls ", sizeH,0.,highH,0.0,100000.);
-   hclusb4l = fs->make<TProfile>("hclusb4l","clusb4 vs ls", sizeH,0.,highH,0.0,30000.);
-   hpixb1l  = fs->make<TProfile>("hpixb1l", "pixb1 vs ls", sizeH,0.,highH,0.0,100000.);
-   hclusb1l = fs->make<TProfile>("hclusb1l","clusb1 vs ls",sizeH,0.,highH,0.0,30000.);
-   hpixb2l  = fs->make<TProfile>("hpixb2l", "pixb2 vs ls ",sizeH,0.,highH,0.0,100000.);
-   hclusb2l = fs->make<TProfile>("hclusb2l","clusb2 vs ls",sizeH,0.,highH,0.0,30000.);
-   hpixb3l  = fs->make<TProfile>("hpixb3l", "pixb3 vs ls",sizeH,0.,highH,0.0,100000.);
-   hclusb3l = fs->make<TProfile>("hclusb3l","clusb3 vs ls",sizeH,0.,highH,0.0,30000.);
+   hpixb4l  = fs->make<TProfile>("hpix4ls", "pixb4 vs ls ", sizeH,0.,highH,0.0,100000.);
+   hclusb4l = fs->make<TProfile>("hclus4ls","clusb4 vs ls", sizeH,0.,highH,0.0,30000.);
+   hpixb1l  = fs->make<TProfile>("hpix1ls", "pixb1 vs ls", sizeH,0.,highH,0.0,100000.);
+   hclusb1l = fs->make<TProfile>("hclus1ls","clusb1 vs ls",sizeH,0.,highH,0.0,30000.);
+   hpixb2l  = fs->make<TProfile>("hpix2ls", "pixb2 vs ls ",sizeH,0.,highH,0.0,100000.);
+   hclusb2l = fs->make<TProfile>("hclus2ls","clusb2 vs ls",sizeH,0.,highH,0.0,30000.);
+   hpixb3l  = fs->make<TProfile>("hpix3ls", "pixb3 vs ls",sizeH,0.,highH,0.0,100000.);
+   hclusb3l = fs->make<TProfile>("hclus3ls","clusb3 vs ls",sizeH,0.,highH,0.0,30000.);
    hpixfl   = fs->make<TProfile>("hpixfl",  "pixf vs ls", sizeH,0.,highH,0.0,100000.);
    hclusfl  = fs->make<TProfile>("hclusfl", "clusf vs ls", sizeH,0.,highH,0.0,30000.);
    hpixfml  = fs->make<TProfile>("hpixfml", "pixfm vs ls",sizeH,0.,highH,0.0,100000.);
@@ -3494,6 +3495,9 @@ void PixClusterAna::analyze(const edm::Event& e,
 	if((pixx==79.) || (pixx==80.)) rocEdgePerDet++; // count roc edge
 	if((int(pixy)%52==0) || (int(pixy)%52==51)) {rocEdgePerDet++;}// count roc edge
 
+	//if(layer==1 && pixy<1.0)
+	//cout<<"Col 0 "<<i<<" "<<pixx<<" "<<pixy<<" "<<kelec<<" "<<size<<endl;
+
 	if(PRINT || select ) cout<<i<<" "<<pixx<<" "<<pixy<<" "<<adc<<endl;
 	//" "<<bigInX<<" "<<bigInY<<" "<<edgeInX<<" "<<edgeInY<<" "<<isBig<<endl;	
 #ifdef USE_TREE
@@ -3557,14 +3561,18 @@ void PixClusterAna::analyze(const edm::Event& e,
 	if (subid==1 && (selectEvent==-1 || countEvents==selectEvent)) {  // barrel
 #ifdef TEST_DCOLS
 	  moduleArray[int(pixx)][int(pixy)]=1;
-#endif	  
+#endif
+#ifdef DO_MINMAX
+	  if(layer>=1 && layer<=4 && sizeY>=3) {
+	    //cout<<layer<<" "<<sizeY<<" "<<pixy<<" "<<minPixelCol<<" "<<maxPixelCol<<endl;
+	    if((pixy!=minPixelCol) && (pixy!=maxPixelCol)) {hpixInside[layer-1]->Fill(adc);}
+	  }
+#endif
 	  if(layer==1) {
-
-	    //cout<<" module "<<layer<<" "<<ladder<<" "<<module<<" "
-	    //	<<pixx<<" "<<pixy<<endl;
 
 	    numOfPixPerDet1++;
 	    numOfPixPerLay1++;     
+
 	    if(newL1Modules) {
 	      //hpixcharge1n->Fill(adc);
 	    } else {
@@ -3646,7 +3654,7 @@ void PixClusterAna::analyze(const edm::Event& e,
 
 #ifdef SINGLE_MODULES
 	    float weight = 1.; // adc
-	    if     ( ladder== 1 && module== -4) hpixDetMap10->Fill(pixy,pixx,weight); //  
+	    if     ( ladder== 2 && module==  4) hpixDetMap10->Fill(pixy,pixx,weight); //  
 	    else if( ladder== -4 && module== -4) hpixDetMap11->Fill(pixy,pixx,weight); // 
 	    else if( ladder== -6 && module== 4) hpixDetMap12->Fill(pixy,pixx,weight); // 
 
@@ -4059,10 +4067,11 @@ void PixClusterAna::analyze(const edm::Event& e,
 	  hz1id->Fill(float(rocZ));
 	  hcols1->Fill(y);
 	  hrows1->Fill(x);
+#ifdef DO_TEST	  
 	  hcols12->Fill(y);
 	  hcols11->Fill(ly);
 	  hrows11->Fill(lx);
-
+#endif
 	  //hcluDetMap1->Fill(y,x);
 
 
@@ -4276,9 +4285,10 @@ void PixClusterAna::analyze(const edm::Event& e,
 	  //hsizeYDetMap2->Fill(float(module),float(ladder),float(sizeY));
 	  hcols2->Fill(y);
 	  hrows2->Fill(x);
+#ifdef DO_TEST
 	  hcols21->Fill(ly);
 	  hrows21->Fill(lx);
-
+#endif 
 	  hcharge2->Fill(ch);
 	  hsize2->Fill(float(size));
 	  hsizex2->Fill(float(sizeX));

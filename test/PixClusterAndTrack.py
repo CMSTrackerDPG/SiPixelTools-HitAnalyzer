@@ -3,7 +3,7 @@
 #
 import FWCore.ParameterSet.Config as cms
 from Configuration.StandardSequences.Eras import eras
-process = cms.Process("cluTest",eras.Run3)
+process = cms.Process("cluTest",eras.Run3_2025)
                    
 #process.load("Configuration.Geometry.GeometryRecoDB_cff")
 process.load("Configuration.StandardSequences.GeometryDB_cff")

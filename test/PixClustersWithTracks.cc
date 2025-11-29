@@ -445,7 +445,7 @@ class PixClustersWithTracks : public edm::one::EDAnalyzer<edm::one::SharedResour
   TProfile *hcharCluls2, *hcharPixls2, *hsizeCluls2, *hsizeXCluls2;
   TProfile *hcharCluls3, *hcharPixls3, *hsizeCluls3, *hsizeXCluls3;
   TProfile *hclusls; //   *hpixls;
-  TProfile *hclusls1, *hclusls2,*hclusls3;
+  TProfile *hclusls1,*hclusls2,*hclusls3,*hclusls4;
   TProfile *hclubx, *hpvbx, *htrackbx; // *hcharClubx, *hcharPixbx,*hsizeClubx, *hsizeYClubx;
 #endif
 
@@ -481,6 +481,7 @@ class PixClustersWithTracks : public edm::one::EDAnalyzer<edm::one::SharedResour
 #ifdef ANA_CLUSTERS
   TProfile2D *hCluProfile1[4],*hCluProfile2[4],*hCluProfile3[4],
     *hCluProfile4[4];
+  TH1D *hpixInside[4];
 #endif
 
 };
@@ -581,7 +582,7 @@ PixClustersWithTracks::PixClustersWithTracks(edm::ParameterSet const& conf)
     //int minPixelRow = clustIt->minPixelRow(); //x
     //int maxPixelRow = clustIt->maxPixelRow();
     int minPixelCol = clustIt->minPixelCol(); //y
-    //int maxPixelCol = clustIt->maxPixelCol();
+    int maxPixelCol = clustIt->maxPixelCol();
     float cluProfile[maxSizeY]={0};
     // Get the pixels in the Cluster
     const vector<SiPixelCluster::Pixel>& pixelsVec = clustIt->pixels();
@@ -594,7 +595,8 @@ PixClustersWithTracks::PixClustersWithTracks(edm::ParameterSet const& conf)
       float kelec = (float(electrons)/1000.);
       int index = int(pixy) - minPixelCol;
       if(index<maxSizeY) cluProfile[index] += kelec;
-      //bool cluEdge = ( (pixy==minPixelCol) || (pixy==maxPixelCol) );
+      bool cluEdge = ( (pixy==minPixelCol) || (pixy==maxPixelCol) );
+      if(!cluEdge) hpixInside[layer-1]->Fill(kelec);
       //cout<<i<<" "<<pixx<<" "<<pixy<<" "<<kelec<<" "<<cluEdge<<endl;
     }
     //index = 0(inner,z>0) 1(inner,z<0) 2(outer,z>0) 3(outer,z<0)
@@ -1534,32 +1536,32 @@ void PixClustersWithTracks::beginJob() {
    highH = 3000.; 
    sizeH = 1000;
 
-   hclusls = fs->make<TProfile>("hclusls","clus vs ls",sizeH,0.,highH,0.0,30000.);
+   //hclusls = fs->make<TProfile>("hclusls","clus vs ls",sizeH,0.,highH,0.0,30000.);
    //hpixls  = fs->make<TProfile>("hpixls", "pix vs ls ",sizeH,0.,highH,0.0,100000.);
-
-   hcharCluls = fs->make<TProfile>("hcharCluls","clu char vs ls",sizeH,0.,highH,0.0,1000.);
+   //hcharCluls = fs->make<TProfile>("hcharCluls","clu char vs ls",sizeH,0.,highH,0.0,1000.);
    //hcharPixls = fs->make<TProfile>("hcharPixls","pix char vs ls",sizeH,0.,highH,0.0,100.);
-   hsizeCluls = fs->make<TProfile>("hsizeCluls","clu size vs ls",sizeH,0.,highH,0.0,1000.);
-   hsizeXCluls= fs->make<TProfile>("hsizeXCluls","clu size-x vs ls",sizeH,0.,highH,0.0,1000.);
+   //hsizeCluls = fs->make<TProfile>("hsizeCluls","clu size vs ls",sizeH,0.,highH,0.0,1000.);
+   //hsizeXCluls= fs->make<TProfile>("hsizeXCluls","clu size-x vs ls",sizeH,0.,highH,0.0,1000.);
 
-   hcharCluls1 = fs->make<TProfile>("hcharCluls1","clu char vs ls",sizeH,0.,highH,0.0,1000.);
-   //hcharPixls1 = fs->make<TProfile>("hcharPixls1","pix char vs ls",sizeH,0.,highH,0.0,100.);
-   hsizeCluls1 = fs->make<TProfile>("hsizeCluls1","clu size vs ls",sizeH,0.,highH,0.0,1000.);
-   hsizeXCluls1= fs->make<TProfile>("hsizeXCluls1","clu size-x vs ls",sizeH,0.,highH,0.0,1000.);
-   hcharCluls2 = fs->make<TProfile>("hcharCluls2","clu char vs ls",sizeH,0.,highH,0.0,1000.);
-   //hcharPixls2 = fs->make<TProfile>("hcharPixls2","pix char vs ls",sizeH,0.,highH,0.0,100.);
-   hsizeCluls2 = fs->make<TProfile>("hsizeCluls2","clu size vs ls",sizeH,0.,highH,0.0,1000.);
-   hsizeXCluls2= fs->make<TProfile>("hsizeXCluls2","clu size-x vs ls",sizeH,0.,highH,0.0,100.);
-   hcharCluls3 = fs->make<TProfile>("hcharCluls3","clu char vs ls",sizeH,0.,highH,0.0,1000.);
-   //hcharPixls3 = fs->make<TProfile>("hcharPixls3","pix char vs ls",sizeH,0.,highH,0.0,100.);
-   hsizeCluls3 = fs->make<TProfile>("hsizeCluls3","clu size vs ls",sizeH,0.,highH,0.0,1000.);
-   hsizeXCluls3= fs->make<TProfile>("hsizeXCluls3","clu size-x vs ls",sizeH,0.,highH,0.0,1000.);
-   hclusls1 = fs->make<TProfile>("hclusls1","clus vs ls",sizeH,0.,highH,0.0,30000.);
-   //hpixls1  = fs->make<TProfile>("hpixls1", "pix vs ls ",sizeH,0.,highH,0.0,100000.);
-   hclusls2 = fs->make<TProfile>("hclusls2","clus vs ls",sizeH,0.,highH,0.0,30000.);
-   //hpixls2  = fs->make<TProfile>("hpixls2", "pix vs ls ",sizeH,0.,highH,0.0,100000.);
-   hclusls3 = fs->make<TProfile>("hclusls3","clus vs ls",sizeH,0.,highH,0.0,30000.);
-   //hpixls3  = fs->make<TProfile>("hpixls3", "pix vs ls ",sizeH,0.,highH,0.0,100000.);
+   hcharCluls1 = fs->make<TProfile>("hcharClu1ls","clu char vs ls",sizeH,0.,highH,0.0,1000.);
+   //hcharPixls1 = fs->make<TProfile>("hcharPix1ls","pix char vs ls",sizeH,0.,highH,0.0,100.);
+   hsizeCluls1 = fs->make<TProfile>("hsizeClu1ls","clu size vs ls",sizeH,0.,highH,0.0,1000.);
+   hsizeXCluls1= fs->make<TProfile>("hsizeXClu1ls","clu size-x vs ls",sizeH,0.,highH,0.0,1000.);
+   hcharCluls2 = fs->make<TProfile>("hcharClu12s","clu char vs ls",sizeH,0.,highH,0.0,1000.);
+   //hcharPixls2 = fs->make<TProfile>("hcharPix2ls","pix char vs ls",sizeH,0.,highH,0.0,100.);
+   hsizeCluls2 = fs->make<TProfile>("hsizeClu2ls","clu size vs ls",sizeH,0.,highH,0.0,1000.);
+   hsizeXCluls2= fs->make<TProfile>("hsizeXClu2ls","clu size-x vs ls",sizeH,0.,highH,0.0,100.);
+   hcharCluls3 = fs->make<TProfile>("hcharClu3ls","clu char vs ls",sizeH,0.,highH,0.0,1000.);
+   //hcharPixls3 = fs->make<TProfile>("hcharPix3ls","pix char vs ls",sizeH,0.,highH,0.0,100.);
+   hsizeCluls3 = fs->make<TProfile>("hsizeClu3ls","clu size vs ls",sizeH,0.,highH,0.0,1000.);
+   hsizeXCluls3= fs->make<TProfile>("hsizeXClu3ls","clu size-x vs ls",sizeH,0.,highH,0.0,1000.);
+   hclusls1 = fs->make<TProfile>("hclus1ls","clus vs ls",sizeH,0.,highH,0.0,30000.);
+   //hpixls1  = fs->make<TProfile>("hpix1ls", "pix vs ls ",sizeH,0.,highH,0.0,100000.);
+   hclusls2 = fs->make<TProfile>("hclus2ls","clus vs ls",sizeH,0.,highH,0.0,30000.);
+   //hpixls2  = fs->make<TProfile>("hpix2ls", "pix vs ls ",sizeH,0.,highH,0.0,100000.);
+   hclusls3 = fs->make<TProfile>("hclus3ls","clus vs ls",sizeH,0.,highH,0.0,30000.);
+   //hpixls3  = fs->make<TProfile>("hpix3ls", "pix vs ls ",sizeH,0.,highH,0.0,100000.);
+   hclusls4 = fs->make<TProfile>("hclus4ls","clus vs ls",sizeH,0.,highH,0.0,30000.);
 
    // Profiles versus bx
    //hpixbx  = fs->make<TProfile>("hpixbx", "pixs vs bx ",4000,-0.5,3999.5,0.0,1000000.);
@@ -1725,6 +1727,10 @@ void PixClustersWithTracks::beginJob() {
     name="hCluProfile4_"+std::to_string(i);
     title="Cluster Profile LYR4- "+location;
     hCluProfile4[i] = fs->make<TProfile2D>(name.c_str(),title.c_str(),14,0.,14.,14,3.,14.,0.,1000.);
+
+    name="hpixInside"+std::to_string(i+1);
+    title="Inner pixels in layer "+std::to_string(i+1);
+    hpixInside[i] = fs->make<TH1D>(name.c_str(),title.c_str(),200,0.,100.);
   }
 #endif
 
@@ -3428,7 +3434,7 @@ void PixClustersWithTracks::analyze(const edm::Event& e,
 	    
 #ifdef SINGLE_MODULES
 	    float weight=1.;
-	    if     (ladderOn== 1 && module== 4) hpixDetMap10->Fill(pixy,pixx,weight); //  thr test 
+	    if     (ladderOn== 2 && module== 4) hpixDetMap10->Fill(pixy,pixx,weight); //  thr test 
 	    // else if(ladderOn==-6 && module==-2) hpixDetMap11->Fill(pixy,pixx,weight); // 
 #endif
 
@@ -3767,9 +3773,9 @@ void PixClustersWithTracks::analyze(const edm::Event& e,
 
 #ifdef LS_STUDIES
 
-  hclusls->Fill(float(lumiBlock),float(numberOfClusters)); // clusters fpix+bpix
+  //hclusls->Fill(float(lumiBlock),float(numberOfClusters)); // clusters fpix+bpix
   //hpixls->Fill(float(lumiBlock),float(numberOfPixels)); // pixels fpix+bpix
-  hclubx->Fill(float(bx),float(numberOfClusters)); // clusters fpix+bpix
+  //hclubx->Fill(float(bx),float(numberOfClusters)); // clusters fpix+bpix
   //hpixbx->Fill(float(bx),float(numberOfPixels)); // pixels fpix+bpix
   hpvbx->Fill(float(bx),float(pvsTrue)); // pvs
   htrackbx->Fill(float(bx),float(countPixTracks)); // tracks
@@ -3778,6 +3784,7 @@ void PixClustersWithTracks::analyze(const edm::Event& e,
   hclusls2->Fill(float(lumiBlock),float(numOfClustersPerLay2)); // clusters bpix2
   //hpixls2->Fill( float(lumiBlock),float(numOfPixPerLay2)); // pixels bpix2
   hclusls3->Fill(float(lumiBlock),float(numOfClustersPerLay3)); // clusters bpix3
+  hclusls4->Fill(float(lumiBlock),float(numOfClustersPerLay4)); // clusters bpix4
   //hpixls3->Fill( float(lumiBlock),float(numOfPixPerLay3)); // pixels bpix3
 #endif
 

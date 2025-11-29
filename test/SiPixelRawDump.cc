@@ -1248,7 +1248,7 @@ void SiPixelRawDump::beginJob() {
   //const float totMax = 399999.5; // hi value 
   const float maxLink = 1000.;   // hi value
   const float maxChan = static_cast<float>(n_of_Channels) + 0.5;
-  const int maxLS=1000;
+  const int maxLS=2500;
   hsize  = fs->make<TH1D>( "hsize", "FED event size in words-4(incl err)", 6000, -0.5, pixMax);
   hsize0 = fs->make<TH1D>( "hsize0", "FED event size in words-4(zoomed)", 2000, -0.5, 1999.5);
   hsize1 = fs->make<TH1D>( "hsize1", "bpix FED event size in words-4", 6000, -0.5, pixMax);
@@ -1277,17 +1277,17 @@ void SiPixelRawDump::beginJob() {
 
   hchannelFED = fs->make<TH2F>("hchannelFED", "channel-FED hits",
 			       n_of_FEDs, -0.5, static_cast<float>(n_of_FEDs) - 0.5,
-			       48,0.,48.);
+			       n_of_Channels,0.5,maxChan);
   hchannelFEDWords = fs->make<TProfile2D>("hchannelFEDWords", "channel-FED words",
 			       n_of_FEDs, -0.5, static_cast<float>(n_of_FEDs) - 0.5,
-					  48,0.,48.,0.,10000.);
+					  n_of_Channels,0.5,maxChan,0.,10000.);
   hfedChannelDefinition = fs->make<TH2F>("hfedChannelDefinition", "define channel-FED 1,2,3,4,5",
 			       n_of_FEDs, -0.5, static_cast<float>(n_of_FEDs) - 0.5,
-			       48,0.,48.);
+			       n_of_Channels,0.5,maxChan);
 
   hmanyHits = fs->make<TH2F>("hmanyHits", "channel-FED events with many hits",
 			       n_of_FEDs, -0.5, static_cast<float>(n_of_FEDs) - 0.5,
-			       48,0.,48.);  
+			       n_of_Channels,0.5,maxChan);  
 #ifdef IND_FEDS
   hsizeFeds[0] = fs->make<TH1D>( "hsizeFed0", "FED 0 event size ", 1000, -0.5, pixMax);
   hsizeFeds[1] = fs->make<TH1D>( "hsizeFed1", "FED 1 event size ", 1000, -0.5, pixMax);
@@ -1644,7 +1644,7 @@ void SiPixelRawDump::beginJob() {
 //-----------------------------------------------------------------------
 void SiPixelRawDump::analyzeHits(int fedId, int fedChannel) {
 
-  hchannelFED->Fill(float(fedId-fedId0),float(fedChannel-1));
+  hchannelFED->Fill(float(fedId-fedId0),float(fedChannel));
 
   static int fed0=-1, chan0=-1, roc0=-1, layer0=-1;
   static int hitsPerRoc=0, hitsPerChannel=0;
@@ -1710,7 +1710,7 @@ void SiPixelRawDump::analyzeHits(int fedId, int fedChannel) {
 	  hhitsPerChannel[layer0-1]->Fill(float(hitsPerChannel));
 	} // layer?
 	if(hitsPerChannel>hitsCut2) {
-	  hmanyHits->Fill(float(fedId-fedId0),float(fedChannel-1));
+	  hmanyHits->Fill(float(fedId-fedId0),float(fedChannel));
 	  cout<<"WARNING: Many hits per channel: fed "<<fed0
 	      <<" chan "<<chan0<<" roc-order "<<roc0
 	      <<" hits "<<hitsPerChannel<<" layer "<<layer0

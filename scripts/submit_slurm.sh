@@ -36,7 +36,7 @@ cd /scratch/$USER/${SLURM_JOB_ID}
 #cmsRun $MYPWD/runRawToClus_356563.py
 #cmsRun $MYPWD/runRawToClus_357438.py
 #cmsRun $MYPWD/runRawToClus_368546_rnd_bx110.py
-cmsRun $MYPWD/runRawToClus_368546_rnd.py
+cmsRun $MYPWD/runRawToClus_395392.py
 #cmsRun $MYPWD/runRawToClus_368546.py
 # 
 pwd

@@ -13,10 +13,11 @@ process.load('Configuration.EventContent.EventContent_cff')
 process.load('Configuration.StandardSequences.EndOfProcess_cff')
 
 # process.load("EventFilter.SiPixelRawToDigi.SiPixelRawToDigi_cfi")
-process.load('Configuration.StandardSequences.RawToDigi_cff')
+process.load("EventFilter.SiPixelRawToDigi.siPixelDigis_cff")
+#process.load('Configuration.StandardSequences.RawToDigi_cff') <-- fails in v15
 
 # needed for pixel RecHits (TkPixelCPERecord)
-process.load("Configuration.StandardSequences.Reconstruction_cff")
+#process.load("Configuration.StandardSequences.Reconstruction_cff") <-- fails in v15
 
 # clusterizer 
 process.load("RecoLocalTracker.Configuration.RecoLocalTracker_cff")
@@ -80,27 +81,19 @@ process.source = cms.Source("PoolSource",
 
 #"file:/eos/cms/store/data/Run2018E/ZeroBias/RAW/v1/000/325/699/00000/FAAE70B9-D4C7-364D-8D80-C34BBB8D1AAC.root",
 #"file:/eos/cms/store/group/dpg_tracker_pixel/comm_pixel/tvami/forDanek/321178/FC2C31E9-C99E-E811-9C51-FA163EAC0A56.root",  # from Tamas OK 
-
 #"file:/work/kotlinski/DATA/RAW/325170/06590754-A60F-E24C-AFDE-4B01585C2B01.root", # copy from AAA
 #"file:/work/kotlinski/DATA/RAW/325308/FDDD4BEE-4B1B-7E42-BD0E-E7FDF26FB466.root", # copy from eos
-
 # HI cannot be accessed from T3
 #"/store/hidata/HIRun2018A/HIMinimumBias0/RAW/v1/000/327/560/00000/D8ACD174-92CC-FC4A-A38E-8588FB558023.root",
 #"/store/hidata/HIRun2018A/HIMinimumBias0/RAW/v1/000/327/560/00000/90CF1CEE-99C3-AE4F-9489-38CCB99609B2.root",
-
 # cosmics 
 #"/store/hidata/HIRun2018A/MinimumBias/RAW/v1/000/326/945/00000/7942C3E7-2287-FD41-93C4-56C05F187CA2.root",
-
-#"/store/data/Run2018D/HIMinimumBias0/RAW/v1/000/325/112/00000/660F62BB-9932-D645-A4A4-0BBBDA3963E8.root",
-
 #"/store/data/Run2018D/ZeroBias/RAW/v1/000/325/170/00000/06590754-A60F-E24C-AFDE-4B01585C2B01.root",
 #"/store/express/Run2018D/ExpressPhysics/FEVT/Express-v1/000/325/159/00000/2EB3AEDA-747D-FB46-9583-BC1F1241CFE7.root",
-
-#"/store/express/Commissioning2021/ExpressCosmics/FEVT/Express-v1/000/344/068/00000/ffc30ac2-6e3b-42e1-b6d9-74973a9cf961.root",
 # )
 #)
 
-#process.source.lumisToProcess = cms.untracked.VLuminosityBlockRange('325097:1-325097:100') # overview
+#process.source.lumisToProcess = cms.untracked.VLuminosityBlockRange('395392:83-395392:103') # overview
 
 process.myBXFilter = cms.EDFilter("BunchCrossingFilter",
                 bunches = cms.vuint32( [foo for foo in range(1, 110)] )
@@ -187,13 +180,13 @@ if useLocalDB :
 # end 
 
 # for Raw2digi for data
-process.siPixelDigis.cpu.InputLabel = 'rawDataCollector'  # normal p-p
+process.siPixelDigis.InputLabel = 'rawDataCollector'  # normal p-p
 #process.siPixelDigis.InputLabel = 'rawDataRepacker'  # HI
 #process.siStripDigis.ProductLabel = 'rawDataCollector'
 #process.siPixelDigis.InputLabel = 'source'
-process.siPixelDigis.cpu.IncludeErrors = True
+process.siPixelDigis.IncludeErrors = True
 #process.siPixelDigis.cpu.Timing = False 
-process.siPixelDigis.cpu.UsePhase1 = True
+process.siPixelDigis.UsePhase1 = True
 
 # for digi to clu
 #process.siPixelClusters.src = 'siPixelDigis'

@@ -65,6 +65,12 @@ process.source = cms.Source("PoolSource",
 
 #process.source.lumisToProcess = cms.untracked.VLuminosityBlockRange('378750:41-378750:9999')
 process.source.skipBadFiles = cms.untracked.bool( True )
+process.myBXFilter = cms.EDFilter("BunchCrossingFilter",
+#        bunches = cms.vuint32( [foo for foo in range(56, 91)] )
+#        bunches = cms.vuint32( [foo for foo in range(3400, 3435)] )
+        bunches = cms.vuint32( [foo for foo in range(1, 54)] )
+#        bunches = cms.vuint32( [foo for foo in range(3445, 3530)] )
+)
 
 process.d = cms.EDAnalyzer("FindHotPixelFromRaw", 
 
