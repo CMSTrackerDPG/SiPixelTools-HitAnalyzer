@@ -59,5 +59,6 @@
 #dasgoclient -query='file dataset=/ExpressCosmics/NeNeRun2025-Express-v1/FEVT run=394248'  
 #dasgoclient -query='file dataset=/ExpressPhysics/Run2025D-Express-v1/FEVT run=395424'
 #dasgoclient -query='file dataset=/ExpressPhysics/Run2025F-Express-v1/FEVT run=397502'
-dasgoclient -query='file dataset=/ExpressCosmics/HIRun2025A-Express-v1/FEVT run=399890'
+dasgoclient -query='file dataset=/ExpressCosmics/HIRun2025A-Express-v1/FEVT run=400179'
+#dasgoclient -query='file dataset=/HIExpressPhysics/HIRun2025A-Express-v1/FEVT run=400165'
 

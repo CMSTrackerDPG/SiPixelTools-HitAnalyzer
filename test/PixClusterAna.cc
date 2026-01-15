@@ -120,7 +120,7 @@ using namespace std;
 
 //#define TESTING_ADC
 //#define LAY1_SPLIT
-#define ROC_RATE
+//#define ROC_RATE // enable size&charge profiles per roc 
 //#define STUDY_ONEMOD
 #define DO_FPIX
 #define USE_TREE
@@ -128,8 +128,9 @@ using namespace std;
 #define DO_1PIXELCLUS
 //#define FPIX_SPECIAL
 #define DO_MINMAX // get min and max pixel charge
-//#define DO_EDGE // monitor edge pixels 
+#define DO_EDGE // monitor edge pixels 
 //#define DO_TEST
+//#define PRINT_LARGE_CLUS
 
 #ifdef HF
 #include "DataFormats/HcalRecHit/interface/HcalRecHitCollections.h"
@@ -490,6 +491,7 @@ class PixClusterAna : public edm::one::EDAnalyzer<edm::one::WatchRuns, edm::one:
   void histogramDcols(int layer, int ladder, int ring);
 #endif
   int rocId(int pixy,int pixx);  // 0-15, column, row
+  int rocId(int pixy,int pixx, int layer, int module);  // 0-15, column, row
   int rocZLocal(int rocId, bool flipped);  // roc z coordinate in local 
   int rocPhiLocal(int rocId, bool flipped);  // roc phi coordinate in local 
   float rocZGlobal(int module, int ladder);  // roc z coordinate in global 
@@ -729,9 +731,9 @@ edm::EDGetTokenT<HFRecHitCollection> HFHitsToken_;
   TH1D *hpixcharge111,*hpixcharge112,*hpixcharge122,*hpixcharge121,*hpixcharge12_1,*hpixcharge12_2;
 #endif
 
-#ifdef ROC_RATE
   TH2F *hrocMap1,*hrocMap2,*hrocMap3,*hrocMap4;
   TH2F *hrocCluMap1,*hrocCluMap2,*hrocCluMap3,*hrocCluMap4;
+#ifdef ROC_RATE
   TProfile2D *hrocSizeXMap1, *hrocSizeYMap1,*hrocClucharMap1,*hrocPixcharMap1;
   TProfile2D *hrocSizeXMap2, *hrocSizeYMap2,*hrocClucharMap2,*hrocPixcharMap2;
   TProfile2D *hrocSizeXMap3, *hrocSizeYMap3,*hrocClucharMap3,*hrocPixcharMap3;
@@ -936,10 +938,59 @@ PixClusterAna::~PixClusterAna() { }
   int PixClusterAna::rocId(int col, int row) {
     int rocRow = row/80;
     int rocCol = col/52;
-    int rocId = rocCol + rocRow*8;
-    return rocId;
+    int rocid = rocCol + rocRow*8;
+    return rocid;
   }
+  int PixClusterAna::rocId(int col, int row, int layer, int module) {
+    const bool CHECK=true;
+    const int ColsInDet=416, RowsInDet=160, ROCSizeInX=80, ROCSizeInY=52;
+    const int maxROCsInX=2, maxROCsInY=8;
 
+    int rocid = -1;
+    if(CHECK) {
+      if(col<0 || col>=(ColsInDet) || row<0 || row>=(RowsInDet)) {
+        cout<<"rocId: wrong module coordinates "<<col<<" "<<row<<endl;
+        return -1;
+      }
+    }    
+    int chipX = row / ROCSizeInX; // row index of the chip 0-1
+    int chipY = col / ROCSizeInY; // col index of the chip 0-7
+    if(CHECK) {
+      if(chipX<0 || chipX>=maxROCsInX ||chipY<0 || chipY>=maxROCsInY) {
+        cout<<"rocId: wrong index "<<chipX<<" "<<chipY<<endl;
+        return -1;
+      }
+    }
+    
+    if(layer==1) {
+      if(chipX==0)      rocid = 15 - chipY;  // should be 15-8
+      else if(chipX==1) rocid = chipY; // should be 0-7
+    } else if(layer>1 && layer <=4) {
+      if(module>0) {   // +z side 
+        if(chipX==0)      rocid = 15 - chipY;  // should be 15-8
+        else if(chipX==1) rocid = chipY; // should be 0-7
+      } else if(module<0) {  // -z side 
+        if(chipX==0)      rocid = 7 - chipY;  // should be 7-0
+        else if(chipX==1) rocid = 8+ chipY; // should be 8-15
+      } else {
+        cout<<" unknown z side "<<module<<endl;
+        return -1;
+      }
+    } else { // for fpix, use the simple way for now 
+      //cout<<" unknown bpix layer "<<layer<<endl;
+      rocid = rocId(col,row);
+    }
+
+   if(CHECK) {
+      if(rocid < 0 || rocid >= (maxROCsInX*maxROCsInY) ) {
+        cout << "PixelIndicesPhase1: Error in ROC index " << rocid << endl;
+        return -1;
+      }
+    }
+
+    
+    return rocid;
+  }
   bool PixClusterAna::isFlipped(int layer, int ladderOn) {
     bool inner=false;
     if(layer>=1  && layer<=4) { // for layer 1
@@ -967,14 +1018,14 @@ PixClusterAna::~PixClusterAna() { }
     //int minPixelRow = clustIt->minPixelRow(); //x
     //int maxPixelRow = clustIt->maxPixelRow();
     int minPixelCol = clustIt->minPixelCol(); //y
-    int maxPixelCol = clustIt->maxPixelCol();
+    //int maxPixelCol = clustIt->maxPixelCol(); // not used
     float cluProfile[maxSizeY]={0};
     // Get the pixels in the Cluster
     const vector<SiPixelCluster::Pixel>& pixelsVec = clustIt->pixels();
     //cout<<" Pixels in this cluster (i/x/y/char) - "
     //	  <<pixelsVec.size()<<endl;
     for (unsigned int i = 0;  i < pixelsVec.size(); ++i) { // loop over pixels
-      float pixx = pixelsVec[i].x; // index as float=iteger, row index
+      //float pixx = pixelsVec[i].x; // index as float=iteger, row index NOT USED
       float pixy = pixelsVec[i].y; // same, col index
       float electrons = pixelsVec[i].adc;
       float kelec = (float(electrons)/1000.);
@@ -1695,41 +1746,40 @@ void PixClusterAna::beginJob() {
    //hpixcharPhi4 = fs->make<TProfile>("hpixcharPhi4","pix char layer 4",560,-28.,28.,0.0,1000.);
 #endif // PHI_PROFILES
 
-#ifdef ROC_RATE
-   hrocMap1 = fs->make<TH2F>("hrocMap1"," ",8*9,-4.5,4.5,2*13,-6.5,6.5);
+   hrocMap1 = fs->make<TH2F>("hrocMap1","Pixel ROC Map Lyr1",8*9,-4.5,4.5,2*13,-6.5,6.5);
    hrocMap1->SetOption("colz");
-   hrocMap2 = fs->make<TH2F>("hrocMap2"," ",8*9,-4.5,4.5,2*29,-14.5,14.5);
+   hrocMap2 = fs->make<TH2F>("hrocMap2","Pixel ROC Map Lyr2",8*9,-4.5,4.5,2*29,-14.5,14.5);
    hrocMap2->SetOption("colz");
-   hrocMap3 = fs->make<TH2F>("hrocMap3"," ",8*9,-4.5,4.5,2*45,-22.5,22.5);
+   hrocMap3 = fs->make<TH2F>("hrocMap3","Pixel ROC Map Lyr3",8*9,-4.5,4.5,2*45,-22.5,22.5);
    hrocMap3->SetOption("colz");
-   hrocMap4 = fs->make<TH2F>("hrocMap4"," ",8*9,-4.5,4.5,2*65,-32.5,32.5);
+   hrocMap4 = fs->make<TH2F>("hrocMap4","Pixel ROC Map Lyr4",8*9,-4.5,4.5,2*65,-32.5,32.5);
    hrocMap4->SetOption("colz");
 
-   hrocCluMap1 = fs->make<TH2F>("hrocCluMap1"," ",8*9,-4.5,4.5,2*13,-6.5,6.5);
+   hrocCluMap1 = fs->make<TH2F>("hrocCluMap1","Cluster ROC Map Lyr1",8*9,-4.5,4.5,2*13,-6.5,6.5);
    hrocCluMap1->SetOption("colz");
-   hrocCluMap2 = fs->make<TH2F>("hrocCluMap2"," ",8*9,-4.5,4.5,2*29,-14.5,14.5);
+   hrocCluMap2 = fs->make<TH2F>("hrocCluMap2","Cluster ROC Map Lyr2",8*9,-4.5,4.5,2*29,-14.5,14.5);
    hrocCluMap2->SetOption("colz");
-   hrocCluMap3 = fs->make<TH2F>("hrocCluMap3"," ",8*9,-4.5,4.5,2*45,-22.5,22.5);
+   hrocCluMap3 = fs->make<TH2F>("hrocCluMap3","Cluster ROC Map Lyr3",8*9,-4.5,4.5,2*45,-22.5,22.5);
    hrocCluMap3->SetOption("colz");
-   hrocCluMap4 = fs->make<TH2F>("hrocCluMap4"," ",8*9,-4.5,4.5,2*65,-32.5,32.5);
+   hrocCluMap4 = fs->make<TH2F>("hrocCluMap4","Cluster ROC Map Lyr4",8*9,-4.5,4.5,2*65,-32.5,32.5);
    hrocCluMap4->SetOption("colz");
-
-   hrocSizeXMap1 = fs->make<TProfile2D>("hrocSizeXMap1"," ",8*9,-4.5,4.5,2*13,-6.5,6.5,0.,1000.);
+#ifdef ROC_RATE
+   hrocSizeXMap1 = fs->make<TProfile2D>("hrocSizeXMap1","SizeX L1",8*9,-4.5,4.5,2*13,-6.5,6.5,0.,1000.);
    hrocSizeXMap1->SetOption("colz");
-   hrocSizeXMap2 = fs->make<TProfile2D>("hrocSizeXMap2"," ",8*9,-4.5,4.5,2*29,-14.5,14.5,0.,1000.);
+   hrocSizeXMap2 = fs->make<TProfile2D>("hrocSizeXMap2","SizeX L2",8*9,-4.5,4.5,2*29,-14.5,14.5,0.,1000.);
    hrocSizeXMap2->SetOption("colz");
-   hrocSizeXMap3 = fs->make<TProfile2D>("hrocSizeXMap3"," ",8*9,-4.5,4.5,2*45,-22.5,22.5,0.,1000.);
+   hrocSizeXMap3 = fs->make<TProfile2D>("hrocSizeXMap3","SizeX L3",8*9,-4.5,4.5,2*45,-22.5,22.5,0.,1000.);
    hrocSizeXMap3->SetOption("colz");
-   hrocSizeXMap4 = fs->make<TProfile2D>("hrocSizeXMap4"," ",8*9,-4.5,4.5,2*65,-32.5,32.5,0.,1000.);
+   hrocSizeXMap4 = fs->make<TProfile2D>("hrocSizeXMap4","SizeX L4",8*9,-4.5,4.5,2*65,-32.5,32.5,0.,1000.);
    hrocSizeXMap4->SetOption("colz");
 
-   hrocSizeYMap1 = fs->make<TProfile2D>("hrocSizeYMap1"," ",8*9,-4.5,4.5,2*13,-6.5,6.5,0.,1000.);
+   hrocSizeYMap1 = fs->make<TProfile2D>("hrocSizeYMap1","SizeY L1",8*9,-4.5,4.5,2*13,-6.5,6.5,0.,1000.);
    hrocSizeYMap1->SetOption("colz");
-   hrocSizeYMap2 = fs->make<TProfile2D>("hrocSizeYMap2"," ",8*9,-4.5,4.5,2*29,-14.5,14.5,0.,1000.);
+   hrocSizeYMap2 = fs->make<TProfile2D>("hrocSizeYMap2","SizeY L2",8*9,-4.5,4.5,2*29,-14.5,14.5,0.,1000.);
    hrocSizeYMap2->SetOption("colz");
-   hrocSizeYMap3 = fs->make<TProfile2D>("hrocSizeYMap3"," ",8*9,-4.5,4.5,2*45,-22.5,22.5,0.,1000.);
+   hrocSizeYMap3 = fs->make<TProfile2D>("hrocSizeYMap3","SizeY L3",8*9,-4.5,4.5,2*45,-22.5,22.5,0.,1000.);
    hrocSizeYMap3->SetOption("colz");
-   hrocSizeYMap4 = fs->make<TProfile2D>("hrocSizeYMap4"," ",8*9,-4.5,4.5,2*65,-32.5,32.5,0.,1000.);
+   hrocSizeYMap4 = fs->make<TProfile2D>("hrocSizeYMap4","SizeY L4",8*9,-4.5,4.5,2*65,-32.5,32.5,0.,1000.);
    hrocSizeYMap4->SetOption("colz");
 
    hrocClucharMap1 = fs->make<TProfile2D>("hrocClucharMap1"," ",8*9,-4.5,4.5,2*13,-6.5,6.5,0.,1000.);
@@ -1889,35 +1939,35 @@ void PixClusterAna::beginJob() {
   // Special test hitos for inefficiency effects
   hpixDetMap10 = fs->make<TH2F>( "hpixDetMap10", "pix det layer 1",
 				 416,0.,416.,160,0.,160.);
-  hpixDetMap11 = fs->make<TH2F>( "hpixDetMap11", "pix det layer 1",
-  				 416,0.,416.,160,0.,160.);
-  hpixDetMap12 = fs->make<TH2F>( "hpixDetMap12", "pix det layer 1",
-  				 416,0.,416.,160,0.,160.);
-  hpixDetMap13 = fs->make<TH2F>( "hpixDetMap13", "pix det layer 1",
-  				 416,0.,416.,160,0.,160.);
-  hpixDetMap14 = fs->make<TH2F>( "hpixDetMap14", "pix det layer 1",
-  				  416,0.,416.,160,0.,160.);
-  hpixDetMap15 = fs->make<TH2F>( "hpixDetMap15", "pix det layer 1",
-  				  416,0.,416.,160,0.,160.);
-  hpixDetMap16 = fs->make<TH2F>( "hpixDetMap16", "pix det layer 1",
-  				  416,0.,416.,160,0.,160.);
-  hpixDetMap17 = fs->make<TH2F>( "hpixDetMap17", "pix det layer 1",
-  				  416,0.,416.,160,0.,160.);
-  hpixDetMap18 = fs->make<TH2F>( "hpixDetMap18", "pix det layer 1",
-  				  416,0.,416.,160,0.,160.);
-  hpixDetMap19 = fs->make<TH2F>( "hpixDetMap19", "pix det layer 1",
-  				  416,0.,416.,160,0.,160.);
-
-  //hpixDetMap20 = fs->make<TH2F>( "hpixDetMap20", "pix det layer 2",
-  //				 416,0.,416.,160,0.,160.);
-  //hpixDetMap21 = fs->make<TH2F>( "hpixDetMap21", "pix det layer 2",
-  //				 416,0.,416.,160,0.,160.);
-  //hpixDetMap22 = fs->make<TH2F>( "hpixDetMap22", "pix det layer 2",
-  //				 416,0.,416.,160,0.,160.);
-  //hpixDetMap23 = fs->make<TH2F>( "hpixDetMap23", "pix det layer 2",
-  //				 416,0.,416.,160,0.,160.);
-  // hpixDetMap24 = fs->make<TH2F>( "hpixDetMap24", "pix det layer 2",
+  // hpixDetMap11 = fs->make<TH2F>( "hpixDetMap11", "pix det layer 1",
+  // 				 416,0.,416.,160,0.,160.);
+  // hpixDetMap12 = fs->make<TH2F>( "hpixDetMap12", "pix det layer 1",
+  // 				 416,0.,416.,160,0.,160.);
+  // hpixDetMap13 = fs->make<TH2F>( "hpixDetMap13", "pix det layer 1",
+  // 				 416,0.,416.,160,0.,160.);
+  // hpixDetMap14 = fs->make<TH2F>( "hpixDetMap14", "pix det layer 1",
   // 				  416,0.,416.,160,0.,160.);
+  // hpixDetMap15 = fs->make<TH2F>( "hpixDetMap15", "pix det layer 1",
+  // 				  416,0.,416.,160,0.,160.);
+  // hpixDetMap16 = fs->make<TH2F>( "hpixDetMap16", "pix det layer 1",
+  // 				  416,0.,416.,160,0.,160.);
+  // hpixDetMap17 = fs->make<TH2F>( "hpixDetMap17", "pix det layer 1",
+  // 				  416,0.,416.,160,0.,160.);
+  // hpixDetMap18 = fs->make<TH2F>( "hpixDetMap18", "pix det layer 1",
+  // 				  416,0.,416.,160,0.,160.);
+  // hpixDetMap19 = fs->make<TH2F>( "hpixDetMap19", "pix det layer 1",
+  // 				  416,0.,416.,160,0.,160.);
+
+  hpixDetMap20 = fs->make<TH2F>( "hpixDetMap20", "pix det layer 2",
+				 416,0.,416.,160,0.,160.);
+  hpixDetMap21 = fs->make<TH2F>( "hpixDetMap21", "pix det layer 2",
+				 416,0.,416.,160,0.,160.);
+  hpixDetMap22 = fs->make<TH2F>( "hpixDetMap22", "pix det layer 2",
+				 416,0.,416.,160,0.,160.);
+  hpixDetMap23 = fs->make<TH2F>( "hpixDetMap23", "pix det layer 2",
+				 416,0.,416.,160,0.,160.);
+  hpixDetMap24 = fs->make<TH2F>( "hpixDetMap24", "pix det layer 2",
+  				  416,0.,416.,160,0.,160.);
   // hpixDetMap25 = fs->make<TH2F>( "hpixDetMap25", "pix det layer 2",
   // 				  416,0.,416.,160,0.,160.);
   // hpixDetMap26 = fs->make<TH2F>( "hpixDetMap26", "pix det layer 2",
@@ -2495,7 +2545,6 @@ void PixClusterAna::endJob(){
     hmoduleEdgePerDet2D[i]->Scale(norm);
   }
 #endif
-#ifdef ROC_RATE
   hrocMap1->Scale(norm);
   hrocMap2->Scale(norm);
   hrocMap3->Scale(norm);
@@ -2504,7 +2553,7 @@ void PixClusterAna::endJob(){
   hrocCluMap2->Scale(norm);
   hrocCluMap3->Scale(norm);
   hrocCluMap4->Scale(norm);
-
+#ifdef ROC_RATE
   //hpixRocRate1->Scale(norm1/2.); // nptmalize to roc
   // hpixRocRate2->Scale(norm2/2.);
   //hpixRocRate3->Scale(norm3/2.);
@@ -3410,10 +3459,10 @@ void PixClusterAna::analyze(const edm::Event& e,
 		    <<x<<" "<<y<<" "<<minPixelRow<<" "<<maxPixelRow<<" "<<minPixelCol<<" "
 		    <<maxPixelCol<<" "<<edgeHitX<<" "<<edgeHitY<<endl;
 
-      // get global z position of the cluster
+      // get global z position of the cluster 
       LocalPoint lp = topol->localPosition(MeasurementPoint(x,y));
-      float lx = lp.x(); // local cluster position in cm
-      float ly = lp.y();
+      //float lx = lp.x(); // local cluster position in cm  NOT USED
+      //float ly = lp.y();
 
       GlobalPoint clustgp = theGeomDet->surface().toGlobal( lp );
       double gZ = clustgp.z();  // global z
@@ -3428,11 +3477,21 @@ void PixClusterAna::analyze(const edm::Event& e,
       float zPos = gZ;
       //float rPos = detR + lx;
       float rPos = gR;
-#ifdef ROC_RATE
+      //#ifdef ROC_RATE
       int roc = -1; //  link = -1;
       //float rocZ=-1., rocPhi=-1.;
-#endif
+      //#endif
 
+#ifdef PRINT_LARGE_CLUS
+      if( (layer==2) && (size>40) ) {
+	cout<<"Large cluster event "<<event<<"/"<<countAllEvents<<" LS "<<lumiBlock<<" dets "<<numOf<<endl;
+	cout<<"lyr "<<layer<<" ldr "<<ladder<<" ring "<<module<<" sh "<<shell
+	    <<" size "<<size<<"/"<<sizeX<<"/"<<sizeY<<" ch "<<ch
+	    <<" edge "<<edgeHitX<<"/"<<edgeHitY
+	    <<endl;
+      }
+#endif
+      
 #ifdef USE_TREE
       // Save clus in tree
       if(doTree&&!fillPixelTree&&(!treeBpixOnly||(treeBpixOnly&&(layer>0)))) {
@@ -3464,9 +3523,9 @@ void PixClusterAna::analyze(const edm::Event& e,
       //bool cluBigInY = false; // does this clu include a big pixel
       //int noisy = 0;
 
-#ifdef ROC_RATE
+      //#ifdef ROC_RATE
       roc = -1; //  link = -1; rocZ=-1.; rocPhi=-1.;
-#endif
+      //#endif
 
       if(pixelsVec.size()>maxPixPerClu) maxPixPerClu = pixelsVec.size();
       float adcMin=9999., adcMax=0.;
@@ -3500,6 +3559,30 @@ void PixClusterAna::analyze(const edm::Event& e,
 
 	if(PRINT || select ) cout<<i<<" "<<pixx<<" "<<pixy<<" "<<adc<<endl;
 	//" "<<bigInX<<" "<<bigInY<<" "<<edgeInX<<" "<<edgeInY<<" "<<isBig<<endl;	
+
+	//roc = rocId(int(pixy),int(pixx));  // 0-15, column, row
+	roc = rocId(int(pixy),int(pixx),layer,module);  // 0-15, column, row
+	//link = int(roc/8); // link 0 & 1 unused
+        int rocZLoc = rocZLocal(roc,flipped);
+        int rocPhiLoc = rocPhiLocal(roc,flipped);
+        float rocZ = rocZGlobal(module,rocZLoc);
+        float rocPhi = rocPhiGlobal(ladder, rocPhiLoc);
+
+	//int chan = PixelChannelIdentifier::pixelToChannel(int(pixx),int(pixy));
+	bool bigInX = topol->isItBigPixelInX(int(pixx));
+	bool bigInY = topol->isItBigPixelInY(int(pixy));
+	if( !(bigInX || bigInY) ) {numberOfNoneEdgePixels++;}
+	//else {isBig=true;}
+
+	
+#ifdef PRINT_LARGE_CLUS
+      if( (layer==2) && (size>40) ) {
+	cout<<"pix "<<i<<" x/y "<<pixx<<"/"<<pixy<<" adc "<<adc
+	    <<" roc "<<roc<<" edge "<<edgeInX<<"/"<<edgeInY
+	    <<endl;
+      }
+#endif
+
 #ifdef USE_TREE
 	// save pixel to tree  
 	if(doTree&&fillPixelTree&&(!treeBpixOnly||(treeBpixOnly&&(layer>0)))) {
@@ -3541,21 +3624,9 @@ void PixClusterAna::analyze(const edm::Event& e,
 	if(negativeADC) {cluWithNegativeADC= true; detWithNegativeADC= true;}
 #endif
 
-#ifdef ROC_RATE
-	roc = rocId(int(pixy),int(pixx));  // 0-15, column, row
-	//link = int(roc/8); // link 0 & 1 unused
-        int rocZLoc = rocZLocal(roc,flipped);
-        int rocPhiLoc = rocPhiLocal(roc,flipped);
-        float rocZ = rocZGlobal(module,rocZLoc);
-        float rocPhi = rocPhiGlobal(ladder, rocPhiLoc);
-#endif
 
-	//int chan = PixelChannelIdentifier::pixelToChannel(int(pixx),int(pixy));
-	bool bigInX = topol->isItBigPixelInX(int(pixx));
-	bool bigInY = topol->isItBigPixelInY(int(pixy));
-	if( !(bigInX || bigInY) ) {numberOfNoneEdgePixels++;}
-	//else {isBig=true;}
 
+	
 	//#ifdef HISTOS
 	// Pixel histos
 	if (subid==1 && (selectEvent==-1 || countEvents==selectEvent)) {  // barrel
@@ -3589,8 +3660,8 @@ void PixClusterAna::analyze(const edm::Event& e,
 	    hpladder1id->Fill(float(rocPhi));
 	    hpz1id->Fill(float(rocZ));
 
-#ifdef ROC_RATE
 	    hrocMap1->Fill(rocZ,rocPhi);
+#ifdef ROC_RATE
 	    hrocPixcharMap1->Fill(rocZ,rocPhi,adc);
 	    //hrocLadder1->Fill(rocPhi);
 	    //hpixRocRate1->Fill(rocZ);
@@ -3655,18 +3726,18 @@ void PixClusterAna::analyze(const edm::Event& e,
 #ifdef SINGLE_MODULES
 	    float weight = 1.; // adc
 	    if     ( ladder== 2 && module==  4) hpixDetMap10->Fill(pixy,pixx,weight); //  
-	    else if( ladder== -4 && module== -4) hpixDetMap11->Fill(pixy,pixx,weight); // 
-	    else if( ladder== -6 && module== 4) hpixDetMap12->Fill(pixy,pixx,weight); // 
+	    // else if( ladder== -4 && module== -4) hpixDetMap11->Fill(pixy,pixx,weight); // 
+	    // else if( ladder== -6 && module== 4) hpixDetMap12->Fill(pixy,pixx,weight); // 
 
-	    else if( ladder== 3 && module== 4) hpixDetMap13->Fill(pixy,pixx,weight); // 
-	    else if( ladder==-3 && module==-3) hpixDetMap14->Fill(pixy,pixx,weight); // 
-	    else if( ladder== 6 && module== -1) hpixDetMap15->Fill(pixy,pixx,weight); // 
+	    // else if( ladder== 3 && module== 4) hpixDetMap13->Fill(pixy,pixx,weight); // 
+	    // else if( ladder==-3 && module==-3) hpixDetMap14->Fill(pixy,pixx,weight); // 
+	    // else if( ladder== 6 && module== -1) hpixDetMap15->Fill(pixy,pixx,weight); // 
 
-	    else if( ladder== 6 && module==-2) hpixDetMap16->Fill(pixy,pixx,weight); //
-	    else if( ladder== 6 && module==-3) hpixDetMap17->Fill(pixy,pixx,weight); // 
+	    // else if( ladder== 6 && module==-2) hpixDetMap16->Fill(pixy,pixx,weight); //
+	    // else if( ladder== 6 && module==-3) hpixDetMap17->Fill(pixy,pixx,weight); // 
 
-	    else if( ladder==-5 && module==-2) hpixDetMap18->Fill(pixy,pixx,weight); // 
-	    else if( ladder==-2 && module==-1) hpixDetMap19->Fill(pixy,pixx,weight); // 
+	    // else if( ladder==-5 && module==-2) hpixDetMap18->Fill(pixy,pixx,weight); // 
+	    // else if( ladder==-2 && module==-1) hpixDetMap19->Fill(pixy,pixx,weight); // 
 
 #endif
 
@@ -3750,8 +3821,8 @@ void PixClusterAna::analyze(const edm::Event& e,
 	      hpcols2->Fill(pixy);
 	      hprows2->Fill(pixx);
 	      hpixDetMap2->Fill(pixy,pixx);
-#ifdef ROC_RATE
 	      hrocMap2->Fill(rocZ,rocPhi);
+#ifdef ROC_RATE
 	      hrocPixcharMap2->Fill(rocZ,rocPhi,adc);
 	      //hpixRocRate2->Fill(rocZ);
 #endif	      
@@ -3767,10 +3838,11 @@ void PixClusterAna::analyze(const edm::Event& e,
 	    }
 
 #ifdef SINGLE_MODULES
-	    //if     (ladder==-3 && module==-3) hpixDetMap20->Fill(pixy,pixx); // noise
-	    //else if(ladder== 7 && module== 1) hpixDetMap21->Fill(pixy,pixx); //  "
-	    //else if(ladder==-14 && module== 2) hpixDetMap22->Fill(pixy,pixx); //  "
-	    //else if(ladder== 13 && module==-4) hpixDetMap23->Fill(pixy,pixx); //  "
+	    if     (ladder==-8 && module==1) hpixDetMap20->Fill(pixy,pixx); // noise
+	    else if(ladder==-5 && module==4) hpixDetMap21->Fill(pixy,pixx); //  "
+	    else if(ladder==-6 && module==2) hpixDetMap22->Fill(pixy,pixx); //  "
+	    else if(ladder==3  && module==1) hpixDetMap23->Fill(pixy,pixx); //  "
+	    else if(ladder==-14 && module==2) hpixDetMap24->Fill(pixy,pixx); //  "
 	    //if     (ladder== -1 && module== 1) hpixDetMap20->Fill(pixy,pixx); // dcdc 
 	    //else if(ladder== -1 && module== 2) hpixDetMap21->Fill(pixy,pixx); //  "
 	   // else if(ladder== -1 && module== 3) hpixDetMap22->Fill(pixy,pixx); //  "
@@ -3845,9 +3917,8 @@ void PixClusterAna::analyze(const edm::Event& e,
 	    hpcols3->Fill(pixy);
 	    hprows3->Fill(pixx);
 	    hpixz3->Fill(gZ);
-
-#ifdef ROC_RATE
 	    hrocMap3->Fill(rocZ,rocPhi);
+#ifdef ROC_RATE
 	    hrocPixcharMap3->Fill(rocZ,rocPhi,adc);
 	    //hpixRocRate3->Fill(rocZ);
 #endif
@@ -3935,9 +4006,8 @@ void PixClusterAna::analyze(const edm::Event& e,
 	    //hcharPixbx->Fill(bx,adc);
 	    //hcharPixls->Fill(lumiBlock,adc);
 	    hpixz4->Fill(gZ);
-
-#ifdef ROC_RATE
 	    hrocMap4->Fill(rocZ,rocPhi);
+#ifdef ROC_RATE
 	    hrocPixcharMap4->Fill(rocZ,rocPhi,adc);
 	    //hpixRocRate4->Fill(rocZ);
 #endif
@@ -4041,14 +4111,15 @@ void PixClusterAna::analyze(const edm::Event& e,
       //#ifdef HISTOS
       // Cluster histos
       if (subid==1 && (selectEvent==-1 || countEvents==selectEvent) ) {  // barrel
-#ifdef ROC_RATE
-	roc = rocId(int(y),int(x));  // 0-15, column, row
+	//#ifdef ROC_RATE
+	//roc = rocId(int(y),int(x));  // 0-15, column, row
+	roc = rocId(int(y),int(x),layer,module);  // 0-15, column, row
 	//link = int(roc/8); // link 0 & 1 unused
         int rocZLoc = rocZLocal(roc,flipped);
         int rocPhiLoc = rocPhiLocal(roc,flipped);
         float rocZ = rocZGlobal(module,rocZLoc);
         float rocPhi = rocPhiGlobal(ladder, rocPhiLoc);
-#endif
+	//#endif
 
 #ifdef DO_MINMAX
 	// comon hisos for bpix
@@ -4119,8 +4190,8 @@ void PixClusterAna::analyze(const edm::Event& e,
 	    hcharMax1->Fill(adcMax);
 	  }
 #endif
-#ifdef ROC_RATE
 	  hrocCluMap1->Fill(rocZ,rocPhi);
+#ifdef ROC_RATE
 	  hrocClucharMap1->Fill(rocZ,rocPhi,ch);
 	  hrocSizeXMap1->Fill(rocZ,rocPhi,sizeX);
 	  hrocSizeYMap1->Fill(rocZ,rocPhi,sizeY);
@@ -4307,10 +4378,9 @@ void PixClusterAna::analyze(const edm::Event& e,
 	  if(size==1) {hcharge2b->Fill(ch);}
 	  else        hcharge2g->Fill(ch);
 #endif
-
+	  hrocCluMap2->Fill(rocZ,rocPhi);
 #ifdef ROC_RATE
 	  //hcluRocRate2->Fill(rocZ);
-	  hrocCluMap2->Fill(rocZ,rocPhi);
 	  hrocClucharMap2->Fill(rocZ,rocPhi,ch);
 	  hrocSizeXMap2->Fill(rocZ,rocPhi,sizeX);
 	  hrocSizeYMap2->Fill(rocZ,rocPhi,sizeY);
@@ -4398,10 +4468,9 @@ void PixClusterAna::analyze(const edm::Event& e,
 	  hclumulty3->Fill(zPos,sizeY);
 	  hcluchar3->Fill(zPos,ch);
 	  hsizeyz3->Fill(zPos,sizeY);
-
+	  hrocCluMap3->Fill(rocZ,rocPhi);
 #ifdef ROC_RATE
 	  //hcluRocRate3->Fill(rocZ);
-	  hrocCluMap3->Fill(rocZ,rocPhi);
 	  hrocClucharMap3->Fill(rocZ,rocPhi,ch);
 	  hrocSizeXMap3->Fill(rocZ,rocPhi,sizeX);
 	  hrocSizeYMap3->Fill(rocZ,rocPhi,sizeY);
@@ -4496,10 +4565,10 @@ void PixClusterAna::analyze(const edm::Event& e,
 	  //hcharCluls->Fill(lumiBlock,ch);
 	  //hsizeCluls->Fill(lumiBlock,size);
 	  //hsizeXCluls->Fill(lumiBlock,sizeX);
+	  hrocCluMap4->Fill(rocZ,rocPhi);
 
 #ifdef ROC_RATE
 	  //hcluRocRate4->Fill(rocZ);
-	  hrocCluMap1->Fill(rocZ,rocPhi);
 	  hrocClucharMap4->Fill(rocZ,rocPhi,ch);
 	  hrocSizeXMap4->Fill(rocZ,rocPhi,sizeX);
 	  hrocSizeYMap4->Fill(rocZ,rocPhi,sizeY);
@@ -4618,12 +4687,14 @@ void PixClusterAna::analyze(const edm::Event& e,
 	hmoduleEdgePerDet[layer-1]->Fill(float(moduleEdgePerDet));
 	hrocEdgePerDet2D[layer-1]->Fill(module,ladder,rocEdgePerDet);
 	hmoduleEdgePerDet2D[layer-1]->Fill(module,ladder,moduleEdgePerDet);
-	if( 0 && (layer==1) && (rocEdgePerDet>79 || moduleEdgePerDet>79) ) 
+#ifdef PRINT_EDGE_CLUS
+	if((layer==2) && (rocEdgePerDet>79 || moduleEdgePerDet>79) ) 
 	  cout<<"edge pixels in lay/lad/mod "<<layer<<"/"<<ladder<<"/"<<module
 	      <<" event "<<event<<"/"<<countAllEvents<<"/"<<countEvents
-	      <<" - roc "<<rocEdgePerDet<<" sens "<<moduleEdgePerDet<<endl;
+	      <<" - in roc "<<rocEdgePerDet<<" in sens "<<moduleEdgePerDet<<endl;
+#endif // PRINT_EDGE_CLUS
       }
-#endif
+#endif // DO_EDGE
 #ifdef TEST_DCOLS
       histogramDcols(layer,ladder,module);
 #endif

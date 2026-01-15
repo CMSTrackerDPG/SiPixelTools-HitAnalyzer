@@ -44,7 +44,8 @@ cp $MYPWD/translation.dat ./translation.dat
 #cmsRun $MYPWD/runRawDumper_307073.py
 #
 #cmsRun $MYPWD/runHotPixels_394248.py
-#cmsRun $MYPWD/runHotPixels.py
+#cmsRun $MYPWD/runHotPixels_400179.py
+
 #
 #cmsRun $MYPWD/PixClusterAndTrack_386478.py   
 #cmsRun $MYPWD/PixClusterAndTrack_386509.py   
@@ -103,7 +104,9 @@ cp $MYPWD/translation.dat ./translation.dat
 #cmsRun $MYPWD/PixClusterAndTrack_398183.py   
 #cmsRun $MYPWD/PixClusterAndTrack_398183_rnd.py   
 #cmsRun $MYPWD/PixClusterAndTrack_398859.py   
-cmsRun $MYPWD/PixClusterAndTrack_399890.py   
+#cmsRun $MYPWD/PixClusterAndTrack_399890.py   
+#cmsRun $MYPWD/PixClusterAndTrack_400165.py   
+cmsRun $MYPWD/PixClusterAndTrack_400179.py   
  
 pwd
 ls 
